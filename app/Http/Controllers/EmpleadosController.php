@@ -181,11 +181,18 @@ class EmpleadosController extends AppBaseController
                 ->pluck('gerencia.NombreGerencia')
                 ->toArray();
 
+            $presupuestos = \DB::table('presupuestos_internos')
+                ->whereNull('deleted_at')
+                ->orderBy('Nombre')
+                ->pluck('Nombre')
+                ->toArray();
+
             return response()->json([
                 'puestos' => $puestos,
                 'departamentos' => $departamentos,
                 'obras' => $obras,
-                'gerencias' => $gerencias
+                'gerencias' => $gerencias,
+                'presupuestos' => $presupuestos,
             ]);
 
         } catch (\Exception $e) {
@@ -313,6 +320,7 @@ class EmpleadosController extends AppBaseController
             'orgPuestos' => $orgPuestos,
             'obrasCatalogo' => Obras::query()->orderBy('NombreObra')->get(['ObraID', 'NombreObra']),
             'centrosCatalogo' => CentroCosto::query()->orderBy('NombreCentro')->get(['CentroCostoID', 'NombreCentro']),
+            'presupuestosInternos' => \App\Models\PresupuestoInterno::query()->orderBy('Nombre')->get(['PresupuestoInternoID', 'Nombre']),
             'jefesCatalogo' => $jefes,
             'cadenaEmpleado' => $cadena,
         ];

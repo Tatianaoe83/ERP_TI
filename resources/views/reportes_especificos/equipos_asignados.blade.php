@@ -30,6 +30,7 @@
                     @endforeach
                 </select>
             </div>
+            @include('reportes_especificos.filtro_presupuesto')
             <div class="form-group">
                 <label for="marca">Marca</label>
                 <select id="marca" name="marca" class="jz form-control">

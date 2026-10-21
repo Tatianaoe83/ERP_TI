@@ -19,6 +19,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LineasAsignadasExport;
 use App\Exports\EquiposAsignadosExport;
 use App\Exports\EstatusLicenciasExport;
+use App\Models\PresupuestoInterno;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
@@ -44,12 +45,13 @@ class ReportesEspecificosController extends AppBaseController
     public function estatusLicencias(Request $request, EstatusLicenciasDataTable $dataTable)
     {
 
-        $filtros = $request->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago']) + [
+        $filtros = $request->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago', 'presupuesto_id']) + [
             'empleado_id' => '',
             'fecha_desde' => '',
             'fecha_hasta' => '',
             'frecuencia_pago' => '',
-            'inventarioinsumo_mes_pago' => ''
+            'inventarioinsumo_mes_pago' => '',
+            'presupuesto_id' => '',
         ];
 
        
@@ -58,7 +60,10 @@ class ReportesEspecificosController extends AppBaseController
             return $dataTable->ajax();
         }
 
-        return $dataTable->render('reportes_especificos.estatus_licencias', ['filtros' => $filtros]);
+        return $dataTable->render('reportes_especificos.estatus_licencias', [
+            'filtros' => $filtros,
+            'presupuestosReporte' => $this->presupuestosVisibles(),
+        ]);
     }
 
     /**
@@ -68,21 +73,25 @@ class ReportesEspecificosController extends AppBaseController
     {
 
 
-        $filtros = $request->only(['empleado_id', 'equipo_id', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre','marca']) + [
+        $filtros = $request->only(['empleado_id', 'equipo_id', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre','marca', 'presupuesto_id']) + [
             'empleado_id' => '',
             'equipo_id' => '',
             'fecha_desde' => '',
             'fecha_hasta' => '',
             'gerencia_id' => '',
             'categoria_nombre' => '',
-            'marca' => ''
+            'marca' => '',
+            'presupuesto_id' => '',
         ];
 
         if ($request->ajax()) {
             return $dataTable->ajax();
         }
 
-        return $dataTable->render('reportes_especificos.equipos_asignados', ['filtros' => $filtros]);
+        return $dataTable->render('reportes_especificos.equipos_asignados', [
+            'filtros' => $filtros,
+            'presupuestosReporte' => $this->presupuestosVisibles(),
+        ]);
     }
 
     /**
@@ -90,12 +99,13 @@ class ReportesEspecificosController extends AppBaseController
      */
     public function lineasAsignadas(Request $request, LineasAsignadasDataTable $dataTable)
     {
-        $filtros = $request->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre']) + [
+        $filtros = $request->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre', 'presupuesto_id']) + [
             'empleado_id' => '',
             'linea_id' => '',
             'fecha_desde' => '',
             'fecha_hasta' => '',
-            'cuenta_padre' => ''
+            'cuenta_padre' => '',
+            'presupuesto_id' => '',
         ];
 
 
@@ -103,7 +113,10 @@ class ReportesEspecificosController extends AppBaseController
             return $dataTable->ajax();
         }
 
-        return $dataTable->render('reportes_especificos.lineas_asignadas', ['filtros' => $filtros]);
+        return $dataTable->render('reportes_especificos.lineas_asignadas', [
+            'filtros' => $filtros,
+            'presupuestosReporte' => $this->presupuestosVisibles(),
+        ]);
     }
 
     /**
@@ -111,15 +124,20 @@ class ReportesEspecificosController extends AppBaseController
      */
     public function exportEstatusLicenciasExcel(Request $request)
     {
-        $filtros = $request->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago']);
+        $filtros = $request->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago', 'presupuesto_id']);
         
         $query = DB::table('inventarioinsumo')
         ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->leftJoin('presupuestos_internos', function ($join) {
+            $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                ->whereNull('presupuestos_internos.deleted_at');
+        })
         ->where('inventarioinsumo.CateogoriaInsumo', 'Licencia')
    
         ->select([
             'inventarioinsumo.InventarioID',
             'empleados.NombreEmpleado as empleado_nombre',
+            'presupuestos_internos.Nombre as presupuesto_nombre',
             'inventarioinsumo.NombreInsumo as insumo_nombre',
             'inventarioinsumo.CateogoriaInsumo as insumo_tipo',
             'inventarioinsumo.FechaAsignacion',
@@ -153,6 +171,10 @@ class ReportesEspecificosController extends AppBaseController
             $query->where('inventarioinsumo.MesDePago', $filtros['inventarioinsumo_mes_pago']);
         }
 
+        if (!empty($filtros['presupuesto_id'])) {
+            $query->where('empleados.PresupuestoInternoID', $filtros['presupuesto_id']);
+        }
+
         $resultado = $query->orderBy('inventarioinsumo.FechaAsignacion', 'desc')->get();
 
         $nombreArchivo = 'estatus_licencias_' . date('Y-m-d_H-i-s') . '.xlsx';
@@ -166,11 +188,16 @@ class ReportesEspecificosController extends AppBaseController
         
         $query = DB::table('inventarioinsumo')
         ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->leftJoin('presupuestos_internos', function ($join) {
+            $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                ->whereNull('presupuestos_internos.deleted_at');
+        })
         ->where('inventarioinsumo.CateogoriaInsumo', 'Licencia')
    
         ->select([
             'inventarioinsumo.InventarioID',
             'empleados.NombreEmpleado as empleado_nombre',
+            'presupuestos_internos.Nombre as presupuesto_nombre',
             'inventarioinsumo.NombreInsumo as insumo_nombre',
             'inventarioinsumo.CateogoriaInsumo as insumo_tipo',
             'inventarioinsumo.FechaAsignacion',
@@ -202,9 +229,14 @@ class ReportesEspecificosController extends AppBaseController
         
         $query = DB::table('inventarioequipo')
         ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->leftJoin('presupuestos_internos', function ($join) {
+            $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                ->whereNull('presupuestos_internos.deleted_at');
+        })
         ->select([
             'inventarioequipo.InventarioID',
             'empleados.NombreEmpleado as empleado_nombre',
+            'presupuestos_internos.Nombre as presupuesto_nombre',
             'inventarioequipo.GerenciaEquipo',
             'inventarioequipo.Marca',
             'inventarioequipo.Modelo',
@@ -229,13 +261,18 @@ class ReportesEspecificosController extends AppBaseController
      */
     public function exportEquiposAsignadosExcel(Request $request)
     {
-        $filtros = $request->only(['empleado_id', 'equipo_id', 'marca', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre']);
+        $filtros = $request->only(['empleado_id', 'equipo_id', 'marca', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre', 'presupuesto_id']);
         
         $query = DB::table('inventarioequipo')
         ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->leftJoin('presupuestos_internos', function ($join) {
+            $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                ->whereNull('presupuestos_internos.deleted_at');
+        })
         ->select([
             'inventarioequipo.InventarioID',
             'empleados.NombreEmpleado as empleado_nombre',
+            'presupuestos_internos.Nombre as presupuesto_nombre',
             'inventarioequipo.GerenciaEquipo',
             'inventarioequipo.Marca',
             'inventarioequipo.Modelo',
@@ -272,6 +309,10 @@ class ReportesEspecificosController extends AppBaseController
             $query->where('inventarioequipo.GerenciaEquipoID', $filtros['gerencia_id']);    
         }
 
+        if (!empty($filtros['presupuesto_id'])) {
+            $query->where('empleados.PresupuestoInternoID', $filtros['presupuesto_id']);
+        }
+
         if (!empty($filtros['categoria_nombre'])) {
             $query->where('inventarioequipo.CategoriaEquipo', $filtros['categoria_nombre']);
         }
@@ -293,6 +334,10 @@ class ReportesEspecificosController extends AppBaseController
         
         $query = DB::table('inventariolineas')
             ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
             ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
             ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
@@ -303,6 +348,7 @@ class ReportesEspecificosController extends AppBaseController
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+            'presupuestos_internos.Nombre as presupuesto_nombre',
                 'empleados.Correo as empleado_correo',
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
@@ -331,10 +377,14 @@ class ReportesEspecificosController extends AppBaseController
      */
     public function exportLineasAsignadasExcel(Request $request)
     {
-        $filtros = $request->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre']);
+        $filtros = $request->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre', 'presupuesto_id']);
         
         $query = DB::table('inventariolineas')
             ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
             ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
             ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
@@ -345,6 +395,7 @@ class ReportesEspecificosController extends AppBaseController
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+            'presupuestos_internos.Nombre as presupuesto_nombre',
                 'empleados.Correo as empleado_correo',
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
@@ -384,10 +435,26 @@ class ReportesEspecificosController extends AppBaseController
             $query->whereDate('inventariolineas.FechaAsignacion', '<=', $filtros['fecha_hasta']);
         }
 
+        if (!empty($filtros['presupuesto_id'])) {
+            $query->where('empleados.PresupuestoInternoID', $filtros['presupuesto_id']);
+        }
+
         $resultado = $query->orderBy('inventariolineas.FechaAsignacion', 'desc')->get();
 
         $nombreArchivo = 'lineas_asignadas_' . date('Y-m-d_H-i-s') . '.xlsx';
         
         return Excel::download(new LineasAsignadasExport($resultado, $filtros), $nombreArchivo);
+    }
+
+    private function presupuestosVisibles()
+    {
+        $asignados = DB::table('presupuesto_interno_usuarios')
+            ->where('users_id', auth()->id())
+            ->pluck('PresupuestoInternoID');
+
+        return PresupuestoInterno::query()
+            ->when($asignados->isNotEmpty(), fn ($q) => $q->whereIn('PresupuestoInternoID', $asignados))
+            ->orderBy('Nombre')
+            ->get(['PresupuestoInternoID', 'Nombre']);
     }
 }

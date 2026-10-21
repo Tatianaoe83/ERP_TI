@@ -170,12 +170,10 @@ class InventarioController extends AppBaseController
             ->editColumn('Estado', function ($row) {
                 
                 if ($row->Estado == 1 || $row->Estado === true) {
-                    return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
+                    return '<span class="aud-marca aud-marca--igual"><i class="fas fa-circle-check" aria-hidden="true"></i> Activo</span>';
                 }
-    
-                else {
-                    return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
-                }
+
+                return '<span class="aud-marca aud-marca--baja"><i class="fas fa-circle-minus" aria-hidden="true"></i> Inactivo</span>';
 
             })
             ->editColumn('NombreEmpleado', function ($row) {
@@ -189,10 +187,12 @@ class InventarioController extends AppBaseController
 
                 $meta = $map[$tipo] ?? $map['FISICA'];
 
-                return e($row->NombreEmpleado)
-                    . ' <span class="inv-tipo-badge ' . $meta['class'] . '" title="' . e($meta['hint']) . '" style="padding:0.1rem 0.45rem;">'
-                    . e($meta['label'])
-                    . '</span>';
+                $gerencia = $row->nombre_gerencia ?: 'Sin gerencia';
+
+                return '<div class="aud-empleado"><div class="aud-empleado__datos">'
+                    . '<div class="aud-strong">' . e($row->NombreEmpleado) . '</div>'
+                    . '<div class="aud-mini aud-muted">' . e($gerencia) . ' · ' . e($meta['label']) . '</div>'
+                    . '</div></div>';
             })
             ->editColumn('nombre_gerencia', fn($row) => e($row->nombre_gerencia ?? 'Sin gerencia'))
             ->rawColumns(['action', 'Estado', 'NombreEmpleado'])

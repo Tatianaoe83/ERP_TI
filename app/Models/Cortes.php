@@ -41,7 +41,8 @@ class Cortes extends Model
         'Costo',
         'CostoTotal',
         'Margen',
-        'GerenciaID'
+        'GerenciaID',
+        'PresupuestoInternoID'
     ];
 
     /**
@@ -57,7 +58,8 @@ class Cortes extends Model
         'Costo' => 'decimal:2',
         'CostoTotal' => 'decimal:2',
         'Margen' => 'decimal:2',
-        'GerenciaID' => 'integer'
+        'GerenciaID' => 'integer',
+        'PresupuestoInternoID' => 'integer'
     ];
 
     /**

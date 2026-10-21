@@ -5,6 +5,7 @@ namespace App\Exports;
 
 use App\Models\CentroCosto;
 use App\Models\Gerencia;
+use App\Models\PresupuestoInterno;
 use App\Models\Empleados;
 use App\Helpers\PresupuestoHelper;
 use App\Models\PresupuestoConfiguracion;
@@ -48,7 +49,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
         $this->gerencia  = $gerencia;
         $this->tipo = $tipo;
         $this->modo = $modo === 'inventario' ? 'inventario' : 'presupuesto';
-        $this->agrupar = $agrupar === 'centro' ? 'centro' : 'gerencia';
+        $this->agrupar = PresupuestoHelper::normalizarAgrupar($agrupar);
         PresupuestoHelper::$agrupar = $this->agrupar;
     }
 
@@ -76,6 +77,10 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
             $centro = CentroCosto::find($numerogerencia);
             $gerencia = new Gerencia();
             $gerencia->NombreGerencia = $centro->NombreCentro ?? 'Centro de costos';
+        } elseif ($this->agrupar === 'interno') {
+            $interno = PresupuestoInterno::find($numerogerencia);
+            $gerencia = new Gerencia();
+            $gerencia->NombreGerencia = $interno->Nombre ?? 'Presupuesto interno';
         } else {
             $gerencia = Gerencia::find($numerogerencia);
         }
@@ -119,9 +124,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
          ROUND(SUM(DISTINCT IFNULL((CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END), 0)), 0) AS CostoTotal
         FROM inventarioinsumo ii
         INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-        INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-        INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-        INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
         WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
             " . $tipoPersonaFilter . $presupInsumoII . "
             AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
@@ -133,9 +136,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
      ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
     FROM inventarioinsumo ii
     INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-    INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-    INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-    INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
     WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
         " . $tipoPersonaFilter . $presupInsumoII . "
         AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
@@ -153,9 +154,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
                       COUNT(*) as CantidadMeses
                FROM inventarioinsumo ii
                INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-               INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-               INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-               INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
                WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
                    " . $tipoPersonaFilter . $presupInsumoII . "
                    AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
@@ -169,9 +168,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
            ROUND(SUM(DISTINCT IFNULL((CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END), 0)), 0) AS CostoTotal
            FROM inventarioinsumo ii
            INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-           INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-           INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-           INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
            WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
                " . $tipoPersonaFilter . $presupInsumoII . "
                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "

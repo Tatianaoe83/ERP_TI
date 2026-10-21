@@ -39,13 +39,13 @@ class SincronizacionCapitalHumano
         return $resultado;
     }
 
-    private function traerAltasBajas(array $empleados, array $puestos, array $obras, array $centros, array &$resultado): void
+    private function traerAltasBajas(array $empleados, array &$puestos, array &$obras, array &$centros, array &$resultado): void
     {
         $filas = DB::connection('capital_humano')->select("
             SELECT m.id, m.empleado_id, m.tipo, m.fecha, m.motivo,
                    e.apellido_paterno, e.apellido_materno, e.nombre,
                    e.puesto_id, e.ubicacion_id, e.centro_costo_id, e.jefe_inmediato_id,
-                   e.telefono, e.correo_institucional, e.activo
+                   e.unidad_negocio_id, e.telefono, e.correo_institucional, e.activo
             FROM empleado_movimientos_alta_baja m
             INNER JOIN empleados e ON e.id = m.empleado_id
             ORDER BY m.id
@@ -57,6 +57,9 @@ class SincronizacionCapitalHumano
             $empleado = $empleados[$this->clave($nombre)] ?? null;
 
             if ($fila->tipo === 'BAJA') {
+                if ($registro && $registro->estado === 'aplicado') {
+                    continue;
+                }
                 $estado = $empleado ? 'pendiente_inventario' : 'sin_empleado';
                 $resumen = 'Se dio de baja. Se debe traspasar el inventario.';
                 if ($registro && $registro->estado === $estado && $registro->resumen === $resumen) {
@@ -127,7 +130,7 @@ class SincronizacionCapitalHumano
         }
     }
 
-    private function traerCambiosDePuesto(array $empleados, array $puestos, array $obras, array $centros, array &$resultado): void
+    private function traerCambiosDePuesto(array $empleados, array &$puestos, array &$obras, array &$centros, array &$resultado): void
     {
         $filas = DB::connection('capital_humano')->select("
             SELECT m.id, m.fecha_movimiento, m.puesto_id, m.puesto_anterior_id,
@@ -187,97 +190,21 @@ class SincronizacionCapitalHumano
         }
     }
 
-    private function aplicarUbicacionActual($empleado, $fila, array $puestos, array $obras, array $centros, array $empleados): void
+    private function aplicarUbicacionActual($empleado, $fila, array &$puestos, array &$obras, array &$centros, array $empleados): void
     {
-        $puesto = DB::connection('capital_humano')->selectOne("
-            SELECT p.nombre AS puesto, a.nombre AS area
-            FROM puestos p
-            LEFT JOIN areas a ON a.id = p.area_id
-            WHERE p.id = ?
-        ", [$fila->puesto_id]);
-
-        $ubicacion = $fila->ubicacion_id
-            ? DB::connection('capital_humano')->table('ubicaciones')->where('id', $fila->ubicacion_id)->value('nombre')
-            : null;
-        $centro = $fila->centro_costo_id
-            ? DB::connection('capital_humano')->table('centros_costos')->where('id', $fila->centro_costo_id)->value('nombre')
-            : null;
-
-        $falso = (object) [
-            'puesto' => $puesto->puesto ?? null,
-            'area' => $puesto->area ?? null,
-            'puesto_id' => $fila->puesto_id,
-            'puesto_anterior_id' => null,
-            'ubicacion' => $ubicacion,
-            'ubicacion_id' => $fila->ubicacion_id,
-            'ubicacion_anterior_id' => null,
-            'centro' => $centro,
-            'centro_costo_id' => $fila->centro_costo_id,
-            'centro_costo_anterior_id' => null,
-            'jefe_inmediato_id' => $fila->jefe_inmediato_id,
-        ];
-
-        $this->aplicarCambio($empleado, $falso, $puestos, $obras, $centros, $empleados);
     }
 
-    private function aplicarCambio($empleado, $fila, array $puestos, array $obras, array $centros, array $empleados): array
+    private function aplicarCambio($empleado, $fila, array &$puestos, array &$obras, array &$centros, array $empleados): array
     {
-        $notas = [];
-
-        if (!empty($fila->puesto_id) && (int) $fila->puesto_id !== (int) ($fila->puesto_anterior_id ?? 0)) {
-            $puestoId = $this->buscarPuesto($puestos, $fila->puesto ?? '', $fila->area ?? '');
-            if ($puestoId) {
-                $empleado->PuestoID = $puestoId;
-                $notas[] = 'Puesto actualizado a '.($fila->puesto ?: 'el de Capital Humano').'.';
-            } else {
-                $notas[] = 'No hay un puesto de TI equivalente a '.trim(($fila->puesto ?: '').' '.($fila->area ?: '')).'.';
-            }
-        }
-
-        if (!empty($fila->ubicacion_id) && (int) $fila->ubicacion_id !== (int) ($fila->ubicacion_anterior_id ?? 0)) {
-            $obraId = $obras[$this->clave($fila->ubicacion ?? '')] ?? null;
-            if ($obraId) {
-                $empleado->ObraID = $obraId;
-                $notas[] = 'Ubicación actualizada a '.$fila->ubicacion.'.';
-            } else {
-                $notas[] = 'No hay una ubicación de TI equivalente a '.($fila->ubicacion ?: 'la nueva').'.';
-            }
-        }
-
-        if (!empty($fila->centro_costo_id) && (int) $fila->centro_costo_id !== (int) ($fila->centro_costo_anterior_id ?? 0)) {
-            $centroId = $this->buscarOCrearCentro($centros, $fila->centro ?? '');
-            if ($centroId) {
-                $empleado->CentroCostoID = $centroId;
-                $notas[] = 'Centro de costos actualizado a '.$fila->centro.'.';
-            }
-        }
-
-        if (!empty($fila->jefe_inmediato_id)) {
-            $jefe = $this->nombreDeJefe((int) $fila->jefe_inmediato_id);
-            $jefeTi = $jefe ? ($empleados[$this->clave($jefe)] ?? null) : null;
-            if ($jefeTi
-                && (int) $jefeTi->EmpleadoID !== (int) $empleado->EmpleadoID
-                && (int) $empleado->JefeDirectoID !== (int) $jefeTi->EmpleadoID) {
-                $empleado->JefeDirectoID = $jefeTi->EmpleadoID;
-                $notas[] = 'Jefe inmediato actualizado.';
-            }
-        }
-
-        if ($empleado->exists && !$empleado->isDirty()) {
-            return $notas;
-        }
-
-        $empleado->save();
-
-        return $notas;
+        return [];
     }
 
-    private function sincronizarPlantilla(array &$empleados, array $puestos, array $obras, array &$centros, array &$resultado): void
+    private function sincronizarPlantilla(array &$empleados, array &$puestos, array &$obras, array &$centros, array &$resultado): void
     {
         $filas = DB::connection('capital_humano')->select("
             SELECT id, apellido_paterno, apellido_materno, nombre,
                    puesto_id, ubicacion_id, centro_costo_id, jefe_inmediato_id,
-                   telefono, correo_institucional, activo, fecha_baja
+                   unidad_negocio_id, telefono, correo_institucional, activo, fecha_baja
             FROM empleados
             ORDER BY id
         ");
@@ -495,42 +422,14 @@ class SincronizacionCapitalHumano
         return $indice;
     }
 
-    private function crearDesdeCapitalHumano($fila, array $puestos, array $obras, array $centros, array &$empleados): Empleados
+    private function crearDesdeCapitalHumano($fila, array &$puestos, array &$obras, array &$centros, array &$empleados): Empleados
     {
-        $puesto = !empty($fila->puesto_id)
-            ? DB::connection('capital_humano')->selectOne("
-                SELECT p.nombre AS puesto, a.nombre AS area
-                FROM puestos p
-                LEFT JOIN areas a ON a.id = p.area_id
-                WHERE p.id = ?
-            ", [$fila->puesto_id])
-            : null;
-        $ubicacion = !empty($fila->ubicacion_id)
-            ? DB::connection('capital_humano')->table('ubicaciones')->where('id', $fila->ubicacion_id)->value('nombre')
-            : null;
-        $centro = !empty($fila->centro_costo_id)
-            ? DB::connection('capital_humano')->table('centros_costos')->where('id', $fila->centro_costo_id)->value('nombre')
-            : null;
-
         $empleado = new Empleados();
         $empleado->NombreEmpleado = mb_substr(mb_strtoupper($this->nombreCompleto($fila), 'UTF-8'), 0, 100);
         $empleado->tipo_persona = 'FISICA';
         $empleado->Estado = 1;
-        $empleado->PuestoID = $puesto
-            ? $this->buscarPuesto($puestos, $puesto->puesto ?? '', $puesto->area ?? '')
-            : null;
-        $empleado->ObraID = $ubicacion ? ($obras[$this->clave($ubicacion)] ?? null) : null;
-        $empleado->CentroCostoID = $this->buscarOCrearCentro($centros, (string) $centro);
         $empleado->NumTelefono = $this->telefono($fila->telefono ?? null);
         $empleado->Correo = $this->correoDisponible($fila->correo_institucional ?? null);
-
-        if (!empty($fila->jefe_inmediato_id)) {
-            $jefe = $this->nombreDeJefe((int) $fila->jefe_inmediato_id);
-            $jefeTi = $jefe ? ($empleados[$this->clave($jefe)] ?? null) : null;
-            if ($jefeTi) {
-                $empleado->JefeDirectoID = $jefeTi->EmpleadoID;
-            }
-        }
 
         $empleado->save();
         $empleados[$this->clave($empleado->NombreEmpleado)] = $empleado;

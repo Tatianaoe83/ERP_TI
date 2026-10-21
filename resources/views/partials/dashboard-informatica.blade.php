@@ -76,10 +76,10 @@
 </style>
 
 @php
-    $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'anio' => (int) now()->year];
-    $catalogoDash = $catalogoDash ?? ['gerencias' => collect(), 'centros' => collect()];
-    $chartGerencias = collect($stats['estadisticas_gerencia'] ?? [])->map(fn ($g) => [
-        'nombre' => $g->NombreGerencia,
+    $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'presupuesto_id' => 0, 'anio' => (int) now()->year];
+    $catalogoDash = $catalogoDash ?? ['gerencias' => collect(), 'centros' => collect(), 'presupuestos' => collect()];
+    $chartPresupuestos = collect($stats['estadisticas_presupuesto'] ?? [])->map(fn ($g) => [
+        'nombre' => $g->NombrePresupuesto,
         'total' => (int) $g->total_empleados,
     ])->values();
     $chartCategorias = collect($stats['equipos_por_categoria'] ?? [])->take(8)->map(fn ($e) => [
@@ -89,28 +89,39 @@
 @endphp
 
 <form method="GET" action="{{ route('home') }}" class="dash-filtros">
-    <label>
-        Gerencia
+    <div class="dash-filtro dash-filtro--wide">
+        <span>Presupuesto interno</span>
+        <select name="presupuesto_id" class="form-control">
+            <option value="">Todos</option>
+            @foreach($catalogoDash['presupuestos'] as $id => $nombre)
+                <option value="{{ $id }}" @if((int) $filtrosDash['presupuesto_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="dash-filtro">
+        <span>Gerencia</span>
         <select name="gerencia_id" class="form-control">
             <option value="">Todas</option>
             @foreach($catalogoDash['gerencias'] as $id => $nombre)
                 <option value="{{ $id }}" @if((int) $filtrosDash['gerencia_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
-    </label>
-    <label>
-        Centro de costos
+    </div>
+    <div class="dash-filtro">
+        <span>Centro de costos</span>
         <select name="centro_id" class="form-control">
             <option value="">Todos</option>
             @foreach($catalogoDash['centros'] as $id => $nombre)
                 <option value="{{ $id }}" @if((int) $filtrosDash['centro_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
-    </label>
-    <button type="submit" class="index-page__btn-primary">Filtrar</button>
-    @if($filtrosDash['gerencia_id'] || $filtrosDash['centro_id'])
-        <a href="{{ route('home') }}" class="index-page__btn-secondary">Limpiar</a>
-    @endif
+    </div>
+    <div class="dash-filtro dash-filtro--acciones">
+        <button type="submit" class="index-page__btn-primary">Filtrar</button>
+        @if($filtrosDash['gerencia_id'] || $filtrosDash['centro_id'] || $filtrosDash['presupuesto_id'])
+            <a href="{{ route('home') }}" class="index-page__btn-secondary">Limpiar</a>
+        @endif
+    </div>
 </form>
 
 <div class="dash-charts">
@@ -119,8 +130,8 @@
         <canvas id="chartInventarioDash"></canvas>
     </div>
     <div class="dash-chart">
-        <h3>Personal por gerencia</h3>
-        <canvas id="chartGerenciasDash"></canvas>
+        <h3>Personal por presupuesto interno</h3>
+        <canvas id="chartPresupuestoDash"></canvas>
     </div>
     <div class="dash-chart dash-chart--wide">
         <h3>Equipos por categoría</h3>
@@ -141,7 +152,7 @@
         if (!window.Chart || !window.UxCharts || document.getElementById('chartInventarioDash')?.dataset.listo === '1') return;
         UxCharts.aplicar(Chart);
         var inventario = document.getElementById('chartInventarioDash');
-        var gerencias = document.getElementById('chartGerenciasDash');
+        var gerencias = document.getElementById('chartPresupuestoDash');
         var categorias = document.getElementById('chartCategoriasDash');
         if (inventario) {
             inventario.dataset.listo = '1';
@@ -164,7 +175,7 @@
             });
         }
         if (gerencias) {
-            var filasG = @json($chartGerencias);
+            var filasG = @json($chartPresupuestos);
             new Chart(gerencias, {
                 type: 'bar',
                 data: {
@@ -209,18 +220,41 @@
     .dash-filtros {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: 0.75rem 1rem;
         align-items: flex-end;
         margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
     }
-    .dash-filtros label {
+    html.dark .dash-filtros,
+    .dark .dash-filtros {
+        background: rgba(15, 23, 42, 0.72);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+    .dash-filtro {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        min-width: 180px;
+        gap: 0.35rem;
+        flex: 1 1 190px;
+        min-width: 0;
     }
+    .dash-filtro--wide { flex: 2 1 280px; }
+    .dash-filtro--acciones {
+        flex: 0 0 auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .dash-filtro > span {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+    .dash-filtros .select2-container { width: 100% !important; }
     .dash-charts {
         display: grid;
         grid-template-columns: 1fr;

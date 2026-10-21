@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\CentroCosto;
 use App\Models\Gerencia;
+use App\Models\PresupuestoInterno;
 use App\Models\Gerencias_usuarios;
 use App\Models\Empleados;
 use App\Helpers\PresupuestoHelper;
@@ -32,28 +33,9 @@ class PresupuestoController extends Controller
      */
     public function index()
     {
+        $presupuestosInternos = $this->presupuestosVisibles();
 
-        $id = auth()->id();
-
-        $usuariosgeren = DB::table('gerencias_usuarios')
-            ->where('users_id', $id)
-            ->pluck('GerenciaID')
-            ->toArray();
-
-        if (count($usuariosgeren) > 0) {
-            $genusuarios = Gerencia::join("gerencias_usuarios", "gerencias_usuarios.GerenciaID", "=", "gerencia.GerenciaID")
-                ->select('gerencia.*')
-                ->where('gerencias_usuarios.users_id', $id)
-                ->get();
-        } else {
-            $genusuarios = Gerencia::all();
-        }
-
-        $centros = CentroCosto::query()->orderBy('NombreCentro')->get();
-
-        return view('presupuesto.index', compact('genusuarios', 'centros'));
-
-
+        return view('presupuesto.index', compact('presupuestosInternos'));
     }
 
     /**
@@ -126,20 +108,15 @@ class PresupuestoController extends Controller
     public function descargar(request $request)
     {
 
-        $agrupar = $request->input('agrupar') === 'centro' ? 'centro' : 'gerencia';
+        $agrupar = 'interno';
         PresupuestoHelper::$agrupar = $agrupar;
-        $numerogerencia = $agrupar === 'centro' ? (int) $request->CentroCostoID : (int) $request->GerenciaID;
+        $numerogerencia = (int) $request->PresupuestoInternoID;
+        $this->asegurarPresupuestoVisible($numerogerencia);
         $metadatosDocumento = $this->metadatosDocumentoReporte($request->input('modo', 'presupuesto'));
         $esPresupuesto = $metadatosDocumento['modo'] === 'presupuesto';
         $tiposPersona = PresupuestoHelper::tiposPersona($metadatosDocumento['modo']);
 
-        if ($agrupar === 'centro') {
-            $centro = CentroCosto::find($numerogerencia);
-            $gerencia = new Gerencia();
-            $gerencia->NombreGerencia = $centro->NombreCentro ?? 'Centro de costos';
-        } else {
-            $gerencia = Gerencia::find($numerogerencia);
-        }
+        $gerencia = $this->etiquetaAlcance($agrupar, $numerogerencia);
 
         $numeroEmpleados = Empleados::where(function ($query) use ($numerogerencia) {
             PresupuestoHelper::aplicarAlcance($query, $numerogerencia);
@@ -191,9 +168,7 @@ class PresupuestoController extends Controller
                  ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
                 FROM inventarioinsumo ii
                 INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-                INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-                INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
                 WHERE " . PresupuestoHelper::sqlWhereAlcance() . " " . $tipoPersonaFilter . $presupInsumoII . "
                     AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                     ", $query_params);
@@ -204,9 +179,7 @@ class PresupuestoController extends Controller
              ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
             FROM inventarioinsumo ii
             INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
             WHERE " . PresupuestoHelper::sqlWhereAlcance() . " " . $tipoPersonaFilter . $presupInsumoII . "
                 AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
                 ", $query_params);
@@ -223,9 +196,7 @@ class PresupuestoController extends Controller
                                        COUNT(*) as CantidadMeses
                                 FROM inventarioinsumo ii
                                 INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-                                INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-                                INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-                                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
                                 WHERE " . PresupuestoHelper::sqlWhereAlcance() . " " . $tipoPersonaFilter . $presupInsumoII . "
                                     AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                                 GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual
@@ -238,9 +209,7 @@ class PresupuestoController extends Controller
                    ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
                    FROM inventarioinsumo ii
                    INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-                   INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-                   INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-                   INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+" . PresupuestoHelper::sqlJoinOrganizacion() . "
                    WHERE " . PresupuestoHelper::sqlWhereAlcance() . " " . $tipoPersonaFilter . $presupInsumoII . "
                        AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
             ", $query_params);
@@ -635,8 +604,10 @@ class PresupuestoController extends Controller
     public function verificarFechas(Request $request)
     {
         try {
-            $agrupar = $request->input('agrupar') === 'centro' ? 'centro' : 'gerencia';
-            $gerenciaId = $agrupar === 'centro' ? $request->CentroCostoID : $request->GerenciaID;
+            $agrupar = 'interno';
+            PresupuestoHelper::$agrupar = $agrupar;
+            $gerenciaId = (int) $request->PresupuestoInternoID;
+            $this->asegurarPresupuestoVisible($gerenciaId);
 
             // Año siguiente
             $anioSiguiente = now()->year + 1;
@@ -645,9 +616,13 @@ class PresupuestoController extends Controller
             $insumosSinMesPagoMensual = DB::table('inventarioinsumo as ii')
                 ->whereNull('ii.deleted_at')
                 ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
-                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-                ->when($agrupar === 'centro', fn ($q) => $q->where('e.CentroCostoID', $gerenciaId), fn ($q) => $q->where('d.GerenciaID', $gerenciaId))
+                ->when($agrupar !== 'interno', function ($q) {
+                    $q->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                        ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID');
+                })
+                ->when($agrupar === 'interno', fn ($q) => $q->where('e.PresupuestoInternoID', $gerenciaId))
+                ->when($agrupar === 'centro', fn ($q) => $q->where('e.CentroCostoID', $gerenciaId))
+                ->when($agrupar === 'gerencia', fn ($q) => $q->where('d.GerenciaID', $gerenciaId))
                 ->where('e.Estado', 1)
                 ->whereNull('e.deleted_at')
                 ->whereNotNull('ii.FechaRenovacion')
@@ -668,9 +643,13 @@ class PresupuestoController extends Controller
             $insumosSinMesPagoAnual = DB::table('inventarioinsumo as ii')
                 ->whereNull('ii.deleted_at')
                 ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
-                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-                ->when($agrupar === 'centro', fn ($q) => $q->where('e.CentroCostoID', $gerenciaId), fn ($q) => $q->where('d.GerenciaID', $gerenciaId))
+                ->when($agrupar !== 'interno', function ($q) {
+                    $q->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                        ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID');
+                })
+                ->when($agrupar === 'interno', fn ($q) => $q->where('e.PresupuestoInternoID', $gerenciaId))
+                ->when($agrupar === 'centro', fn ($q) => $q->where('e.CentroCostoID', $gerenciaId))
+                ->when($agrupar === 'gerencia', fn ($q) => $q->where('d.GerenciaID', $gerenciaId))
                 ->where('e.Estado', 1)
                 ->whereNull('e.deleted_at')
                 ->whereNotNull('ii.FechaRenovacion')
@@ -688,9 +667,13 @@ class PresupuestoController extends Controller
 
             // 3. TOTAL DE EMPLEADOS
             $totalEmpleados = DB::table('empleados as e')
-                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-                ->when($agrupar === 'centro', fn ($q) => $q->where('e.CentroCostoID', $gerenciaId), fn ($q) => $q->where('d.GerenciaID', $gerenciaId))
+                ->when($agrupar !== 'interno', function ($q) {
+                    $q->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                        ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID');
+                })
+                ->when($agrupar === 'interno', fn ($q) => $q->where('e.PresupuestoInternoID', $gerenciaId))
+                ->when($agrupar === 'centro', fn ($q) => $q->where('e.CentroCostoID', $gerenciaId))
+                ->when($agrupar === 'gerencia', fn ($q) => $q->where('d.GerenciaID', $gerenciaId))
                 ->where('e.Estado', 1)
                 ->whereNull('e.deleted_at')
                 ->distinct()
@@ -749,6 +732,59 @@ class PresupuestoController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function presupuestosVisibles()
+    {
+        $asignados = DB::table('presupuesto_interno_usuarios')
+            ->where('users_id', auth()->id())
+            ->pluck('PresupuestoInternoID');
+
+        return PresupuestoInterno::query()
+            ->when($asignados->isNotEmpty(), fn ($q) => $q->whereIn('PresupuestoInternoID', $asignados))
+            ->orderBy('Nombre')
+            ->get();
+    }
+
+    private function asegurarPresupuestoVisible(int $id): void
+    {
+        $visible = $this->presupuestosVisibles()->contains('PresupuestoInternoID', $id);
+        if (!$visible) {
+            abort(403, 'No tienes asignado ese presupuesto interno.');
+        }
+    }
+
+    private function idAlcance(Request $request, string $agrupar): int
+    {
+        if ($agrupar === 'centro') {
+            return (int) $request->CentroCostoID;
+        }
+        if ($agrupar === 'interno') {
+            return (int) $request->PresupuestoInternoID;
+        }
+
+        return (int) $request->GerenciaID;
+    }
+
+    private function etiquetaAlcance(string $agrupar, int $id): Gerencia
+    {
+        if ($agrupar === 'centro') {
+            $centro = CentroCosto::find($id);
+            $gerencia = new Gerencia();
+            $gerencia->NombreGerencia = $centro->NombreCentro ?? 'Centro de costos';
+
+            return $gerencia;
+        }
+
+        if ($agrupar === 'interno') {
+            $interno = PresupuestoInterno::find($id);
+            $gerencia = new Gerencia();
+            $gerencia->NombreGerencia = $interno->Nombre ?? 'Presupuesto interno';
+
+            return $gerencia;
+        }
+
+        return Gerencia::find($id) ?? new Gerencia();
     }
 
     private function metadatosDocumentoReporte(?string $modo): array

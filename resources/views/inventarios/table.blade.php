@@ -119,18 +119,18 @@
     @endpush
 
     <div class="index-page__table-wrap inv-empleados-wrap">
-        <table id="tabla-empleados" class="table index-table w-full">
+        <table id="tabla-empleados" class="table index-table aud-grupos w-full">
             <thead>
                 <tr>
-                    <th aria-label="Inventario"></th>
-                    <th>Nombre</th>
+                    <th class="aud-col-toggle" aria-label="Inventario"></th>
+                    <th>Empleado</th>
                     <th>Gerencia</th>
                     <th>Puesto</th>
                     <th>Obra</th>
                     <th>Teléfono</th>
                     <th>Correo</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th class="aud-col-acciones">Acciones</th>
                 </tr>
             </thead>
         </table>
@@ -199,58 +199,54 @@
                 },
 
                 columns: [{
-                        className: 'dt-control dark:bg-[#101010] dark:text-white',
+                        className: 'dt-control aud-col-toggle',
                         orderable: false,
                         searchable: false,
                         data: null,
-                        width: '42px',
-                        defaultContent: '<button type="button" class="inv-row-toggle" title="Ver inventario" aria-label="Ver inventario del empleado" aria-expanded="false"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>',
+                        width: '48px',
+                        defaultContent: '<button type="button" class="aud-toggle" title="Ver inventario" aria-label="Ver inventario del empleado" aria-expanded="false"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>',
                     },
 
                     {
-                        data: 'NombreEmpleado',
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        data: 'NombreEmpleado'
                     },
 
                     {
                         data: 'nombre_gerencia',
-                        orderable: false,
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        orderable: false
                     },
 
                     {
-                        data: 'nombre_puesto',
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        data: 'nombre_puesto'
                     },
 
                     {
-                        data: 'nombre_obra',
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        data: 'nombre_obra'
                     },
 
                     {
-                        data: 'NumTelefono',
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        data: 'NumTelefono'
                     },
 
                     {
-                        data: 'Correo',
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        data: 'Correo'
                     },
 
                     {
-                        data: 'Estado',
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        data: 'Estado'
                     },
 
                     {
                         data: 'action',
                         orderable: false,
                         searchable: false,
-                        class: 'dark:bg-[#101010] dark:text-white'
+                        className: 'aud-col-acciones'
                     }
                 ],
 
+                createdRow: function(row) {
+                    $(row).addClass('aud-grupo');
+                },
                 initComplete: function() {
 
                     var api = this.api();
@@ -319,7 +315,7 @@
             // (td.dt-control) y abría/cerraba al instante. El chevron
             // solo carga el inventario del empleado.
             // =========================
-            $('#tabla-empleados tbody').on('click', '.inv-row-toggle', function(e) {
+            $('#tabla-empleados tbody').on('click', '.aud-toggle', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (e.stopImmediatePropagation) e.stopImmediatePropagation();
@@ -332,18 +328,18 @@
                 var data = row.data();
                 if (!data || !data.EmpleadoID) return;
 
-                var toggle = tr.find('.inv-row-toggle');
+                var toggle = tr.find('.aud-toggle');
 
                 if (row.child.isShown()) {
                     row.child.hide();
                     tr.removeClass('shown');
-                    toggle.attr('aria-expanded', 'false');
+                    toggle.removeClass('is-abierto').attr('aria-expanded', 'false');
                     return;
                 }
 
-                row.child('<div class="text-center py-3">Cargando...</div>').show();
+                row.child('<div class="aud-historial__inner"><p class="aud-muted">Cargando inventario...</p></div>').show();
                 tr.addClass('shown');
-                toggle.attr('aria-expanded', 'true');
+                toggle.addClass('is-abierto').attr('aria-expanded', 'true');
 
                 $.get('/inventarios/' + data.EmpleadoID + '/inventario')
                     .done(function(html) {
@@ -353,7 +349,7 @@
                     .fail(function() {
                         row.child.hide();
                         tr.removeClass('shown');
-                        toggle.attr('aria-expanded', 'false');
+                        toggle.removeClass('is-abierto').attr('aria-expanded', 'false');
                     });
             });
 

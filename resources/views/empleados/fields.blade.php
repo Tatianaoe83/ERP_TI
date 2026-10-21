@@ -8,6 +8,7 @@
     })->sortBy('etiqueta', SORT_NATURAL | SORT_FLAG_CASE)->values();
     $obraSel = old('ObraID', isset($empleados) ? $empleados->ObraID : '');
     $centroSel = old('CentroCostoID', isset($empleados) ? $empleados->CentroCostoID : '');
+    $presupuestoSel = old('PresupuestoInternoID', isset($empleados) ? $empleados->PresupuestoInternoID : '');
     $jefeSel = old('JefeDirectoID', isset($empleados) ? $empleados->JefeDirectoID : '');
 @endphp
 
@@ -27,6 +28,17 @@
 
 <div class="col-sm-12 mt-2 mb-3">
     <p id="empleado-tipo-nota" class="mb-0 text-sm text-slate-500"></p>
+</div>
+
+<div class="col-sm-12 text-[#101D49] dark:text-white mb-3">
+    <label for="PresupuestoInternoID">Presupuesto interno:</label>
+    <select id="PresupuestoInternoID" name="PresupuestoInternoID" class="form-control jz empleado-select">
+        <option value="">Sin presupuesto interno</option>
+        @foreach ($presupuestosInternos as $presupuesto)
+            <option value="{{ $presupuesto->PresupuestoInternoID }}" {{ (string) $presupuestoSel === (string) $presupuesto->PresupuestoInternoID ? 'selected' : '' }}>{{ $presupuesto->Nombre }}</option>
+        @endforeach
+    </select>
+    <p class="mb-0 mt-1 text-sm text-slate-500">Define a dónde va el presupuesto de esta persona. La jerarquía de puesto y área se conserva aparte.</p>
 </div>
 
 <div class="col-sm-12" id="empleado-estructura">

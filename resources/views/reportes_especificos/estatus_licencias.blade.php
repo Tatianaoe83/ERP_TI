@@ -30,6 +30,7 @@
                     @endforeach
                 </select>
             </div>
+            @include('reportes_especificos.filtro_presupuesto')
             <div class="form-group">
                 <label for="frecuencia_pago">Frecuencia de pago</label>
                 <select id="frecuencia_pago" name="frecuencia_pago" class="jz form-control">

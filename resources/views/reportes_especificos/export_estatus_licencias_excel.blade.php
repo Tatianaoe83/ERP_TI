@@ -2,6 +2,7 @@
     <thead>
         <tr>
             <th>Empleado</th>
+            <th>Presupuesto interno</th>
             <th>Insumo</th>
             <th>Tipo</th>
             <th>Fecha Asignación</th>
@@ -18,6 +19,7 @@
         @foreach($datos as $item)
             <tr>
                 <td>{{ $item->empleado_nombre }}</td>
+                <td>{{ $item->presupuesto_nombre ?: '—' }}</td>
                 <td>{{ $item->insumo_nombre }}</td>
                 <td>{{ $item->insumo_tipo }}</td>
                 <td>{{ $item->FechaAsignacion ? \Carbon\Carbon::parse($item->FechaAsignacion)->format('d/m/Y') : 'N/A' }}</td>

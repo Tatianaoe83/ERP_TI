@@ -26,6 +26,11 @@
     <p>{{ optional($empleados->centroCosto)->NombreCentro ?: '—' }}</p>
 </div>
 
+<div class="col-sm-12 text-[#101D49] dark:text-white">
+    {!! Form::label('PresupuestoInternoID', 'Presupuesto interno:') !!}
+    <p>{{ optional($empleados->presupuestoInterno)->Nombre ?: '—' }}</p>
+</div>
+
 <!-- Numtelefono Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('NumTelefono', 'Num telefono:') !!}

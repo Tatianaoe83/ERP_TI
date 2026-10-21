@@ -15,7 +15,7 @@
                     <th>Insumo</th>
                     <th>Emisor</th>
                     <th>Solicitud</th>
-                    <th>Gerencia</th>
+                    <th>Presupuesto interno</th>
                     <th class="text-right">Total</th>
                     <th>Mes</th>
                     <th>Año</th>

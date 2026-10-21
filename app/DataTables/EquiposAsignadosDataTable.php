@@ -22,6 +22,9 @@ class EquiposAsignadosDataTable extends DataTable
         $dataTable = new QueryDataTable($query);
 
         return $dataTable
+            ->editColumn('presupuesto_nombre', function ($row) {
+                return $row->presupuesto_nombre ?: '—';
+            })
             ->setRowId('InventarioID');
     }
 
@@ -33,13 +36,18 @@ class EquiposAsignadosDataTable extends DataTable
     public function query()
     {
 
-        $filtros = request()->only(['empleado_id', 'equipo_id', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre','marca']);
+        $filtros = request()->only(['empleado_id', 'equipo_id', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre','marca', 'presupuesto_id']);
         
         $query = DB::table('inventarioequipo')
             ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->select([
                 'inventarioequipo.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+                'presupuestos_internos.Nombre as presupuesto_nombre',
                 'inventarioequipo.GerenciaEquipo',
                 'inventarioequipo.Marca',
                 'inventarioequipo.Modelo',
@@ -79,6 +87,10 @@ class EquiposAsignadosDataTable extends DataTable
             $query->where('inventarioequipo.GerenciaEquipoID', $filtros['gerencia_id']);
         }
 
+        if (!empty($filtros['presupuesto_id'])) {
+            $query->where('empleados.PresupuestoInternoID', $filtros['presupuesto_id']);
+        }
+
         return $query->orderBy('inventarioequipo.InventarioID', 'desc');
     }
 
@@ -90,7 +102,7 @@ class EquiposAsignadosDataTable extends DataTable
     public function html()
     {
         return $this->indexPageHtml('equipos-asignados-table', [
-            'orderColumn' => 8,
+            'orderColumn' => 9,
             'orderDir' => 'desc',
         ]);
     }
@@ -107,6 +119,12 @@ class EquiposAsignadosDataTable extends DataTable
                 'title' => 'Empleado',
                 'data' => 'empleado_nombre',
                 'name' => 'empleados.NombreEmpleado',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'presupuesto_nombre' => [
+                'title' => 'Presupuesto interno',
+                'data' => 'presupuesto_nombre',
+                'name' => 'presupuestos_internos.Nombre',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'GerenciaEquipo' => [

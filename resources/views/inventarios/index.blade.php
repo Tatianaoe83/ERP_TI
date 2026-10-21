@@ -3,6 +3,7 @@
 @section('content')
 @include('flash::message')
 @include('inventarios.partials.tipo-persona-styles')
+@include('auditorias.partials.styles')
 <style>
     .index-page__filters .index-page__note { grid-column: 1 / -1; margin-bottom: 0.15rem; }
     .inv-leyenda--inline {
@@ -79,7 +80,105 @@
         min-width: 0;
         max-width: 100%;
     }
+
+    .aud .inv-index-page .index-page__filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 0.85rem;
+        padding: 0.85rem 1.1rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--aud-border);
+        border-radius: var(--aud-radius);
+        background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
+    }
+    .aud .inv-index-page .index-page__filters .form-group {
+        flex: 1 1 11rem;
+        margin: 0;
+    }
+    .aud .inv-index-page .index-page__filters .index-page__note {
+        flex: 1 1 100%;
+    }
+    .aud .inv-index-page .index-page__filters label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--aud-text-muted);
+    }
+    .aud .inv-index-page .index-page__card {
+        border: 1px solid var(--aud-border);
+        border-radius: var(--aud-radius);
+        background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
+        overflow: hidden;
+    }
+    .aud #tabla-empleados.aud-grupos thead th {
+        background: var(--aud-surface-2) !important;
+        color: var(--aud-text-muted) !important;
+        border-bottom: 2px solid var(--aud-border) !important;
+    }
+    .aud #tabla-empleados tbody tr.aud-grupo > td {
+        background: var(--aud-surface) !important;
+        color: var(--aud-text) !important;
+        border-bottom: 1px solid var(--aud-border) !important;
+        padding: 0.7rem 0.9rem !important;
+        vertical-align: middle;
+    }
+    .aud #tabla-empleados tbody tr.aud-grupo:hover > td,
+    .aud #tabla-empleados tbody tr.aud-grupo.shown > td,
+    .dark .aud #tabla-empleados tbody tr.aud-grupo:hover > td,
+    .dark .aud #tabla-empleados tbody tr.aud-grupo.shown > td {
+        background: var(--aud-surface-2) !important;
+        color: var(--aud-text) !important;
+    }
+    .aud .aud-empleado .aud-mini {
+        display: block;
+        margin: 0.15rem 0 0;
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
+        font-weight: 500;
+    }
+    .aud #tabla-empleados tbody tr.child > td,
+    .dark .aud #tabla-empleados tbody tr.child > td {
+        padding: 0 !important;
+        background: var(--aud-surface-2) !important;
+        border-bottom: 1px solid var(--aud-border) !important;
+    }
+    .aud #tabla-empleados tbody tr.child:hover > td,
+    .dark .aud #tabla-empleados tbody tr.child:hover > td {
+        background: var(--aud-surface-2) !important;
+    }
+    .aud #tabla-empleados .aud-historial__tabla td,
+    .aud #tabla-empleados .aud-historial__tabla th,
+    .dark .aud #tabla-empleados tbody tr.child .aud-historial__tabla td,
+    .dark .aud #tabla-empleados tbody tr.child .aud-historial__tabla th {
+        background: var(--aud-surface) !important;
+        color: var(--aud-text) !important;
+        border: 0;
+        border-bottom: 1px solid var(--aud-border) !important;
+    }
+    .aud #tabla-empleados .aud-historial__tabla thead th,
+    .dark .aud #tabla-empleados tbody tr.child .aud-historial__tabla thead th {
+        background: var(--aud-surface-2) !important;
+        color: var(--aud-text-muted) !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+    .aud #tabla-empleados .aud-historial__tabla tbody tr:nth-child(even) td,
+    .dark .aud #tabla-empleados tbody tr.child .aud-historial__tabla tbody tr:nth-child(even) td {
+        background: var(--aud-surface-2) !important;
+    }
+    .aud #tabla-empleados .aud-historial__tabla tbody td,
+    .dark .aud #tabla-empleados tbody tr.child .aud-historial__tabla tbody td {
+        padding: 0.55rem 0.75rem !important;
+        font-size: 0.78rem !important;
+        color: var(--aud-text) !important;
+    }
 </style>
+
+<div class="aud">
 
 <x-index-page
     class="inv-index-page"
@@ -167,4 +266,5 @@
 
     @include('inventarios.table')
 </x-index-page>
+</div>
 @endsection

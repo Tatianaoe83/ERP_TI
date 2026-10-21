@@ -58,6 +58,14 @@ function cargarOpcionesFiltros() {
                 });
             }
 
+            var selectPresupuesto = $('#filtro_presupuesto');
+            selectPresupuesto.empty().append('<option value="">Todos</option>');
+            if (data.presupuestos) {
+                data.presupuestos.forEach(function(presupuesto) {
+                    selectPresupuesto.append('<option value="' + presupuesto + '">' + presupuesto + '</option>');
+                });
+            }
+
             reiniciarSelect2FiltrosEmpleados();
         },
         error: function() {
@@ -73,7 +81,16 @@ function cargarOpcionesFiltrosFallback() {
     var table = $('#tabla-empleados').DataTable();
 
     setTimeout(function() {
-        var puestos = table.column(2).data().unique().sort();
+        var presupuestos = table.column(2).data().unique().sort();
+        var selectPresupuesto = $('#filtro_presupuesto');
+        selectPresupuesto.empty().append('<option value="">Todos</option>');
+        presupuestos.each(function(d) {
+            if (d && String(d).trim() !== '' && d !== '—') {
+                selectPresupuesto.append('<option value="' + d + '">' + d + '</option>');
+            }
+        });
+
+        var puestos = table.column(3).data().unique().sort();
         var selectPuesto = $('#filtro_puesto');
         selectPuesto.empty().append('<option value="">Todos los puestos</option>');
         puestos.each(function(d) {
@@ -82,7 +99,7 @@ function cargarOpcionesFiltrosFallback() {
             }
         });
 
-        var departamentos = table.column(5).data().unique().sort();
+        var departamentos = table.column(6).data().unique().sort();
         var selectDepartamento = $('#filtro_departamento');
         selectDepartamento.empty().append('<option value="">Todas las áreas</option>');
         departamentos.each(function(d) {
@@ -91,7 +108,7 @@ function cargarOpcionesFiltrosFallback() {
             }
         });
 
-        var obras = table.column(3).data().unique().sort();
+        var obras = table.column(4).data().unique().sort();
         var selectObra = $('#filtro_obra');
         selectObra.empty().append('<option value="">Todas las ubicaciones</option>');
         obras.each(function(d) {
@@ -100,7 +117,7 @@ function cargarOpcionesFiltrosFallback() {
             }
         });
 
-        var gerencias = table.column(6).data().unique().sort();
+        var gerencias = table.column(7).data().unique().sort();
         var selectGerencia = $('#filtro_gerencia');
         selectGerencia.empty().append('<option value="">Todas las gerencias</option>');
         gerencias.each(function(d) {
@@ -121,6 +138,7 @@ function configurarFiltros() {
 
     $('#limpiarFiltros').on('click', function() {
         $('#filtro_nombre').val('');
+        $('#filtro_presupuesto').val('').trigger('change');
         $('#filtro_puesto').val('').trigger('change');
         $('#filtro_departamento').val('').trigger('change');
         $('#filtro_estado').val('').trigger('change');
@@ -134,12 +152,13 @@ function configurarFiltros() {
         table.column(1).search($(this).val()).draw();
     });
 
-    $('#filtro_puesto, #filtro_departamento, #filtro_estado, #filtro_obra, #filtro_gerencia, #filtro_tipo_persona').on('change', function() {
+    $('#filtro_presupuesto, #filtro_puesto, #filtro_departamento, #filtro_estado, #filtro_obra, #filtro_gerencia, #filtro_tipo_persona').on('change', function() {
         aplicarFiltros();
     });
 
     function aplicarFiltros() {
         var filtroNombre = $('#filtro_nombre').val();
+        var filtroPresupuesto = $('#filtro_presupuesto').val();
         var filtroPuesto = $('#filtro_puesto').val();
         var filtroDepartamento = $('#filtro_departamento').val();
         var filtroEstado = $('#filtro_estado').val();
@@ -149,40 +168,46 @@ function configurarFiltros() {
 
         table.column(1).search(filtroNombre || '');
 
-        if (filtroPuesto) {
-            table.column(2).search('^' + filtroPuesto + '$', true, false);
+        if (filtroPresupuesto) {
+            table.column(2).search('^' + filtroPresupuesto + '$', true, false);
         } else {
             table.column(2).search('');
         }
 
-        if (filtroObra) {
-            table.column(3).search('^' + filtroObra + '$', true, false);
+        if (filtroPuesto) {
+            table.column(3).search('^' + filtroPuesto + '$', true, false);
         } else {
             table.column(3).search('');
         }
 
-        if (filtroDepartamento) {
-            table.column(5).search('^' + filtroDepartamento + '$', true, false);
+        if (filtroObra) {
+            table.column(4).search('^' + filtroObra + '$', true, false);
         } else {
-            table.column(5).search('');
+            table.column(4).search('');
         }
 
-        if (filtroGerencia) {
-            table.column(6).search('^' + filtroGerencia + '$', true, false);
+        if (filtroDepartamento) {
+            table.column(6).search('^' + filtroDepartamento + '$', true, false);
         } else {
             table.column(6).search('');
         }
 
-        if (filtroTipoPersona) {
-            table.column(10).search('^' + filtroTipoPersona + '$', true, false);
+        if (filtroGerencia) {
+            table.column(7).search('^' + filtroGerencia + '$', true, false);
         } else {
-            table.column(10).search('');
+            table.column(7).search('');
+        }
+
+        if (filtroTipoPersona) {
+            table.column(11).search('^' + filtroTipoPersona + '$', true, false);
+        } else {
+            table.column(11).search('');
         }
 
         if (filtroEstado) {
-            table.column(11).search('^' + filtroEstado + '$', true, false);
+            table.column(12).search('^' + filtroEstado + '$', true, false);
         } else {
-            table.column(11).search('');
+            table.column(12).search('');
         }
 
         table.draw();

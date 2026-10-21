@@ -8,7 +8,7 @@ use App\Repositories\FacturasRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Facturas;
-use App\Models\Gerencia;
+use App\Models\PresupuestoInterno;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,26 +77,12 @@ class FacturasController extends AppBaseController
         $currentYear = (int) Carbon::now()->format('Y');
         $years       = range($currentYear - 2, $currentYear + 3);
 
-        $gerenciasConFacturas = Gerencia::query()
-            ->where('estado', 1)
-            ->whereIn('GerenciaID', function ($q) {
-                $q->select('GerenciaID')
-                    ->from('facturas')
-                    ->whereNull('deleted_at')
-                    ->whereNotNull('GerenciaID');
-            })
-            ->orderBy('NombreGerencia')
-            ->pluck('NombreGerencia', 'GerenciaID')
-            ->toArray();
-
-        $gerencia = ['' => 'Todas las gerencias'] + $gerenciasConFacturas;
-
-        $gerenciasModal = DB::table('gerencia')
-            ->where('estado', 1)
-            ->whereNull('deleted_at')
-            ->select('GerenciaID as id', 'NombreGerencia as nombre')
-            ->orderBy('NombreGerencia')
-            ->get();
+        $presupuestos = PresupuestoInterno::visiblesPara(auth()->id());
+        $gerencia = ['' => 'Todos los presupuestos internos'] + $presupuestos->pluck('Nombre', 'PresupuestoInternoID')->all();
+        $gerenciasModal = $presupuestos->map(fn ($presupuesto) => (object) [
+            'id' => $presupuesto->PresupuestoInternoID,
+            'nombre' => $presupuesto->Nombre,
+        ]);
 
         $insumosModal = DB::table('cortes')
             ->whereNull('deleted_at')
@@ -148,16 +134,19 @@ class FacturasController extends AppBaseController
                 'facturas.PdfRuta',
                 'facturas.ArchivoRuta',
                 'facturas.InsumoNombre',
-                'facturas.GerenciaID',
-                'gerencia.NombreGerencia',
+                'facturas.PresupuestoInternoID as GerenciaID',
+                'presupuestos_internos.Nombre as NombreGerencia',
                 'empleados.NombreEmpleado'
             ])
-            ->leftJoin('gerencia', 'facturas.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('facturas.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->leftJoin('empleados', 'facturas.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->whereNull('facturas.deleted_at');
 
         if ($gerenciaID) {
-            $query->where('facturas.GerenciaID', $gerenciaID);
+            $query->where('facturas.PresupuestoInternoID', $gerenciaID);
         }
         if ($numMes) $query->where('facturas.Mes', $numMes);
         if ($año)    $query->where('facturas.Anio', (int)$año);
@@ -422,7 +411,7 @@ class FacturasController extends AppBaseController
 
                 DB::table('facturas')->insert([
                     'SolicitudID'  => null,
-                    'GerenciaID'   => $gerenciaId,
+                    'PresupuestoInternoID' => $gerenciaId,
                     'Nombre'       => $nombre,
                     'Costo'        => $costo,
                     'Importe'      => $importe,
@@ -548,7 +537,7 @@ class FacturasController extends AppBaseController
 
                         DB::table('facturas')->insert([
                             'SolicitudID'  => $factura->SolicitudID,
-                            'GerenciaID'   => $factura->GerenciaID,
+                            'PresupuestoInternoID' => $factura->PresupuestoInternoID,
                             'Nombre'       => mb_substr(trim((string)($concepto['nombre'] ?? '')), 0, 300),
                             'Costo'        => is_numeric($concepto['costo'] ?? null) ? (float)$concepto['costo'] : 0,
                             'Importe'      => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
@@ -615,14 +604,14 @@ class FacturasController extends AppBaseController
         if (!$gerenciaID) {
             $facturaID = $request->input('facturaID');
             if ($facturaID) {
-                $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('GerenciaID');
+                $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('PresupuestoInternoID');
             }
         }
 
         if (!$gerenciaID) return response()->json(['data' => []]);
 
         return response()->json(['data' => DB::table('cortes')
-            ->where('GerenciaID', $gerenciaID)->whereNull('deleted_at')
+            ->where('PresupuestoInternoID', $gerenciaID)->whereNull('deleted_at')
             ->distinct()->orderBy('NombreInsumo')->pluck('NombreInsumo')]);
     }
 
@@ -786,8 +775,8 @@ class FacturasController extends AppBaseController
                 's.Requerimientos',
                 's.Presupuesto',
                 's.created_at as solicitud_fecha',
-                'g.NombreGerencia',
-                'g.GerenciaID',
+                'p.Nombre as NombreGerencia',
+                'p.PresupuestoInternoID as GerenciaID',
                 'f.FacturasID',
                 'f.Nombre as FacturaNombre',
                 'f.Costo',
@@ -802,7 +791,10 @@ class FacturasController extends AppBaseController
                 'c.CostoTotal as CostoAnual',
             ])
             ->join('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
-            ->join('gerencia as g', 's.GerenciaID', '=', 'g.GerenciaID')
+            ->leftJoin('presupuestos_internos as p', function ($join) {
+                $join->on('f.PresupuestoInternoID', '=', 'p.PresupuestoInternoID')
+                    ->whereNull('p.deleted_at');
+            })
             ->leftJoin(
                 DB::raw('(SELECT NombreInsumo, MIN(Costo) as Costo, MIN(CostoTotal) as CostoTotal FROM cortes WHERE deleted_at IS NULL GROUP BY NombreInsumo) as c'),
                 fn($j) => $j->on(
@@ -813,7 +805,7 @@ class FacturasController extends AppBaseController
             )
             ->whereNull('f.deleted_at')->whereNull('s.deleted_at');
 
-        if ($gerenciaID) $query->where('s.GerenciaID', $gerenciaID);
+        if ($gerenciaID) $query->where('f.PresupuestoInternoID', $gerenciaID);
 
         $rows        = $query->orderBy('s.SolicitudID', 'desc')->orderBy('f.Mes', 'asc')->cursor();
         $solicitudes = [];
@@ -875,32 +867,36 @@ class FacturasController extends AppBaseController
         $insumo     = trim((string)$request->input('insumo', ''));
 
         [$mesIntCortes, $mesNombreCortes] = $this->resolveMesCortes($mes);
-        $gerenciaMap = DB::table('gerencia')->select('GerenciaID', 'NombreGerencia')->get()->keyBy('GerenciaID');
+        $gerenciaMap = DB::table('presupuestos_internos')
+            ->whereNull('deleted_at')
+            ->select('PresupuestoInternoID as GerenciaID', 'Nombre as NombreGerencia')
+            ->get()
+            ->keyBy('GerenciaID');
 
         $facturas = DB::table('facturas as f')
             ->leftJoin('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
             ->whereNull('f.deleted_at')
             ->where(fn($q) => $q->whereNull('s.deleted_at')->orWhereNull('f.SolicitudID'))
             ->whereNotNull('f.InsumoNombre')->where('f.InsumoNombre', '<>', '')
-            ->whereNotNull('f.GerenciaID')
-            ->when($gerenciaId, fn($q) => $q->where('f.GerenciaID', (int)$gerenciaId))
+            ->whereNotNull('f.PresupuestoInternoID')
+            ->when($gerenciaId, fn($q) => $q->where('f.PresupuestoInternoID', (int)$gerenciaId))
             ->when($mes, fn($q) => $q->where('f.Mes', (int)$mes))
             ->when($anio, fn($q) => $q->where('f.Anio', (int)$anio))
             ->when($insumo !== '', fn($q) => $q->where('f.InsumoNombre', 'like', "%{$insumo}%"))
             ->select([
                 'f.InsumoNombre',
-                'f.GerenciaID',
+                'f.PresupuestoInternoID as GerenciaID',
                 'f.Mes',
                 DB::raw('SUM(COALESCE(f.Costo, f.Importe, 0)) as TotalFacturado'),
             ])
-            ->groupBy('f.InsumoNombre', 'f.GerenciaID', 'f.Mes')
+            ->groupBy('f.InsumoNombre', 'f.PresupuestoInternoID', 'f.Mes')
             ->get();
 
         $presupuestos = DB::table('cortes')
             ->whereNull('deleted_at')
             ->whereNotNull('NombreInsumo')->where('NombreInsumo', '<>', '')
-            ->whereNotNull('GerenciaID')
-            ->when($gerenciaId, fn($q) => $q->where('GerenciaID', (int)$gerenciaId))
+            ->whereNotNull('PresupuestoInternoID')
+            ->when($gerenciaId, fn($q) => $q->where('PresupuestoInternoID', (int)$gerenciaId))
             ->when($mesNombreCortes !== null, function ($q) use ($mesNombreCortes, $mesIntCortes) {
                 $q->where(function ($w) use ($mesNombreCortes, $mesIntCortes) {
                     $w->where('Mes', $mesNombreCortes);
@@ -911,11 +907,11 @@ class FacturasController extends AppBaseController
             ->when($insumo !== '', fn($q) => $q->where('NombreInsumo', 'like', "%{$insumo}%"))
             ->select([
                 'NombreInsumo',
-                'GerenciaID',
+                'PresupuestoInternoID as GerenciaID',
                 'Mes',
                 DB::raw('SUM(COALESCE(CostoTotal, Costo, 0)) as TotalPresupuesto'),
             ])
-            ->groupBy('NombreInsumo', 'GerenciaID', 'Mes')
+            ->groupBy('NombreInsumo', 'PresupuestoInternoID', 'Mes')
             ->get();
 
         $items = [];
@@ -925,7 +921,7 @@ class FacturasController extends AppBaseController
             $key = $this->comparativaKey((int)$row->GerenciaID, (string)$row->NombreInsumo, $mesInt);
             $items[$key] = $items[$key] ?? [
                 'gerencia_id' => (int)$row->GerenciaID,
-                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Gerencia #' . $row->GerenciaID,
+                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Presupuesto interno #' . $row->GerenciaID,
                 'insumo' => (string)$row->NombreInsumo,
                 'mes' => $mesInt,
                 'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? (string)$row->Mes,
@@ -941,7 +937,7 @@ class FacturasController extends AppBaseController
             $key = $this->comparativaKey((int)$row->GerenciaID, (string)$row->InsumoNombre, $mesInt);
             $items[$key] = $items[$key] ?? [
                 'gerencia_id' => (int)$row->GerenciaID,
-                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Gerencia #' . $row->GerenciaID,
+                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Presupuesto interno #' . $row->GerenciaID,
                 'insumo' => (string)$row->InsumoNombre,
                 'mes' => $mesInt,
                 'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? (string)$row->Mes,

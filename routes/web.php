@@ -45,11 +45,13 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('obras', App\Http\Controllers\ObrasController::class);
     Route::resource('departamentos', App\Http\Controllers\DepartamentosController::class);
     Route::resource('puestos', App\Http\Controllers\PuestosController::class);
+    Route::resource('presupuestos-internos', App\Http\Controllers\PresupuestoInternoController::class)->except(['create', 'show', 'edit']);
     Route::resource('empleados', App\Http\Controllers\EmpleadosController::class);
     Route::get('empleados-filtros', [App\Http\Controllers\EmpleadosController::class, 'filtros'])->name('empleados.filtros');
     Route::get('actualizaciones', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'index'])->name('actualizaciones.index');
     Route::post('actualizaciones/traer', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'traer'])->name('actualizaciones.traer');
     Route::post('actualizaciones/{id}/baja', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'registrarBaja'])->name('actualizaciones.baja');
+    Route::post('actualizaciones/empleado/{empleado}/presupuesto', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'asignarPresupuesto'])->name('actualizaciones.presupuesto');
     Route::resource('lineasTelefonicas', App\Http\Controllers\LineasTelefonicasController::class);
     Route::get('lineas-telefonicas-inventario-records', [App\Http\Controllers\LineasTelefonicasController::class, 'getInventarioRecords'])->name('lineas-telefonicas.inventario-records');
     Route::resource('equipos', App\Http\Controllers\EquiposController::class);

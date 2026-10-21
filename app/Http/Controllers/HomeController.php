@@ -18,6 +18,7 @@ use App\Models\Solicitud;
 use App\Models\Auditoria;
 use App\Models\Facturas;
 use App\Models\PresupuestoConfiguracion;
+use App\Models\PresupuestoInterno;
 use App\Helpers\PresupuestoAsignacion;
 use DB;
 use Illuminate\Support\Facades\Schema;
@@ -51,15 +52,8 @@ class HomeController extends Controller
                 return view('partials.insumos-licencia', compact('stats'))->render();
             }
 
-            $filtrosDash = [
-                'gerencia_id' => (int) $request->input('gerencia_id'),
-                'centro_id' => (int) $request->input('centro_id'),
-                'anio' => (int) ($request->input('anio') ?: now()->year),
-            ];
-            $catalogoDash = [
-                'gerencias' => Gerencia::query()->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
-                'centros' => CentroCosto::query()->orderBy('NombreCentro')->pluck('NombreCentro', 'CentroCostoID'),
-            ];
+            $filtrosDash = $this->filtrosDash($request);
+            $catalogoDash = $this->catalogoDash();
 
             return view('home', compact('stats', 'statsCompras', 'tipoDashboard', 'filtrosDash', 'catalogoDash'));
         } catch (\Exception $e) {
@@ -70,15 +64,8 @@ class HomeController extends Controller
                 'stats' => $stats,
                 'statsCompras' => $statsCompras,
                 'tipoDashboard' => $tipoDashboard,
-                'filtrosDash' => [
-                    'gerencia_id' => (int) $request->input('gerencia_id'),
-                    'centro_id' => (int) $request->input('centro_id'),
-                    'anio' => (int) ($request->input('anio') ?: now()->year),
-                ],
-                'catalogoDash' => [
-                    'gerencias' => Gerencia::query()->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
-                    'centros' => CentroCosto::query()->orderBy('NombreCentro')->pluck('NombreCentro', 'CentroCostoID'),
-                ],
+                'filtrosDash' => $this->filtrosDash($request),
+                'catalogoDash' => $this->catalogoDash(),
             ]);
         }
     }
@@ -191,6 +178,22 @@ class HomeController extends Controller
             ->limit(7)
             ->get();
 
+        $estadisticasPorPresupuesto = DB::table('presupuestos_internos')
+            ->leftJoin('empleados', 'presupuestos_internos.PresupuestoInternoID', '=', 'empleados.PresupuestoInternoID')
+            ->select('presupuestos_internos.Nombre as NombrePresupuesto')
+            ->selectRaw('COUNT(DISTINCT empleados.EmpleadoID) as total_empleados')
+            ->whereNull('presupuestos_internos.deleted_at')
+            ->where('empleados.Estado', true)
+            ->whereIn('empleados.tipo_persona', $tiposOperativos)
+            ->when($idsFiltro !== null, function ($query) use ($idsFiltro) {
+                $query->whereIn('empleados.EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
+            })
+            ->groupBy('presupuestos_internos.PresupuestoInternoID', 'presupuestos_internos.Nombre')
+            ->having('total_empleados', '>', 0)
+            ->orderBy('total_empleados', 'desc')
+            ->limit(8)
+            ->get();
+
         $vacantes = Empleados::where('tipo_persona', 'EXTRAORDINARIO')->where('Estado', true)->count();
         $equiposPropios = $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPropios(DB::table('inventarioequipo'))->count());
         $presupuestados = [
@@ -253,6 +256,7 @@ class HomeController extends Controller
             'insumos_por_licencia' => $this->getInsumosPorLicencia($request),
             'equipos_por_categoria' => $this->getEquiposPorCategoria($idsFiltro),
             'estadisticas_gerencia' => $estadisticasPorGerencia,
+            'estadisticas_presupuesto' => $estadisticasPorPresupuesto,
         ];
     }
 
@@ -330,6 +334,7 @@ class HomeController extends Controller
             'insumos_por_licencia' => collect(),
             'equipos_por_categoria' => collect(),
             'estadisticas_gerencia' => collect(),
+            'estadisticas_presupuesto' => collect(),
         ];
     }
 
@@ -390,11 +395,15 @@ class HomeController extends Controller
     {
         $gerencia = (int) $request->input('gerencia_id');
         $centro = (int) $request->input('centro_id');
-        if (!$gerencia && !$centro) {
+        $presupuesto = (int) $request->input('presupuesto_id');
+        if (!$gerencia && !$centro && !$presupuesto) {
             return null;
         }
 
         $query = Empleados::query();
+        if ($presupuesto) {
+            $query->where('PresupuestoInternoID', $presupuesto);
+        }
         if ($centro) {
             $query->where('CentroCostoID', $centro);
         }
@@ -405,6 +414,32 @@ class HomeController extends Controller
         }
 
         return $query->pluck('EmpleadoID')->all();
+    }
+
+    private function filtrosDash(Request $request): array
+    {
+        return [
+            'gerencia_id' => (int) $request->input('gerencia_id'),
+            'centro_id' => (int) $request->input('centro_id'),
+            'presupuesto_id' => (int) $request->input('presupuesto_id'),
+            'anio' => (int) ($request->input('anio') ?: now()->year),
+        ];
+    }
+
+    private function catalogoDash(): array
+    {
+        $asignados = DB::table('presupuesto_interno_usuarios')
+            ->where('users_id', auth()->id())
+            ->pluck('PresupuestoInternoID');
+
+        return [
+            'gerencias' => Gerencia::query()->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
+            'centros' => CentroCosto::query()->orderBy('NombreCentro')->pluck('NombreCentro', 'CentroCostoID'),
+            'presupuestos' => PresupuestoInterno::query()
+                ->when($asignados->isNotEmpty(), fn ($q) => $q->whereIn('PresupuestoInternoID', $asignados))
+                ->orderBy('Nombre')
+                ->pluck('Nombre', 'PresupuestoInternoID'),
+        ];
     }
 
     private function limitarPorEmpleados($query, ?array $ids)

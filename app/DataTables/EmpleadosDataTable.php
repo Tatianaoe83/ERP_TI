@@ -29,6 +29,9 @@ class EmpleadosDataTable extends DataTable
                     'tipo_persona' => $row->tipo_persona,
                 ])->render();
             })
+            ->editColumn('nombre_presupuesto', function ($row) {
+                return $row->nombre_presupuesto ?: '—';
+            })
             ->editColumn('Estado', function ($row) {
                 if ($row->Estado == 1 || $row->Estado === true) {
                     return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
@@ -54,6 +57,10 @@ class EmpleadosDataTable extends DataTable
             ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
             ->leftJoin('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
             ->leftJoin('centrosdecostos', 'empleados.CentroCostoID', '=', 'centrosdecostos.CentroCostoID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->leftJoin('empleados as jefe', 'empleados.JefeDirectoID', '=', 'jefe.EmpleadoID')
             ->select([
                 'empleados.EmpleadoID',
@@ -61,6 +68,7 @@ class EmpleadosDataTable extends DataTable
                 'puestos.NombrePuesto as nombre_puesto',
                 'obras.NombreObra as nombre_obra',
                 'centrosdecostos.NombreCentro as nombre_centro',
+                'presupuestos_internos.Nombre as nombre_presupuesto',
                 'departamentos.NombreDepartamento as nombre_departamento',
                 'gerencia.NombreGerencia as nombre_gerencia',
                 'jefe.NombreEmpleado as nombre_jefe',
@@ -114,6 +122,13 @@ class EmpleadosDataTable extends DataTable
                 'data' => 'NombreEmpleado',
                 'name' => 'empleados.NombreEmpleado',
                 'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'PresupuestoInternoID' => [
+                'title' => 'Presupuesto interno',
+                'data' => 'nombre_presupuesto',
+                'name' => 'presupuestos_internos.Nombre',
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 2,
             ],
             'PuestoID' => [
                 'title' => 'Puesto',

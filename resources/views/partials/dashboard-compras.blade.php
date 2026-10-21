@@ -7,8 +7,11 @@
 @endphp
 
 <style>
-    .dash-filtros { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem; }
-    .dash-filtros label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; min-width: 140px; }
+    .dash-filtros { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: flex-end; margin-bottom: 1rem; padding: 0.85rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 0.85rem; }
+    html.dark .dash-filtros, .dark .dash-filtros { background: rgba(15, 23, 42, 0.72); border-color: rgba(255, 255, 255, 0.12); }
+    .dash-filtro { display: flex; flex-direction: column; gap: 0.35rem; flex: 0 1 180px; min-width: 0; }
+    .dash-filtro > span { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+    .dash-filtros .select2-container { width: 100% !important; }
     .dash-charts { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.25rem; }
     @media (min-width: 900px) { .dash-charts { grid-template-columns: 1fr 1fr; } }
     .dash-chart { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.85rem; padding: 1rem 1rem 0.75rem; }
@@ -17,14 +20,14 @@
 </style>
 <form method="GET" action="{{ route('home') }}" class="dash-filtros">
     <input type="hidden" name="tab" value="compras">
-    <label>
-        Año
+    <div class="dash-filtro">
+        <span>Año</span>
         <select name="anio" class="form-control">
             @for($y = (int) now()->year; $y >= (int) now()->year - 4; $y--)
                 <option value="{{ $y }}" @if((int) $filtrosDash['anio'] === $y) selected @endif>{{ $y }}</option>
             @endfor
         </select>
-    </label>
+    </div>
     <button type="submit" class="index-page__btn-primary">Filtrar</button>
 </form>
 

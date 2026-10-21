@@ -18,31 +18,23 @@ class SeederTablaPermisos extends Seeder
     {
         $permisos = [
 
-            //Operaciones sobre tabla unidadesdenegocio
+            // Jerarquía de empresa. Se conserva en TI por si Capital Humano no está disponible.
             'ver-unidadesdenegocio',
             'crear-unidadesdenegocio',
             'editar-unidadesdenegocio',
             'borrar-unidadesdenegocio',
-
-            //Operaciones sobre tabla gerencias
             'ver-gerencias',
             'crear-gerencias',
             'editar-gerencias',
             'borrar-gerencias',
-
-            //Operaciones sobre tabla obras
             'ver-obras',
             'crear-obras',
             'editar-obras',
             'borrar-obras',
-
-            //Operaciones sobre tabla departamentos
             'ver-departamentos',
             'crear-departamentos',
             'editar-departamentos',
             'borrar-departamentos',
-
-            //Operaciones sobre tabla puestos
             'ver-puestos',
             'crear-puestos',
             'editar-puestos',

@@ -21,6 +21,9 @@ class LineasAsignadasDataTable extends DataTable
     {
         $dataTable = new QueryDataTable($query);
                 return $dataTable
+                    ->editColumn('presupuesto_nombre', function ($row) {
+                        return $row->presupuesto_nombre ?: '—';
+                    })
                     ->editColumn('fecha_asignacion', function ($row) {
             if (!$row->fecha_asignacion || $row->fecha_asignacion === '0000-00-00') {
                 return 'Sin asignar';
@@ -54,10 +57,14 @@ class LineasAsignadasDataTable extends DataTable
      */
     public function query()
     {
-        $filtros = request()->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre']);
+        $filtros = request()->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre', 'presupuesto_id']);
         
         $query = DB::table('inventariolineas')
             ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
             ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
             ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
@@ -68,6 +75,7 @@ class LineasAsignadasDataTable extends DataTable
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+                'presupuestos_internos.Nombre as presupuesto_nombre',
                 'empleados.Correo as empleado_correo',
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
@@ -108,6 +116,10 @@ class LineasAsignadasDataTable extends DataTable
             $query->whereDate('inventariolineas.FechaAsignacion', '<=', $filtros['fecha_hasta']);
         }
 
+        if (!empty($filtros['presupuesto_id'])) {
+            $query->where('empleados.PresupuestoInternoID', $filtros['presupuesto_id']);
+        }
+
         return $query->orderBy('inventariolineas.FechaAsignacion', 'desc');
     }
 
@@ -119,7 +131,7 @@ class LineasAsignadasDataTable extends DataTable
     public function html()
     {
         return $this->indexPageHtml('lineas-asignadas-table', [
-            'orderColumn' => 10,
+            'orderColumn' => 11,
             'orderDir' => 'desc',
         ]);
     }
@@ -136,6 +148,12 @@ class LineasAsignadasDataTable extends DataTable
                 'title' => 'Empleado',
                 'data' => 'empleado_nombre',
                 'name' => 'empleados.NombreEmpleado',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'presupuesto_nombre' => [
+                'title' => 'Presupuesto interno',
+                'data' => 'presupuesto_nombre',
+                'name' => 'presupuestos_internos.Nombre',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'empleado_correo' => [

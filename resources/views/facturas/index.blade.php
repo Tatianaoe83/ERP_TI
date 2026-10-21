@@ -90,7 +90,7 @@
             data-mes-default=""
             data-anio-default="{{ $anioActualFiltro }}">
             <div class="form-group">
-                <label for="gerenci_id">Gerencia</label>
+                <label for="gerenci_id">Presupuesto interno</label>
                 {!! Form::select('gerenci_id', $gerencia, null, [
                     'class' => 'form-control',
                     'id' => 'gerenci_id'
@@ -239,15 +239,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Gerencia <span class="text-red-500">*</span></label>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Presupuesto interno <span class="text-red-500">*</span></label>
                         <div class="relative">
                             <select id="fdGerencia" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
-                                <option value="">Seleccione gerencia</option>
+                                <option value="">Seleccione presupuesto interno</option>
                                 @if(isset($gerencias)) @foreach($gerencias as $gerencia) <option value="{{ $gerencia->id }}">{{ $gerencia->nombre }}</option> @endforeach @endif
                             </select>
                             <i class="fas fa-chevron-down text-xs text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                         </div>
-                        <p id="errFdGerencia" class="hidden mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Seleccione una gerencia</p>
+                        <p id="errFdGerencia" class="hidden mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Seleccione un presupuesto interno</p>
                     </div>
 
                     <div>

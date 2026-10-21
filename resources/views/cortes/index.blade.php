@@ -600,7 +600,7 @@
 <x-index-page
     title="Presupuestos oficiales"
     icon="fa-money-check-alt"
-    subtitle="Gestión visual de costos por gerencia"
+    subtitle="Gestión visual de costos por presupuesto interno"
     :show-count="false"
     :card="false"
 >
@@ -629,7 +629,7 @@
                     </div>
                 </div>
                 <div class="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-sm group">
-                    <label for="gerenciaID" class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 ml-1">Gerencia</label>
+                    <label for="gerenciaID" class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 ml-1">Presupuesto interno</label>
                     <div class="relative">
                         <select name="gerenciaID" id="gerenciaID"
                             class="w-full h-11 pl-4 pr-10 appearance-none cursor-pointer rounded-xl outline-none transition-all duration-200
@@ -651,12 +651,12 @@
             <div class="flex flex-wrap gap-3 items-center lg:pb-0.5">
                 @can('generar-cortes')
                 <button type="button" id="generarTodos"
-                    title="Genera y guarda el presupuesto de TODAS las gerencias activas"
+                    title="Genera y guarda el presupuesto de todos los presupuestos internos"
                     class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-violet-400 dark:border-violet-600 text-violet-700 dark:text-violet-300 bg-gray-50 dark:bg-slate-900 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all duration-200">
                     <i class="fas fa-layer-group"></i> <span>Generar Todos</span>
                 </button>
                 <button type="button" id="enviar"
-                    title="Genera el presupuesto de la gerencia seleccionada"
+                    title="Genera el presupuesto interno seleccionado"
                     class="h-11 px-6 flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-900/40 transition-all duration-200
                            bg-indigo-600 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
                     <i class="fas fa-calculator"></i> <span>Generar Presupuesto</span>
@@ -668,7 +668,7 @@
 
     <div class="px-6 md:px-8 py-5 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950/50">
         <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">
-            Estado por gerencia ({{ $anioConsulta }})
+            Estado por presupuesto interno ({{ $anioConsulta }})
         </p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 overflow-hidden min-h-[120px] flex flex-col">
@@ -695,7 +695,7 @@
                             {{ $g->NombreGerencia }}
                         </button>
                     @empty
-                        <p class="text-sm text-slate-400 dark:text-slate-500 italic">Ninguna gerencia con presupuesto en este año.</p>
+                        <p class="text-sm text-slate-400 dark:text-slate-500 italic">Ningún presupuesto interno guardado en este año.</p>
                     @endforelse
                 </div>
             </div>
@@ -709,7 +709,7 @@
                     @forelse($gerenciasSinCorte as $g)
                         <span class="inline-block px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-200 text-xs font-medium mr-1.5 mb-1">{{ $g->NombreGerencia }}</span>
                     @empty
-                        <p class="text-sm text-slate-400 dark:text-slate-500 italic">Todas las gerencias tienen presupuesto.</p>
+                        <p class="text-sm text-slate-400 dark:text-slate-500 italic">Todos los presupuestos internos están guardados.</p>
                     @endforelse
                 </div>
             </div>
@@ -753,7 +753,7 @@
                         <i class="fas fa-table"></i>
                     </div>
                     <h4>Sin presupuesto generado</h4>
-                    <p>Selecciona una gerencia y pulsa <strong>Generar presupuesto</strong> para ver el desglose mensual y poder guardarlo.</p>
+                    <p>Selecciona un presupuesto interno y pulsa <strong>Generar presupuesto</strong> para ver el desglose mensual y poder guardarlo.</p>
                 </div>
 
                 <div id="tabla-container" class="budget-table-wrapper" style="display: none;">
@@ -963,13 +963,13 @@ $(function () {
                     <div class="error-grupo-header" onclick="toggleGrupoError(this)">
                         <i class="fas fa-lock" style="color:#dc2626;font-size:0.85rem;"></i>
                         <div style="flex:1;text-align:left;">
-                            <p style="font-size:0.78rem;font-weight:700;color:#991b1b;margin:0;">Plazo vencido — ${g.gerencias.length} gerencia${g.gerencias.length > 1 ? 's' : ''}</p>
+                            <p style="font-size:0.78rem;font-weight:700;color:#991b1b;margin:0;">Plazo vencido — ${g.gerencias.length} presupuesto${g.gerencias.length > 1 ? 's' : ''} interno${g.gerencias.length > 1 ? 's' : ''}</p>
                             <p style="font-size:0.7rem;color:#b91c1c;margin:0;opacity:0.85;">El presupuesto de <strong>${anio}</strong> cerró el 30 de junio. No es posible modificarlo.</p>
                         </div>
                         <i class="fas fa-chevron-down toggle-arrow" style="font-size:0.7rem;"></i>
                     </div>
                     <div class="error-grupo-body">
-                        <p style="font-size:0.68rem;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.35rem;">Gerencias afectadas</p>
+                        <p style="font-size:0.68rem;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.35rem;">Presupuestos internos afectados</p>
                         <div>${g.gerencias.map(n => `<span class="error-chip">${escapeHtml(n)}</span>`).join('')}</div>
                     </div>
                 </div>`;
@@ -978,7 +978,7 @@ $(function () {
                 erroresHtml = '<div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;">';
                 grupos.forEach(g => {
                     const labelMap = {
-                        'PLAZO_VENCIDO'       : { icon: 'fa-lock',           label: `Plazo vencido — ${g.gerencias.length} gerencia${g.gerencias.length > 1 ? 's' : ''}`, sub: `Presupuesto cerrado el 30 de junio de ${anio}.` },
+                        'PLAZO_VENCIDO'       : { icon: 'fa-lock',           label: `Plazo vencido — ${g.gerencias.length} presupuesto${g.gerencias.length > 1 ? 's internos' : ' interno'}`, sub: `Presupuesto cerrado el 30 de junio de ${anio}.` },
                         'ERROR_PROCESAMIENTO' : { icon: 'fa-triangle-exclamation', label: `Error de procesamiento — ${g.gerencias.length}`, sub: 'Revisa los datos del sistema.' },
                     };
                     const info = labelMap[g.clave] || { icon: 'fa-circle-xmark', label: `Error (${g.gerencias.length})`, sub: g.mensaje };
@@ -1006,12 +1006,12 @@ $(function () {
         if (tieneOk && tieneErrores) {
             contextMsg = `<p style="font-size:0.72rem;color:#64748b;text-align:center;margin-top:0.75rem;">
                 <i class="fas fa-circle-info" style="margin-right:0.25rem;"></i>
-                ${ok} gerencia${ok > 1 ? 's fueron guardadas' : ' fue guardada'} correctamente.
+                ${ok} presupuesto${ok > 1 ? 's internos fueron guardados' : ' interno fue guardado'} correctamente.
             </p>`;
         } else if (!tieneOk && !tieneSinDatos && tieneErrores) {
             contextMsg = `<p style="font-size:0.72rem;color:#dc2626;text-align:center;margin-top:0.75rem;font-weight:600;">
                 <i class="fas fa-triangle-exclamation" style="margin-right:0.25rem;"></i>
-                Ninguna gerencia pudo ser procesada.
+                Ningún presupuesto interno pudo ser procesado.
             </p>`;
         }
 
@@ -1131,8 +1131,8 @@ $(function () {
         if (!gid) {
             Swal.fire({
                 icon             : 'warning',
-                title            : 'Gerencia requerida',
-                text             : 'Por favor selecciona una gerencia antes de continuar.',
+                title            : 'Presupuesto interno requerido',
+                text             : 'Por favor selecciona un presupuesto interno antes de continuar.',
                 confirmButtonColor: '#4f46e5',
                 confirmButtonText : 'Entendido'
             });
@@ -1155,7 +1155,7 @@ $(function () {
                 title            : 'Presupuesto ya generado',
                 html             : `
                     <div class="text-left space-y-3">
-                        <p class="text-slate-600">La gerencia <strong class="text-slate-800">${escapeHtml(nombre)}</strong> ya tiene un presupuesto generado para <strong>${anio}</strong>.</p>
+                        <p class="text-slate-600">El presupuesto interno <strong class="text-slate-800">${escapeHtml(nombre)}</strong> ya tiene un corte generado para <strong>${anio}</strong>.</p>
                         <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 flex gap-2.5 items-start">
                             <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
                             <p class="text-xs text-amber-700">Si continúas, la vista de datos se <strong>regenerará desde el SP</strong>. Los datos guardados no cambiarán hasta que presiones <em>Guardar</em>.</p>
@@ -1209,10 +1209,10 @@ $(function () {
 
         const step1 = await Swal.fire({
             icon             : 'question',
-            title            : 'Generar para todas las gerencias',
+            title            : 'Generar para todos los presupuestos internos',
             html             : `
                 <div class="text-left space-y-3">
-                    <p class="text-slate-600 dark:text-slate-300">Se procesarán <strong class="text-slate-800 dark:text-white">${totalGerencias} gerencias activas</strong> para el año <strong class="text-slate-800 dark:text-white">${anio}</strong>.</p>
+                    <p class="text-slate-600 dark:text-slate-300">Se procesarán <strong class="text-slate-800 dark:text-white">${totalGerencias} presupuestos internos</strong> para el año <strong class="text-slate-800 dark:text-white">${anio}</strong>.</p>
                     <div class="grid grid-cols-2 gap-2 my-2">
                         <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-center">
                             <p class="text-2xl font-bold text-emerald-600">${totalConCorte}</p>
@@ -1243,7 +1243,7 @@ $(function () {
             title            : 'Confirma la acción',
             html             : `
                 <div class="text-left space-y-3">
-                    <p class="text-slate-600">Esta operación afectará <strong>todas las gerencias</strong> y no se puede deshacer.</p>
+                    <p class="text-slate-600">Esta operación afectará <strong>todos los presupuestos internos</strong> y no se puede deshacer.</p>
                     <p class="text-sm text-slate-500">Para confirmar, escribe <strong class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">CONFIRMAR</strong> en el campo:</p>
                     <input id="swal-confirm-input" type="text" placeholder="Escribe CONFIRMAR aquí"
                         class="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono text-slate-700 outline-none
@@ -1270,7 +1270,7 @@ $(function () {
 
         const $btn = $(this);
         $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
-        mostrarProgreso('Procesando todas las gerencias...', `<p class="text-sm text-slate-500">Esto puede tardar unos momentos. Por favor espera.</p>`);
+        mostrarProgreso('Procesando todos los presupuestos internos...', `<p class="text-sm text-slate-500">Esto puede tardar unos momentos. Por favor espera.</p>`);
 
         try {
             const res  = await fetch('{{ route("cortes.storeAll") }}', {
@@ -1396,7 +1396,7 @@ $(function () {
                 <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
                 <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Info</th>
             </tr>`);
-            tbody.append('<tr><td colspan="2" class="py-8 text-center text-slate-500 dark:text-slate-400">No hay presupuesto guardado para esta gerencia y año.</td></tr>');
+            tbody.append('<tr><td colspan="2" class="py-8 text-center text-slate-500 dark:text-slate-400">No hay presupuesto guardado para este presupuesto interno y año.</td></tr>');
             return;
         }
 
@@ -1484,8 +1484,8 @@ $(function () {
         if (!gid) {
             Swal.fire({
                 icon             : 'error',
-                title            : 'Gerencia requerida',
-                text             : 'Selecciona una gerencia antes de guardar.',
+                title            : 'Presupuesto interno requerido',
+                text             : 'Selecciona un presupuesto interno antes de guardar.',
                 confirmButtonColor: '#4f46e5'
             });
             return;

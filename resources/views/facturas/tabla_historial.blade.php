@@ -203,8 +203,8 @@ text-align: right;
         <div id="cmpGerenciasCard" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-xl overflow-hidden">
             <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">Concentrado por gerencias</h2>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Totales del corte contra facturas, y calendario mensual por gerencia.</p>
+                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">Concentrado por presupuesto interno</h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Totales del corte contra facturas, y calendario mensual por presupuesto interno.</p>
                 </div>
                 <div id="cmpGerenciasTabs" class="flex gap-2 overflow-x-auto pb-1 md:pb-0"></div>
             </div>
@@ -249,7 +249,7 @@ text-align: right;
                     <thead id="cmpTableHead" class="bg-slate-50 dark:bg-slate-950 sticky top-0 z-10">
                         <tr>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Insumo</th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Gerencia</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Presupuesto interno</th>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-indigo-400 uppercase tracking-wider ">Presupuesto</th>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-emerald-500 uppercase tracking-wider ">Facturado</th>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider ">Ahorro / Desviación</th>
@@ -284,9 +284,9 @@ text-align: right;
 
     /* ══ Helpers ══ */
     const f    = v => (v != null && v !== 0 && !isNaN(v)) ? FMT.format(v) : '—';
-    const gNom = (id, nombre) => nombre || GERENCIA_MAP[id] || (id ? 'Gerencia #'+id : 'Sin gerencia asignada');
+    const gNom = (id, nombre) => nombre || GERENCIA_MAP[id] || (id ? 'Presupuesto interno #'+id : 'Sin presupuesto interno');
     const gBadge = (id, nombre) => {
-        const n = nombre || GERENCIA_MAP[id] || (id ? 'Gerencia #'+id : null);
+        const n = nombre || GERENCIA_MAP[id] || (id ? 'Presupuesto interno #'+id : null);
         if (n) return `<span class="text-xs text-slate-500 dark:text-slate-400">${n}</span>`;
         return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700"><i class="fas fa-hourglass-half text-[9px]"></i> Sin asignar</span>`;
     };
@@ -675,7 +675,7 @@ text-align: right;
 
     function renderConcentradoGerencias(rows) {
         if (!rows.length) {
-            return `<div class="py-10 text-center text-sm text-slate-400">No hay datos de gerencias para los filtros seleccionados.</div>`;
+            return `<div class="py-10 text-center text-sm text-slate-400">No hay datos de presupuesto interno para los filtros seleccionados.</div>`;
         }
 
         const totales = rows.reduce((acc, row) => {
@@ -722,7 +722,7 @@ text-align: right;
             <table class="w-full min-w-[980px] text-left">
                 <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                        <th class="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-extrabold">Gerencia</th>
+                        <th class="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-extrabold">Presupuesto interno</th>
                         <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-emerald-500 font-extrabold">Ahorro</th>
                         <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-teal-500 font-extrabold">No se consumió</th>
                         <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-rose-500 font-extrabold">Desviación</th>

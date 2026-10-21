@@ -2,6 +2,7 @@
     <thead>
         <tr>
             <th>Empleado</th>
+            <th>Presupuesto interno</th>
             <th>Gerencia</th>
             <th>Marca</th>
             <th>Modelo</th>
@@ -16,6 +17,7 @@
         @foreach($datos as $item)
             <tr>
                 <td>{{ $item->empleado_nombre }}</td>
+                <td>{{ $item->presupuesto_nombre ?: '—' }}</td>
                 <td>{{ $item->GerenciaEquipo }}</td>
                 <td>{{ $item->Marca }}</td>
                 <td>{{ $item->Modelo }}</td>

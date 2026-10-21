@@ -47,6 +47,7 @@ class Empleados extends Model implements Auditable
         'JefeDirectoID',
         'ObraID',
         'CentroCostoID',
+        'PresupuestoInternoID',
         'NumTelefono',
         'Correo',
         'Estado',
@@ -65,6 +66,7 @@ class Empleados extends Model implements Auditable
         'JefeDirectoID' => 'integer',
         'ObraID' => 'integer',
         'CentroCostoID' => 'integer',
+        'PresupuestoInternoID' => 'integer',
         'NumTelefono' => 'string',
         'Correo' => 'string',
         'Estado' => 'boolean',
@@ -103,6 +105,7 @@ class Empleados extends Model implements Auditable
             ]),
             'ObraID' => $soloNombre ? 'nullable' : 'required|integer|exists:obras,ObraID',
             'CentroCostoID' => 'nullable|integer|exists:centrosdecostos,CentroCostoID',
+            'PresupuestoInternoID' => 'nullable|integer|exists:presupuestos_internos,PresupuestoInternoID',
             'NumTelefono' => 'nullable|string|max:50',
             'Correo' => 'nullable|string|max:150|email',
             'Estado' => 'required|boolean',
@@ -170,6 +173,11 @@ class Empleados extends Model implements Auditable
     public function centroCosto()
     {
         return $this->belongsTo(CentroCosto::class, 'CentroCostoID', 'CentroCostoID');
+    }
+
+    public function presupuestoInterno()
+    {
+        return $this->belongsTo(PresupuestoInterno::class, 'PresupuestoInternoID', 'PresupuestoInternoID');
     }
 
     /**

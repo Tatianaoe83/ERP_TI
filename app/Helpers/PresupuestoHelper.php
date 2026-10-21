@@ -9,16 +9,36 @@ use App\Helpers\PagoMeses;
 
 class PresupuestoHelper
 {
-    /** gerencia | centro */
+    /** gerencia | centro | interno */
     public static string $agrupar = 'gerencia';
+
+    public static function normalizarAgrupar(?string $agrupar): string
+    {
+        if ($agrupar === 'centro' || $agrupar === 'interno') {
+            return $agrupar;
+        }
+
+        return 'gerencia';
+    }
 
     public static function esCentro(): bool
     {
         return self::$agrupar === 'centro';
     }
 
+    public static function esInterno(): bool
+    {
+        return self::$agrupar === 'interno';
+    }
+
     public static function aplicarAlcance($query, int $id): void
     {
+        if (self::esInterno()) {
+            $query->where('PresupuestoInternoID', $id);
+
+            return;
+        }
+
         if (self::esCentro()) {
             $query->where('CentroCostoID', $id);
 
@@ -32,7 +52,22 @@ class PresupuestoHelper
 
     public static function sqlWhereAlcance(): string
     {
+        if (self::esInterno()) {
+            return 'e.PresupuestoInternoID = ?';
+        }
+
         return self::esCentro() ? 'e.CentroCostoID = ?' : 'g.GerenciaID = ?';
+    }
+
+    public static function sqlJoinOrganizacion(): string
+    {
+        if (self::esInterno()) {
+            return '';
+        }
+
+        return 'INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+                INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID';
     }
 
     private static function costoCeldaInsumo($insumo): float
@@ -535,7 +570,7 @@ class PresupuestoHelper
                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         $mesIndice = array_flip($meses);
 
-        $esExentaWindows = in_array($gerenciaId, [17, 18]);
+        $esExentaWindows = !self::esInterno() && in_array($gerenciaId, [17, 18]);
 
         // 1. Precio de referencia del PRO, con el que se cotizan las HOME. La inflación ya viene
         //    aplicada en el costo capturado, así que aquí no se ajusta nada.
