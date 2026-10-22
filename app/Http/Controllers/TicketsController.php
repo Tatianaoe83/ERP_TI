@@ -657,7 +657,13 @@ class TicketsController extends Controller
     public function show($id)
     {
         try {
-            $ticket = Tickets::with(['empleado.obras', 'empleado.puestos.departamentos.gerencia'])->find($id);
+            $ticket = Tickets::with([
+                'empleado.obras',
+                'empleado.centroCosto',
+                'empleado.jefeDirecto',
+                'empleado.puestos.departamentos.gerencia.direccion',
+                'empleado.puestos.departamentos.gerencia.unidadesdenegocio.division',
+            ])->find($id);
 
             if (!$ticket) {
                 return response()->json(['success' => false, 'message' => 'Ticket no encontrado'], 404);
@@ -683,11 +689,20 @@ class TicketsController extends Controller
                     'correo'         => $ticket->empleado ? $ticket->empleado->Correo : '',
                     'numero'         => $ticket->Numero,
                     'anydesk'        => $ticket->CodeAnyDesk,
-                    'puesto'         => $ticket->empleado->puestos ? $ticket->empleado->puestos->NombrePuesto   : 'sin puesto',
-                    'gerencia'       => $ticket->empleado->puestos ? $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia : 'sin gerencia',
-                    'departamento'   => $ticket->empleado->puestos ? $ticket->empleado->puestos->departamentos->NombreDepartamento : 'sin departamento',
-                    'obra'           => ($ticket->empleado && $ticket->empleado->obras) ? $ticket->empleado->obras->NombreObra : 'Sin obra',
-                ],
+                ] + ($ticket->empleado ? $ticket->empleado->datosContacto() : [
+                    'telefono' => '',
+                    'tipo_persona' => '',
+                    'estado_empleado' => '',
+                    'puesto' => '',
+                    'departamento' => '',
+                    'gerencia' => '',
+                    'direccion' => '',
+                    'unidad' => '',
+                    'division' => '',
+                    'obra' => '',
+                    'centro_costo' => '',
+                    'jefe' => '',
+                ]),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al obtener el ticket: ' . $e->getMessage()], 500);

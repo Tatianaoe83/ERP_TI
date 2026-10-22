@@ -547,7 +547,15 @@ class TicketMantenimiento extends Model
 
     public static function formatearTicketParaVista(TicketMantenimiento $ticket): array
     {
-        $ticket->loadMissing(['empleado.obras', 'empleado.puestos.departamentos', 'responsable']);
+        $ticket->loadMissing([
+            'empleado.obras',
+            'empleado.centroCosto',
+            'empleado.jefeDirecto',
+            'empleado.puestos.departamentos.gerencia.direccion',
+            'empleado.puestos.departamentos.gerencia.unidadesdenegocio.division',
+            'responsable',
+        ]);
+        $contacto = $ticket->empleado ? $ticket->empleado->datosContacto() : [];
 
         return [
             'id'                 => $ticket->MantenimientoID,
@@ -566,8 +574,20 @@ class TicketMantenimiento extends Model
             'solicitante_corto'  => $ticket->empleado
                 ? self::formatearNombreEmpleado($ticket->empleado->NombreEmpleado)
                 : ($ticket->nombre_solicitante ?? ''),
-            'correo'             => $ticket->correo ?? '',
+            'correo'             => $ticket->correo ?: ($ticket->empleado?->Correo ?? ''),
             'area'               => $ticket->area_departamento ?? '',
+            'telefono'           => $contacto['telefono'] ?? '',
+            'tipo_persona'       => $contacto['tipo_persona'] ?? '',
+            'estado_empleado'    => $contacto['estado_empleado'] ?? '',
+            'puesto'             => $contacto['puesto'] ?? '',
+            'departamento'       => $contacto['departamento'] ?? '',
+            'gerencia'           => $contacto['gerencia'] ?? '',
+            'direccion'          => $contacto['direccion'] ?? '',
+            'unidad'             => $contacto['unidad'] ?? '',
+            'division'           => $contacto['division'] ?? '',
+            'obra'               => $contacto['obra'] ?? '',
+            'centro_costo'       => $contacto['centro_costo'] ?? '',
+            'jefe'               => $contacto['jefe'] ?? '',
             'imagen'             => $ticket->imagen,
             'created_at'         => optional($ticket->created_at)->toIso8601String(),
             'sla'                => $ticket->resumenSlaTarjeta(),

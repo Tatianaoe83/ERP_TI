@@ -1653,6 +1653,14 @@
                                 this.selected.gerencia = data.ticket.gerencia || '';
                                 this.selected.departamento = data.ticket.departamento || '';
                                 this.selected.obra = data.ticket.obra || '';
+                                this.selected.direccion = data.ticket.direccion || '';
+                                this.selected.unidad = data.ticket.unidad || '';
+                                this.selected.division = data.ticket.division || '';
+                                this.selected.centro_costo = data.ticket.centro_costo || '';
+                                this.selected.jefe = data.ticket.jefe || '';
+                                this.selected.telefono = data.ticket.telefono || '';
+                                this.selected.tipo_persona = data.ticket.tipo_persona || '';
+                                this.selected.estado_empleado = data.ticket.estado_empleado || '';
                             }
                             
                             this.$nextTick(() => { this.actualizarEstadoEditor(); });

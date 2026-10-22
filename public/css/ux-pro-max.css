@@ -697,6 +697,70 @@ html.dark .cat-org__estado {
     box-shadow: none !important;
 }
 
+.erp-modal-panel,
+.erp-modal-card {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+}
+
+.erp-modal-panel__bar {
+    background: #ffffff;
+    color: #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.erp-modal-panel__cerrar {
+    color: #64748b;
+    background: transparent;
+}
+
+.erp-modal-panel__cerrar:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.erp-modal-panel__lienzo {
+    background: #f8fafc;
+}
+
+html.dark .erp-modal-panel,
+html.dark .erp-modal-card,
+.dark .erp-modal-panel,
+.dark .erp-modal-card {
+    background: #1c1f26 !important;
+    color: #e5e7eb !important;
+    border-color: #2a2f3a !important;
+}
+
+html.dark .erp-modal-panel__bar,
+.dark .erp-modal-panel__bar {
+    background: #1a1d24 !important;
+    color: #f3f4f6 !important;
+    border-bottom-color: #2a2f3a !important;
+}
+
+html.dark .erp-modal-panel__cerrar,
+.dark .erp-modal-panel__cerrar {
+    color: #d1d5db !important;
+}
+
+html.dark .erp-modal-panel__cerrar:hover,
+.dark .erp-modal-panel__cerrar:hover {
+    background: #2a2f3a !important;
+    color: #f9fafb !important;
+}
+
+html.dark .erp-modal-panel__lienzo,
+.dark .erp-modal-panel__lienzo {
+    background: #0f1116 !important;
+}
+
+html.dark .erp-modal-card span,
+.dark .erp-modal-card span {
+    color: #e5e7eb !important;
+}
+
 .fd-insumo-nuevo {
     background: var(--erp-surface) !important;
     color: var(--erp-text) !important;

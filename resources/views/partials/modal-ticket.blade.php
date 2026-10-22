@@ -11,11 +11,21 @@
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
+            class="relative flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
            bg-gray-50 dark:bg-[#1A1D24] 
            border border-transparent dark:border-gray-700
            max-h-[calc(100vh-1.5rem)] md:max-h-[95vh] mt-0 min-h-0"
             @click.stop>
+            <div x-show="cargandoTicket" x-cloak
+                class="absolute inset-0 z-30 flex items-center justify-center bg-gray-900/60">
+                <div class="erp-modal-card flex flex-col items-center gap-3 rounded-xl px-6 py-5 shadow-xl">
+                    <svg class="animate-spin w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="text-sm">Cargando datos del ticket...</span>
+                </div>
+            </div>
 
             <!-- Header fijo: Propiedades del Ticket + botón cerrar -->
             <div class="flex justify-between items-center p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1A1D24] flex-shrink-0">
@@ -75,15 +85,15 @@
                                         </div>
 
                                         <div class="flex items-center gap-2 flex-shrink-0">
-                                            <a :href="obtenerUrlArchivo(adjunto)"
-                                                target="_blank"
-                                                class="p-1.5 rounded transition text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-600"
+                                            <button type="button"
+                                                @click="verArchivoEnPantalla(obtenerUrlArchivo(adjunto), obtenerNombreArchivo(adjunto))"
+                                                class="p-1.5 rounded transition text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-600 cursor-pointer"
                                                 title="Ver archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                                 </svg>
-                                            </a>
+                                            </button>
                                             <a :href="obtenerUrlArchivo(adjunto)"
                                                 download
                                                 class="p-1.5 rounded transition hover:bg-green-50 dark:hover:bg-green-900/30"
@@ -163,11 +173,11 @@
                 <i class="fas fa-map-marker-alt"></i>
             </div>
             <div class="text-sm text-gray-700 dark:text-gray-300">
-                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Obra:</span>
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Ubicación:</span>
                 <span x-text="selected.obra" class="font-mono"></span>
             </div>
         </div>
-         
+        @include('partials.empleado-contacto-extra')
 
         <div class="flex items-center gap-3" x-show="selected.anydesk">
             <div class="text-red-500 dark:text-red-400 flex-shrink-0 w-4 text-center">
@@ -180,7 +190,7 @@
             </div>
         </div>
 
-        <div x-show="!selected.numero && !selected.anydesk" class="pt-2 pl-7">
+        <div x-show="!selected.numero && !selected.anydesk && !selected.puesto && !selected.telefono && !selected.obra" class="pt-2 pl-7">
             <p class="text-xs italic text-gray-400 dark:text-gray-600">
                 Sin datos de contacto adicionales.
             </p>
@@ -473,15 +483,15 @@
                                             <div class="text-xs mb-2 font-semibold text-gray-500 dark:text-gray-400">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
-                                                    <a :href="obtenerUrlArchivo(adjunto)" 
-                                                    target="_blank" 
+                                                    <button type="button"
+                                                    @click="verArchivoEnPantalla(obtenerUrlArchivo(adjunto), adjunto.name)"
                                                     class="text-xs px-3 py-1.5 rounded flex items-center gap-2 transition-colors bg-GRAY-50 border border-gray-300 text-blue-600 hover:bg-blue-50 dark:bg-[#2A2F3A] dark:border-gray-600 dark:text-blue-400 dark:hover:bg-gray-700 cursor-pointer shadow-sm">
                                                         
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                                                         </svg>
                                                         <span x-text="adjunto.name" class="font-medium hover:underline"></span>
-                                                    </a>
+                                                    </button>
                                                 </template>
                                             </div>
                                         </div>

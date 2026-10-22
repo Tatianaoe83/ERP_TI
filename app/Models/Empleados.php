@@ -243,4 +243,34 @@ class Empleados extends Model implements Auditable
             'UnidadNegocioID',
         );
     }
+
+    public function datosContacto(): array
+    {
+        $puesto = $this->puestos;
+        $departamento = $puesto?->departamentos;
+        $gerencia = $departamento?->gerencia;
+        $direccion = $gerencia?->direccion;
+        $unidad = $gerencia?->unidadesdenegocio;
+        $division = $unidad?->division;
+        $tipos = [
+            'FISICA' => 'Física',
+            'REFERENCIADO' => 'Referenciado',
+            'EXTRAORDINARIO' => 'Extraordinario',
+        ];
+
+        return [
+            'telefono' => (string) ($this->NumTelefono ?? ''),
+            'tipo_persona' => $tipos[$this->tipo_persona] ?? (string) ($this->tipo_persona ?? ''),
+            'estado_empleado' => $this->Estado ? 'Activo' : 'Inactivo',
+            'puesto' => (string) ($puesto->NombrePuesto ?? ''),
+            'departamento' => (string) ($departamento->NombreDepartamento ?? ''),
+            'gerencia' => (string) ($gerencia->NombreGerencia ?? ''),
+            'direccion' => (string) ($direccion->NombreDireccion ?? ''),
+            'unidad' => (string) ($unidad->NombreEmpresa ?? ''),
+            'division' => (string) ($division->NombreDivision ?? ''),
+            'obra' => (string) ($this->obras->NombreObra ?? ''),
+            'centro_costo' => (string) ($this->centroCosto->NombreCentro ?? ''),
+            'jefe' => (string) ($this->jefeDirecto->NombreEmpleado ?? ''),
+        ];
+    }
 }

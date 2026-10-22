@@ -87,9 +87,9 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 flex-shrink-0">
-                                        <a :href="obtenerUrlArchivo(adjunto)" target="_blank" class="p-1.5 rounded text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600" title="Ver archivo">
+                                        <button type="button" @click="verArchivoEnPantalla(obtenerUrlArchivo(adjunto), obtenerNombreArchivo(adjunto))" class="p-1.5 rounded text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer" title="Ver archivo">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                        </a>
+                                        </button>
                                         <a :href="obtenerUrlArchivo(adjunto)" :download="obtenerNombreArchivo(adjunto)" class="p-1.5 rounded hover:bg-green-50 dark:hover:bg-green-900/30" style="color:#22C55E;" title="Descargar">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         </a>
@@ -112,13 +112,35 @@
                                 <i class="fas fa-envelope text-gray-400 w-4 mt-0.5"></i>
                                 <a :href="'mailto:' + selected.correo" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 break-all" x-text="selected.correo"></a>
                             </div>
-                            <div class="flex items-center gap-3" x-show="selected.area">
-                                <i class="fas fa-building text-gray-400 w-4"></i>
+                            <div class="flex items-center gap-3" x-show="selected.puesto">
+                                <i class="fas fa-briefcase text-gray-400 w-4"></i>
                                 <div class="text-sm text-gray-700 dark:text-gray-300">
-                                    <span class="font-bold text-xs text-gray-500 uppercase mr-1">Área:</span>
-                                    <span x-text="selected.area"></span>
+                                    <span class="font-bold text-xs text-gray-500 uppercase mr-1">Puesto:</span>
+                                    <span x-text="selected.puesto"></span>
                                 </div>
                             </div>
+                            <div class="flex items-center gap-3" x-show="selected.departamento">
+                                <i class="fas fa-building text-gray-400 w-4"></i>
+                                <div class="text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="font-bold text-xs text-gray-500 uppercase mr-1">Departamento:</span>
+                                    <span x-text="selected.departamento"></span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3" x-show="selected.gerencia">
+                                <i class="fas fa-sitemap text-gray-400 w-4"></i>
+                                <div class="text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="font-bold text-xs text-gray-500 uppercase mr-1">Gerencia:</span>
+                                    <span x-text="selected.gerencia"></span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3" x-show="selected.obra">
+                                <i class="fas fa-map-marker-alt text-gray-400 w-4"></i>
+                                <div class="text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="font-bold text-xs text-gray-500 uppercase mr-1">Ubicación:</span>
+                                    <span x-text="selected.obra"></span>
+                                </div>
+                            </div>
+                            @include('partials.empleado-contacto-extra')
                         </div>
                     </div>
 
@@ -252,11 +274,11 @@
                                         <div class="flex flex-wrap gap-2">
                                             <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
                                                 <div class="flex items-center gap-2">
-                                                    <a :href="obtenerUrlArchivo(adjunto)" target="_blank"
-                                                        class="text-xs px-3 py-1.5 rounded flex items-center gap-2 border border-gray-300 text-blue-600 hover:bg-blue-50 dark:bg-[#2A2F3A] dark:border-gray-600 dark:text-blue-400">
+                                                    <button type="button" @click="verArchivoEnPantalla(obtenerUrlArchivo(adjunto), adjunto.name)"
+                                                        class="text-xs px-3 py-1.5 rounded flex items-center gap-2 border border-gray-300 text-blue-600 hover:bg-blue-50 dark:bg-[#2A2F3A] dark:border-gray-600 dark:text-blue-400 cursor-pointer">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                                                         <span x-text="adjunto.name" class="font-medium hover:underline"></span>
-                                                    </a>
+                                                    </button>
                                                     <a :href="obtenerUrlArchivo(adjunto)" :download="adjunto.name"
                                                         class="text-xs px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600" style="color:#22C55E;" title="Descargar">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>

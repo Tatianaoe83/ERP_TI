@@ -1091,7 +1091,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022c">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022d">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1105,7 +1105,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022c">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022d">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1140,6 +1140,7 @@
     </div>
 
     <div id="app-shell-extras">
+    @include('partials.modal-vista-archivo')
     @include('profile.change_password')
     @include('profile.edit_profile')
     @include('partials.modal-detalle-solicitud')
