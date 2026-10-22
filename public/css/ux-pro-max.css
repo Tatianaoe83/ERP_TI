@@ -541,7 +541,11 @@ button:disabled {
 }
 
 .select2-container--open {
-    z-index: 10050;
+    z-index: 110000;
+}
+
+.iziToast-wrapper {
+    z-index: 130000 !important;
 }
 
 .select2-container.select2-compact .select2-selection--single {
@@ -691,6 +695,18 @@ html.dark .cat-org__estado {
     background: rgba(22, 163, 74, 0.12) !important;
     color: var(--erp-accent) !important;
     box-shadow: none !important;
+}
+
+.fd-insumo-nuevo {
+    background: var(--erp-surface) !important;
+    color: var(--erp-text) !important;
+    border: 2px solid var(--erp-warning) !important;
+    caret-color: var(--erp-text);
+}
+
+.fd-insumo-nuevo::placeholder {
+    color: var(--erp-muted) !important;
+    opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

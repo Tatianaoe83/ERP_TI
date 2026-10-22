@@ -56,13 +56,18 @@
                     </div>
                     <input type="hidden" id="reemplazoFacturaID">
 
+                    <div id="reemplazoVistaWrap" class="hidden">
+                        <p id="reemplazoVistaTitulo" class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Archivo actual</p>
+                        <iframe id="reemplazoVista" title="Archivo de la factura" class="w-full h-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white"></iframe>
+                    </div>
+
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-4">
-                            <i class="fas fa-file-upload text-indigo-500 mr-1.5"></i> Subir Nuevo Documento <span class="text-slate-400 font-normal">(Opcional)</span>
+                        <label id="reemplazoEtiquetaArchivo" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-4">
+                            <i class="fas fa-file-upload text-indigo-500 mr-1.5"></i> Reemplazar archivo <span class="text-slate-400 font-normal">(Opcional)</span>
                         </label>
                         
                         <div class="space-y-4">
-                            <div class="flex flex-col gap-1.5">
+                            <div id="reemplazoZonaXml" class="flex flex-col gap-1.5">
                                 <label class="inline-flex items-center w-max px-2.5 py-1 rounded-md bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-[10px] font-bold border border-violet-200 dark:border-violet-700">
                                     <i class="fas fa-file-code mr-1"></i> XML
                                 </label>
@@ -77,7 +82,7 @@
                                            focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/20">
                             </div>
 
-                            <div class="flex flex-col gap-1.5">
+                            <div id="reemplazoZonaPdf" class="flex flex-col gap-1.5">
                                 <label class="inline-flex items-center w-max px-2.5 py-1 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-[10px] font-bold border border-rose-200 dark:border-rose-700">
                                     <i class="fas fa-file-pdf mr-1"></i> PDF
                                 </label>
@@ -135,6 +140,21 @@
                     <i class="fas fa-save text-xs"></i> Guardar
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="modalVistaFactura" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+        <div class="relative bg-gray-50 dark:bg-slate-900 rounded-2xl w-full max-w-5xl mx-4 overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col" style="height:min(88vh,900px);box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)">
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
+                <div>
+                    <h3 id="vistaFacturaTitulo" class="text-sm font-bold text-slate-800 dark:text-slate-100">Factura</h3>
+                    <p id="vistaFacturaSub" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5"></p>
+                </div>
+                <button type="button" onclick="cerrarVistaFactura()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-all">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <iframe id="vistaFacturaFrame" title="Vista de la factura" class="flex-1 w-full bg-white"></iframe>
         </div>
     </div>
 </div>
@@ -342,6 +362,7 @@
                     className: 'px-4 py-3 border-b dark:border-slate-800 whitespace-nowrap',
                     orderable: false,
                     render: function(data, type, row) {
+                        const tipoArchivo = row.PdfRuta ? 'pdf' : (row.ArchivoRuta ? 'xml' : '');
                         const fileUrl = row.PdfRuta || row.ArchivoRuta || '';
                         const insumoStr = row.InsumoNombre ? row.InsumoNombre.replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
                         const solID = row.SolicitudID || 'null';
@@ -349,17 +370,13 @@
 
                         let actions = '<div class="index-actions">';
 
-                        if (row.PdfRuta) {
-                            actions += `<a href="/storage/${row.PdfRuta}" target="_blank" class="index-action index-action--view" title="Ver PDF">
+                        if (tipoArchivo) {
+                            actions += `<button type="button" onclick="verFacturaArchivo('${tipoArchivo}', '/storage/${fileUrl}')" class="index-action index-action--view" title="Ver ${tipoArchivo === 'pdf' ? 'PDF' : 'XML'}">
                             <i class="fas fa-eye"></i>
-                        </a>`;
-                        } else if (row.ArchivoRuta) {
-                            actions += `<a href="/storage/${row.ArchivoRuta}" target="_blank" class="index-action index-action--view" title="Ver XML">
-                            <i class="fas fa-eye"></i>
-                        </a>`;
+                        </button>`;
                         }
 
-                        actions += `<button type="button" onclick="abrirModalReemplazo(${row.FacturasID}, '${nombreFactura}', '${fileUrl}', '${insumoStr}', ${solID}, ${row.GerenciaID})" class="index-action index-action--edit" title="Actualizar">
+                        actions += `<button type="button" onclick="abrirModalReemplazo(${row.FacturasID}, '${nombreFactura}', '${fileUrl}', '${insumoStr}', ${solID}, ${row.GerenciaID}, '${tipoArchivo}')" class="index-action index-action--edit" title="Actualizar">
                         <i class="fas fa-edit"></i>
                     </button>`;
 
@@ -417,15 +434,19 @@
             $sel.prop('disabled', true);
 
             try {
-                let insumos = insumoCache[facturaID];
-                if (!insumos) {
+                let cache = insumoCache[facturaID];
+                if (!cache || !Array.isArray(cache.nombres)) {
                     const res = await fetch(`{{ route('facturas.getInsumosPorGerencia') }}?facturaID=${encodeURIComponent(facturaID)}`, {
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     const json = await res.json();
-                    insumos = (json && json.data) ? json.data : [];
-                    insumoCache[facturaID] = insumos;
+                    cache = {
+                        nombres: (json && json.data) ? json.data : [],
+                        tiene: !!(json && json.tiene_presupuesto)
+                    };
+                    insumoCache[facturaID] = cache;
                 }
+                const insumos = cache.nombres;
 
                 // Guardar el valor actual antes de limpiar
                 const currentVal = $sel.val();
@@ -437,9 +458,13 @@
                     $sel.append(`<option value="${nombre}" ${selected} title="${nombre}">${displayNombre}</option>`);
                 });
 
-                if (insumos.length === 0) {
-                    $sel.append('<option value="" disabled>Sin insumos disponibles</option>');
+                const actual = String(valorAct || currentVal || '');
+                if (actual && insumos.indexOf(actual) === -1) {
+                    const displayActual = actual.length > 32 ? actual.substring(0, 32) + '...' : actual;
+                    $sel.append(`<option value="${actual}" selected title="${actual}">${displayActual}</option>`);
                 }
+                $sel.data('tienePresupuesto', !!cache.tiene);
+                $sel.append('<option value="__nuevo__">Agregar insumo (desviación)</option>');
             } catch (e) {
                 console.error('Error cargando insumos:', e);
                 $sel.empty().append('<option value="" disabled>Error al cargar</option>');
@@ -474,8 +499,36 @@
             const $sel = $(this);
             const $wrap = $sel.closest('.insumo-select-wrap');
             const facturaID = $sel.data('factura');
-            const nuevo = $sel.val() || '';
+            let nuevo = $sel.val() || '';
             const prev = String($sel.attr('data-valor') || '').trim();
+            if (nuevo === '__nuevo__') {
+                const sinPresupuesto = $sel.data('tienePresupuesto') === false || $sel.data('tienePresupuesto') === 'false';
+                const pedido = (typeof Swal !== 'undefined')
+                    ? await Swal.fire({
+                        title: 'Insumo nuevo',
+                        text: sinPresupuesto
+                            ? 'Este presupuesto interno no tiene corte. El insumo se cuenta como desviación.'
+                            : 'Este insumo no está en el corte. Se cuenta como desviación.',
+                        input: 'text',
+                        inputPlaceholder: 'Nombre del insumo',
+                        showCancelButton: true,
+                        confirmButtonText: 'Usar insumo',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#d97706'
+                    })
+                    : { isConfirmed: true, value: window.prompt('Nombre del insumo. Se cuenta como desviación.') };
+                const nombre = pedido && pedido.isConfirmed ? String(pedido.value || '').trim() : '';
+                if (!nombre) {
+                    $sel.val(prev);
+                    return;
+                }
+                const yaExiste = $sel.find('option').filter(function () { return this.value === nombre; }).length > 0;
+                if (!yaExiste) {
+                    $sel.append($('<option>', { value: nombre, text: nombre }));
+                }
+                $sel.val(nombre);
+                nuevo = nombre;
+            }
             if (nuevo === prev) return;
 
             const prevLabel = prev ? (prev.length > 48 ? prev.substring(0, 48) + '…' : prev) : '— Sin asignar —';
@@ -679,19 +732,169 @@
             setTimeout(() => $('.select-dropdown').addClass('hidden'), 200);
         });
 
-        window.abrirModalReemplazo = async function(id, nombre, fileUrl, insumoActual, solID, gerenciaID) {
+        function escaparHtmlFactura(valor) {
+            return String(valor == null ? '' : valor)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function atributoXml(nodo, nombre) {
+            if (!nodo) return '';
+            return nodo.getAttribute(nombre) || nodo.getAttribute(nombre.toLowerCase()) || '';
+        }
+
+        function nodoCfdi(doc, local) {
+            const espacios = [
+                'http://www.sat.gob.mx/cfd/4',
+                'http://www.sat.gob.mx/cfd/3',
+                'http://www.sat.gob.mx/TimbreFiscalDigital'
+            ];
+            for (let i = 0; i < espacios.length; i++) {
+                const lista = doc.getElementsByTagNameNS(espacios[i], local);
+                if (lista && lista.length) return lista;
+            }
+            const sueltos = doc.getElementsByTagName(local);
+            return sueltos && sueltos.length ? sueltos : [];
+        }
+
+        function documentoXmlLegible(texto) {
+            const xml = new DOMParser().parseFromString(texto, 'text/xml');
+            if (xml.querySelector('parsererror')) {
+                return '<p style="font-family:sans-serif;padding:24px;">No se pudo leer el XML.</p>';
+            }
+            const comprobantes = nodoCfdi(xml, 'Comprobante');
+            const comprobante = comprobantes[0];
+            if (!comprobante) {
+                return '<p style="font-family:sans-serif;padding:24px;">Este XML no tiene el formato de una factura CFDI.</p>';
+            }
+            const emisor = nodoCfdi(xml, 'Emisor')[0];
+            const receptor = nodoCfdi(xml, 'Receptor')[0];
+            const timbre = nodoCfdi(xml, 'TimbreFiscalDigital')[0];
+            const conceptos = nodoCfdi(xml, 'Concepto');
+            const dinero = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+            const monto = (valor) => {
+                const n = parseFloat(valor);
+                return Number.isNaN(n) ? '—' : dinero.format(n);
+            };
+            let filas = '';
+            for (let i = 0; i < conceptos.length; i++) {
+                const c = conceptos[i];
+                filas += '<tr><td>' + escaparHtmlFactura(atributoXml(c, 'Descripcion') || atributoXml(c, 'ClaveProdServ')) + '</td>'
+                    + '<td style="text-align:right">' + escaparHtmlFactura(atributoXml(c, 'Cantidad')) + '</td>'
+                    + '<td style="text-align:right">' + monto(atributoXml(c, 'ValorUnitario')) + '</td>'
+                    + '<td style="text-align:right">' + monto(atributoXml(c, 'Importe')) + '</td></tr>';
+            }
+            if (!filas) filas = '<tr><td colspan="4">Sin conceptos</td></tr>';
+            return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+                + 'body{margin:0;background:#f8fafc;color:#0f172a;font-family:Segoe UI,sans-serif;padding:24px;}'
+                + '.hoja{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;}'
+                + 'h1{margin:0 0 4px;font-size:20px;} .muted{color:#64748b;font-size:12px;}'
+                + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0;}'
+                + '.caja{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;}'
+                + '.caja strong{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;margin-bottom:4px;}'
+                + 'table{width:100%;border-collapse:collapse;font-size:13px;}'
+                + 'th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left;}'
+                + 'th{font-size:11px;text-transform:uppercase;color:#64748b;}'
+                + '.totales{margin-top:16px;text-align:right;font-size:14px;}'
+                + '.totales b{font-size:18px;}'
+                + '</style></head><body><div class="hoja"><h1>Factura</h1>'
+                + '<p class="muted">Folio ' + escaparHtmlFactura((atributoXml(comprobante, 'Serie') + ' ' + atributoXml(comprobante, 'Folio')).trim() || 'sin folio')
+                + ' · ' + escaparHtmlFactura(atributoXml(comprobante, 'Fecha')) + '</p>'
+                + '<div class="grid"><div class="caja"><strong>Emisor</strong>' + escaparHtmlFactura(atributoXml(emisor, 'Nombre') || '—')
+                + '<div class="muted">RFC ' + escaparHtmlFactura(atributoXml(emisor, 'Rfc') || '—') + '</div></div>'
+                + '<div class="caja"><strong>Receptor</strong>' + escaparHtmlFactura(atributoXml(receptor, 'Nombre') || '—')
+                + '<div class="muted">RFC ' + escaparHtmlFactura(atributoXml(receptor, 'Rfc') || '—') + '</div></div></div>'
+                + '<table><thead><tr><th>Concepto</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Unitario</th><th style="text-align:right">Importe</th></tr></thead><tbody>'
+                + filas + '</tbody></table><div class="totales"><div>Subtotal ' + monto(atributoXml(comprobante, 'SubTotal')) + '</div>'
+                + '<div><b>Total ' + monto(atributoXml(comprobante, 'Total')) + ' ' + escaparHtmlFactura(atributoXml(comprobante, 'Moneda') || 'MXN') + '</b></div>'
+                + (timbre ? '<div class="muted" style="margin-top:8px;">UUID ' + escaparHtmlFactura(atributoXml(timbre, 'UUID')) + '</div>' : '')
+                + '</div></div></body></html>';
+        }
+
+        function limpiarFrameFactura(frame) {
+            if (!frame) return;
+            frame.removeAttribute('srcdoc');
+            frame.src = 'about:blank';
+        }
+
+        async function mostrarArchivoEnFrame(frame, tipo, url) {
+            limpiarFrameFactura(frame);
+            if (!url) return;
+            if (tipo === 'pdf') {
+                frame.src = url;
+                return;
+            }
+            const res = await fetch(url, { headers: { 'Accept': 'application/xml,text/xml,text/plain,*/*' } });
+            const texto = await res.text();
+            frame.srcdoc = documentoXmlLegible(texto);
+        }
+
+        window.verFacturaArchivo = async function(tipo, url) {
+            const modal = window.llevarModalAPantalla
+                ? window.llevarModalAPantalla('modalVistaFactura')
+                : document.getElementById('modalVistaFactura');
+            const titulo = modal ? modal.querySelector('#vistaFacturaTitulo') : null;
+            const sub = modal ? modal.querySelector('#vistaFacturaSub') : null;
+            const frame = modal ? modal.querySelector('#vistaFacturaFrame') : null;
+            if (titulo) titulo.textContent = tipo === 'pdf' ? 'Factura PDF' : 'Factura XML';
+            if (sub) sub.textContent = tipo === 'pdf' ? 'Representación del PDF cargado.' : 'Datos del CFDI en una vista legible.';
+            if (modal) modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            try {
+                await mostrarArchivoEnFrame(frame, tipo, url);
+            } catch (e) {
+                frame.srcdoc = '<p style="font-family:sans-serif;padding:24px;">No se pudo abrir el archivo.</p>';
+            }
+        };
+
+        window.cerrarVistaFactura = function() {
+            const modal = document.getElementById('modalVistaFactura');
+            if (modal) modal.classList.add('hidden');
+            limpiarFrameFactura(document.getElementById('vistaFacturaFrame'));
+            document.body.classList.remove('overflow-hidden');
+        };
+
+        window.abrirModalReemplazo = async function(id, nombre, fileUrl, insumoActual, solID, gerenciaID, tipo) {
             $('#formReemplazarFactura')[0].reset();
             $('#btnSubmitReemplazo').prop('disabled', false).html('<i class="fas fa-save text-xs"></i> Guardar');
             $('#reemplazoFacturaID').val(id);
             $('#reemplazoFacturaNombre').text(nombre);
+            $('#formReemplazarFactura').data('tipoArchivo', tipo || '');
             
-            // Limpiar preview y archivos
             $('#previewContenedor').addClass('hidden');
             $('#previewContenido').html('');
             $('#reemplazoXml').val('');
             $('#reemplazoPdf').val('');
+            const esPdf = tipo === 'pdf';
+            const esXml = tipo === 'xml';
+            $('#reemplazoZonaPdf').toggleClass('hidden', !esPdf);
+            $('#reemplazoZonaXml').toggleClass('hidden', !esXml);
+            $('#reemplazoEtiquetaArchivo').html(esPdf
+                ? '<i class="fas fa-file-pdf text-rose-500 mr-1.5"></i> Reemplazar PDF <span class="text-slate-400 font-normal">(Opcional)</span>'
+                : (esXml
+                    ? '<i class="fas fa-file-code text-violet-500 mr-1.5"></i> Reemplazar XML <span class="text-slate-400 font-normal">(Opcional)</span>'
+                    : '<i class="fas fa-file-upload text-indigo-500 mr-1.5"></i> Esta factura no tiene archivo'));
+            const vista = document.getElementById('reemplazoVista');
+            if (fileUrl && (esPdf || esXml)) {
+                $('#reemplazoVistaWrap').removeClass('hidden');
+                $('#reemplazoVistaTitulo').text(esPdf ? 'PDF cargado' : 'XML cargado');
+                try {
+                    await mostrarArchivoEnFrame(vista, tipo, '/storage/' + fileUrl);
+                } catch (e) {
+                    limpiarFrameFactura(vista);
+                }
+            } else {
+                $('#reemplazoVistaWrap').addClass('hidden');
+                limpiarFrameFactura(vista);
+            }
             
-            $('#modalReemplazoFactura').removeClass('hidden');
+            const modalEdicion = window.llevarModalAPantalla
+                ? window.llevarModalAPantalla('modalReemplazoFactura')
+                : document.getElementById('modalReemplazoFactura');
+            if (modalEdicion) modalEdicion.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
 
             // Cargar los datos actuales de la factura
             try {
@@ -709,6 +912,8 @@
 
         window.cerrarModalReemplazo = function() {
             $('#modalReemplazoFactura').addClass('hidden');
+            limpiarFrameFactura(document.getElementById('reemplazoVista'));
+            document.body.classList.remove('overflow-hidden');
         };
 
         window.enviarReemplazoFactura = async function(e) {
@@ -716,8 +921,9 @@
             const facturaID = $('#reemplazoFacturaID').val();
             const emisor = $('#reemplazoEmisor').val().trim();
             const costo = $('#reemplazoCosto').val();
-            const fileXml = $('#reemplazoXml')[0].files[0];
-            const filePdf = $('#reemplazoPdf')[0].files[0];
+            const tipoArchivo = $('#formReemplazarFactura').data('tipoArchivo');
+            const fileXml = tipoArchivo === 'xml' ? $('#reemplazoXml')[0].files[0] : null;
+            const filePdf = tipoArchivo === 'pdf' ? $('#reemplazoPdf')[0].files[0] : null;
             
             const btn = $('#btnSubmitReemplazo');
             const originalText = btn.html();
@@ -741,31 +947,14 @@
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.message || 'Error al actualizar');
 
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Actualizado!',
-                        text: json.message || 'Factura actualizada correctamente.',
-                        timer: 3000,
-                        showConfirmButton: false,
-                        toast: true,
-                        position: 'top-end',
-                        background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
-                        color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a'
-                    });
-                }
+                if (window.AppAlert) window.AppAlert.ok(json.message || 'Factura actualizada correctamente.', 'Factura actualizada');
 
                 cerrarModalReemplazo();
                 $('#facturasTable').DataTable().ajax.reload(null, false);
 
             } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: error.message || 'Hubo un error al actualizar la factura',
-                    background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
-                    color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a'
-                });
+                if (window.AppAlert) window.AppAlert.fallo(error.message || 'Hubo un error al actualizar la factura.');
+                else window.alert(error.message || 'Hubo un error al actualizar la factura.');
             } finally {
                 btn.html(originalText).prop('disabled', false);
             }

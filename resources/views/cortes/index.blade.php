@@ -1378,8 +1378,8 @@ $(function () {
     }
 
     $(document).on('click', '.ver-corte-badge', async function () {
-        const gid    = $(this).data('gerencia-id');
-        const nombre = $(this).data('gerencia-nombre');
+        const gid    = $(this).attr('data-gerencia-id');
+        const nombre = $(this).attr('data-gerencia-nombre');
         const anio   = $('#anioCorte').val();
         $('#gerenciaID').val(gid);
         await abrirCorteGuardado(gid, anio, nombre);
@@ -1504,7 +1504,7 @@ $(function () {
                     Costo       : costo,
                     Margen      : 0,
                     CostoTotal  : costo,
-                    GerenciaID  : Number(gid)
+                    GerenciaID  : Number(String(gid).replace(/^[gp]-/, ''))
                 });
             }
         });
@@ -1602,7 +1602,7 @@ $(function () {
             const res = await fetch('{{ route("cortes.store") }}', {
                 method : 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                body   : JSON.stringify({ rows: payload, anio })
+                body   : JSON.stringify({ rows: payload, anio, alcance: String(gid).indexOf('p-') === 0 ? 'interno' : 'gerencia' })
             });
 
             const contentType = res.headers.get('content-type') || '';

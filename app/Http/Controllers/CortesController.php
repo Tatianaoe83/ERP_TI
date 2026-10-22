@@ -46,22 +46,22 @@ class CortesController extends AppBaseController
 
     public function index(Request $request)
     {
-        $gerencia   = $this->opcionesPresupuesto();
+        $gerencia   = $this->opcionesAlcance();
         $anioActual = (int) Carbon::now()->year;
         $years      = array_reverse(range($anioActual - 5, $anioActual + 1));
 
         $anioConsulta = (int) ($request->input('anio') ?? $anioActual);
         $anioConsulta = in_array($anioConsulta, $years, true) ? $anioConsulta : $anioActual;
 
-        $gerenciasConCorteIds = Cortes::where('Anio', $anioConsulta)
+        $clavesGuardadas = Cortes::where('Anio', $anioConsulta)
             ->whereNull('deleted_at')
             ->whereNotNull('PresupuestoInternoID')
             ->distinct()
             ->pluck('PresupuestoInternoID')
-            ->toArray();
+            ->map(fn ($id) => 'p-'.(int) $id);
 
-        $gerenciasConCorte = $gerencia->whereIn('GerenciaID', $gerenciasConCorteIds)->values();
-        $gerenciasSinCorte = $gerencia->whereNotIn('GerenciaID', $gerenciasConCorteIds)->values();
+        $gerenciasConCorte = $gerencia->filter(fn ($opcion) => $clavesGuardadas->contains($opcion->GerenciaID))->values();
+        $gerenciasSinCorte = $gerencia->reject(fn ($opcion) => $clavesGuardadas->contains($opcion->GerenciaID))->values();
 
         $meses = array_values(self::NUM_TO_NAME);
 
@@ -73,7 +73,7 @@ class CortesController extends AppBaseController
 
     public function indexVista(Request $request)
     {
-        $gerenciaID = $request->input('gerenci_id');
+        $gerenciaID = $this->idPresupuestoInterno($request->input('gerenci_id'));
         $mes        = $request->input('mes');
 
         if ($request->ajax()) {
@@ -95,7 +95,7 @@ class CortesController extends AppBaseController
 
     public function obtenerInsumos(Request $request)
     {
-        $gerenciaID = $request->input('gerenciaID');
+        $gerenciaID = $this->idPresupuestoInterno($request->input('gerenciaID'));
 
         if (empty($gerenciaID)) {
             if ($request->expectsJson()) {
@@ -207,10 +207,11 @@ class CortesController extends AppBaseController
             return response()->json(['message' => 'Todas las filas deben pertenecer al mismo presupuesto interno.'], 422);
         }
 
+        $campo = 'PresupuestoInternoID';
         $gerenciaID = (int) $ids->first();
         $año        = (int) ($request->input('anio') ?? Carbon::now()->year);
 
-        $yaExiste = Cortes::where('PresupuestoInternoID', $gerenciaID)
+        $yaExiste = Cortes::where($campo, $gerenciaID)
             ->where('Anio', $año)
             ->whereNull('deleted_at')
             ->exists();
@@ -233,7 +234,7 @@ class CortesController extends AppBaseController
                 'Margen'       => $margen,
                 'CostoTotal'   => round($costo * (1 + $margen / 100), 2),
                 'Anio'         => $año,
-                'PresupuestoInternoID' => (int) $r['GerenciaID'],
+                $campo         => (int) $r['GerenciaID'],
             ];
         });
 
@@ -241,8 +242,8 @@ class CortesController extends AppBaseController
             return response()->json(['message' => 'Nada que guardar'], 422);
         }
 
-        DB::transaction(function () use ($gerenciaID, $año, $toInsert) {
-            Cortes::where('PresupuestoInternoID', $gerenciaID)->where('Anio', $año)->delete();
+        DB::transaction(function () use ($campo, $gerenciaID, $año, $toInsert) {
+            Cortes::where($campo, $gerenciaID)->where('Anio', $año)->delete();
             Cortes::insertOrIgnore($toInsert->all());
         });
 
@@ -252,13 +253,13 @@ class CortesController extends AppBaseController
     public function storeAll(Request $request)
     {
         $año       = (int) ($request->input('anio') ?? Carbon::now()->year);
-        $gerencias = $this->opcionesPresupuesto();
+        $gerencias = $this->opcionesAlcance();
 
         $resultados = [];
 
         foreach ($gerencias as $g) {
             try {
-                $yaExiste = Cortes::where('PresupuestoInternoID', $g->GerenciaID)
+                $yaExiste = Cortes::where($this->columnaAlcance($g->Alcance), $g->Id)
                     ->where('Anio', $año)
                     ->whereNull('deleted_at')
                     ->exists();
@@ -273,7 +274,7 @@ class CortesController extends AppBaseController
                     continue;
                 }
 
-                $toInsert = $this->procesarInsumosParaCorte((int) $g->GerenciaID, $año);
+                $toInsert = $this->procesarInsumosParaCorte((int) $g->Id, $año, $g->Alcance);
 
                 if (empty($toInsert)) {
                     $resultados[] = ['gerencia' => $g->NombreGerencia, 'status' => 'sin_datos'];
@@ -281,7 +282,7 @@ class CortesController extends AppBaseController
                 }
 
                 DB::transaction(function () use ($g, $año, $toInsert) {
-                    Cortes::where('PresupuestoInternoID', $g->GerenciaID)->where('Anio', $año)->delete();
+                    Cortes::where($this->columnaAlcance($g->Alcance), $g->Id)->where('Anio', $año)->delete();
                     Cortes::insertOrIgnore($toInsert);
                 });
 
@@ -314,12 +315,14 @@ class CortesController extends AppBaseController
         return Carbon::now()->isAfter($limite);
     }
 
-    private function procesarInsumosParaCorte(int $gerenciaID, int $año): array
+    private function procesarInsumosParaCorte(int $gerenciaID, int $año, string $alcance = 'interno'): array
     {
-        $rows     = $this->insumosDelPresupuesto($gerenciaID);
+        $rows     = $alcance === 'interno'
+            ? $this->insumosDelPresupuesto($gerenciaID)
+            : PresupuestoHelper::obtenerInsumosAnualesPorGerencia($gerenciaID);
         $toInsert = [];
 
-        $rows->groupBy('NombreInsumo')->each(function (Collection $items, $nombre) use ($año, $gerenciaID, &$toInsert) {
+        $rows->groupBy('NombreInsumo')->each(function (Collection $items, $nombre) use ($año, $gerenciaID, $alcance, &$toInsert) {
             foreach ($items as $r) {
                 $costo  = round((float) ($r->Costo ?? 0), 2);
                 if ($costo <= 0) continue;
@@ -341,7 +344,7 @@ class CortesController extends AppBaseController
                     'Margen'       => 0,
                     'CostoTotal'   => $costo,
                     'Anio'         => $año,
-                    'PresupuestoInternoID' => $gerenciaID,
+                    $this->columnaAlcance($alcance) => $gerenciaID,
                 ];
             }
         });
@@ -352,7 +355,7 @@ class CortesController extends AppBaseController
     public function obtenerCorteGuardado(Request $request)
     {
         $anio       = (int) $request->input('anio');
-        $gerenciaID = (int) $request->input('gerenciaID');
+        $gerenciaID = $this->idPresupuestoInterno($request->input('gerenciaID'));
 
         if (!$anio || !$gerenciaID) {
             return response()->json(['message' => 'Faltan año o presupuesto interno', 'data' => []], 422);
@@ -553,14 +556,47 @@ class CortesController extends AppBaseController
         return redirect(route('cortes.index'));
     }
 
-    private function opcionesPresupuesto()
+    private function opcionesAlcance()
     {
         return PresupuestoInterno::visiblesPara(auth()->id())->map(function ($presupuesto) {
             return (object) [
-                'GerenciaID' => $presupuesto->PresupuestoInternoID,
+                'GerenciaID' => 'p-'.$presupuesto->PresupuestoInternoID,
+                'Id' => (int) $presupuesto->PresupuestoInternoID,
+                'Alcance' => 'interno',
                 'NombreGerencia' => $presupuesto->Nombre,
             ];
-        });
+        })->values();
+    }
+
+    private function idPresupuestoInterno($valor): int
+    {
+        $valor = trim((string) $valor);
+        if ($valor === '' || str_starts_with($valor, 'g-')) {
+            return 0;
+        }
+        if (str_starts_with($valor, 'p-')) {
+            return (int) substr($valor, 2);
+        }
+
+        return (int) $valor;
+    }
+
+    private function separarAlcance($valor): array
+    {
+        $valor = (string) $valor;
+        if ($valor === 'interno' || str_starts_with($valor, 'p-')) {
+            return ['interno', str_starts_with($valor, 'p-') ? (int) substr($valor, 2) : 0];
+        }
+        if (str_starts_with($valor, 'g-')) {
+            return ['gerencia', (int) substr($valor, 2)];
+        }
+
+        return ['gerencia', (int) $valor];
+    }
+
+    private function columnaAlcance(string $alcance): string
+    {
+        return $alcance === 'interno' ? 'PresupuestoInternoID' : 'GerenciaID';
     }
 
     private function insumosDelPresupuesto(int $presupuestoId)

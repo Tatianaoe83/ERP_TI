@@ -15,7 +15,10 @@
             <div class="row crud-form">
                 <div class="col-sm-8">
                     <label for="Nombre">Nombre</label>
-                    <input type="text" name="Nombre" id="Nombre" class="form-control" maxlength="150" required value="{{ old('Nombre') }}" placeholder="Ej. G601 TI DIRECCION ADM Y FINANZAS">
+                    <input type="text" name="Nombre" id="Nombre" class="form-control" maxlength="150" required value="{{ old('Nombre') }}" placeholder="Ej. G601 TI DIRECCION ADM Y FINANZAS" @error('Nombre') style="border-color:#f87171;" @enderror>
+                    @error('Nombre')
+                        <p role="alert" style="margin:.45rem 0 0;color:#fca5a5;font-size:.85rem;font-weight:600;">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="col-sm-4 d-flex align-items-end">
                     <button type="submit" class="index-page__btn-primary">Agregar</button>

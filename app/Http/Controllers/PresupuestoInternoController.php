@@ -6,7 +6,9 @@ use App\Models\Empleados;
 use App\Models\PresupuestoInterno;
 use Flash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PresupuestoInternoController extends AppBaseController
 {
@@ -66,15 +68,24 @@ class PresupuestoInternoController extends AppBaseController
             'Nombre' => mb_strtoupper(trim((string) $request->input('Nombre')), 'UTF-8'),
         ]);
 
-        $datos = $request->validate([
+        $validator = Validator::make($request->all(), [
             'Nombre' => [
                 'required',
                 'string',
                 'max:150',
                 Rule::unique('presupuestos_internos', 'Nombre')->ignore($id, 'PresupuestoInternoID')->whereNull('deleted_at'),
             ],
+        ], [
+            'Nombre.required' => 'Escribe el nombre del presupuesto interno.',
+            'Nombre.max' => 'El nombre no puede pasar de 150 caracteres.',
+            'Nombre.unique' => 'Ese presupuesto interno ya existe. No se puede agregar otro con el mismo nombre.',
         ]);
 
-        return ['Nombre' => $datos['Nombre']];
+        if ($validator->fails()) {
+            Flash::error($validator->errors()->first('Nombre'));
+            throw new ValidationException($validator);
+        }
+
+        return ['Nombre' => $validator->validated()['Nombre']];
     }
 }

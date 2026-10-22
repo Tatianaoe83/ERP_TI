@@ -111,7 +111,7 @@
 <x-index-page
     title="Actualizaciones"
     icon="fa-sync-alt"
-    subtitle="TI tiene a la gente de Capital Humano. Inventario asigna las altas y traspasa las bajas."
+    subtitle="TI ve las altas y bajas de Capital Humano. El presupuesto interno se asigna aquí."
     :show-count="false"
     :card="false"
 >
@@ -189,7 +189,7 @@
                 <span class="act-panel__icon" aria-hidden="true"><i class="fas fa-user-plus"></i></span>
                 <div>
                     <h2>Se agregó</h2>
-                    <p>Ya están en TI y todavía no tienen inventario. Aquí se hace la asignación.</p>
+                    <p>Ya están en TI. Asigna el presupuesto interno y, si aplica, el inventario.</p>
                 </div>
             </div>
             <div class="index-page__table-wrap table-responsive">
@@ -199,6 +199,7 @@
                             <th>Empleado</th>
                             <th>Fecha</th>
                             <th>Detalle</th>
+                            <th>Presupuesto interno</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -209,6 +210,22 @@
                                 <td>{{ optional($alta->fecha)->format('d/m/Y') }}</td>
                                 <td>{{ $alta->resumen }}</td>
                                 <td>
+                                    @if($alta->empleado_ti_id && auth()->user()->can('editar-empleados'))
+                                        <form method="POST" action="{{ route('actualizaciones.presupuesto', $alta->empleado_ti_id) }}" style="display:flex;gap:.4rem;align-items:center;min-width:16rem;">
+                                            @csrf
+                                            <select name="PresupuestoInternoID" class="form-control" data-no-select2>
+                                                <option value="">Sin presupuesto interno</option>
+                                                @foreach ($presupuestos as $presupuesto)
+                                                    <option value="{{ $presupuesto->PresupuestoInternoID }}" {{ (string) optional($alta->empleado)->PresupuestoInternoID === (string) $presupuesto->PresupuestoInternoID ? 'selected' : '' }}>{{ $presupuesto->Nombre }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit" class="index-page__btn-primary">Guardar</button>
+                                        </form>
+                                    @else
+                                        {{ optional(optional($alta->empleado)->presupuestoInterno)->Nombre ?: '—' }}
+                                    @endif
+                                </td>
+                                <td>
                                     @if($alta->empleado_ti_id)
                                         <a href="{{ route('inventarios.inventario', $alta->empleado_ti_id) }}" class="index-page__btn-secondary">Asignar inventario</a>
                                     @endif
@@ -216,7 +233,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4">No hay personas nuevas por asignar.</td>
+                                <td colspan="5">No hay personas nuevas por asignar.</td>
                             </tr>
                         @endforelse
                     </tbody>

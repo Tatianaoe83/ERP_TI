@@ -1091,7 +1091,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261015f">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022c">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1105,7 +1105,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261015f">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022c">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1206,13 +1206,39 @@
             });
         }
 
+        function cerrarListas() {
+            if (window.jQuery && jQuery.fn && typeof jQuery.fn.select2 === 'function') {
+                jQuery('select.select2-hidden-accessible').each(function () {
+                    try { jQuery(this).select2('close'); } catch (e) {}
+                });
+            }
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+        }
+
+        function avisar(tipo, titulo, mensaje) {
+            cerrarListas();
+            if (!window.iziToast || typeof iziToast[tipo] !== 'function') {
+                window.alert((titulo ? titulo + '. ' : '') + (mensaje || ''));
+                return;
+            }
+            iziToast[tipo]({ title: titulo, message: mensaje || '' });
+        }
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function () { mostrar(document); });
         } else {
             mostrar(document);
         }
 
-        return { mostrar: mostrar };
+        return {
+            mostrar: mostrar,
+            ok: function (mensaje, titulo) { avisar('success', titulo || 'Listo', mensaje); },
+            fallo: function (mensaje, titulo) { avisar('error', titulo || 'No se pudo', mensaje); },
+            aviso: function (mensaje, titulo) { avisar('info', titulo || 'Aviso', mensaje); },
+            cuidado: function (mensaje, titulo) { avisar('warning', titulo || 'Atención', mensaje); }
+        };
     })();
 </script>
 <script src="{{ mix('assets/js/select2.min.js') }}"></script>

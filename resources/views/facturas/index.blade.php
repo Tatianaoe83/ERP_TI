@@ -241,9 +241,13 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Presupuesto interno <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <select id="fdGerencia" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
+                            <select id="fdGerencia" data-no-select2="1" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
                                 <option value="">Seleccione presupuesto interno</option>
-                                @if(isset($gerencias)) @foreach($gerencias as $gerencia) <option value="{{ $gerencia->id }}">{{ $gerencia->nombre }}</option> @endforeach @endif
+                                @if(isset($gerencias))
+                                    @foreach($gerencias as $gerencia)
+                                        <option value="{{ $gerencia->id }}">{{ $gerencia->nombre }}</option>
+                                    @endforeach
+                                @endif
                             </select>
                             <i class="fas fa-chevron-down text-xs text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                         </div>
@@ -253,11 +257,13 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Insumo <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <select id="fdInsumoSelect" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
+                            <select id="fdInsumoSelect" data-no-select2="1" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
                                 <option value="">Seleccione insumo</option>
                             </select>
                             <i class="fas fa-chevron-down text-xs text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                         </div>
+                        <input type="text" id="fdInsumoNuevo" placeholder="Nombre del insumo nuevo" class="fd-insumo-nuevo hidden mt-2 w-full h-10 px-4 text-sm rounded-lg outline-none">
+                        <p id="fdAvisoDesviacion" class="hidden mt-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-300"></p>
                         <p id="errFdInsumo" class="hidden mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Seleccione un insumo</p>
                     </div>
 
@@ -274,7 +280,7 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Mes</label>
                         <div class="relative">
-                            <select id="fdMes" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
+                            <select id="fdMes" data-no-select2="1" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
                                 <option value="">Sin mes</option>
                                 <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
                                 <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
@@ -408,7 +414,38 @@
 
     let openDropdownIdx = null;
 
-    function abrirModal() { resetModal(); $('modalFacturaDirecta').classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+    function llevarModalAPantalla(id) {
+        const nodos = document.querySelectorAll('#' + id);
+        let modal = nodos[nodos.length - 1];
+        for (let i = 0; i < nodos.length - 1; i++) nodos[i].remove();
+        if (!modal) return null;
+        if (modal.parentElement !== document.body) document.body.appendChild(modal);
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '100000';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.margin = '0';
+        return modal;
+    }
+    window.llevarModalAPantalla = llevarModalAPantalla;
+
+    function liberarSelectModal(id) {
+        const el = $(id);
+        if (!el) return;
+        el.setAttribute('data-no-select2', '1');
+        if (window.jQuery && jQuery(el).hasClass('select2-hidden-accessible')) {
+            jQuery(el).select2('destroy');
+        }
+    }
+
+    function abrirModal() {
+        resetModal();
+        ['fdGerencia', 'fdInsumoSelect', 'fdMes'].forEach(liberarSelectModal);
+        const modal = llevarModalAPantalla('modalFacturaDirecta');
+        if (modal) modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
     function cerrarModal() { $('modalFacturaDirecta').classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
 
     function resetModal() {
@@ -423,6 +460,10 @@
         // Cargar insumos vacíos
         const sel = $('fdInsumoSelect');
         if (sel) sel.innerHTML = '<option value="">Seleccione insumo</option>';
+        const nuevo = $('fdInsumoNuevo');
+        if (nuevo) { nuevo.value = ''; nuevo.classList.add('hidden'); }
+        const aviso = $('fdAvisoDesviacion');
+        if (aviso) { aviso.textContent = ''; aviso.classList.add('hidden'); }
     }
 
     function resetZonaXml() {
@@ -437,23 +478,55 @@
         $('iconoPdf').innerHTML = '<i class="fas fa-file-pdf text-slate-400 group-hover:text-emerald-500 transition-colors"></i>';
     }
 
+    function mostrarAvisoDesviacion(texto) {
+        const aviso = $('fdAvisoDesviacion');
+        if (!aviso) return;
+        if (!texto) {
+            aviso.textContent = '';
+            aviso.classList.add('hidden');
+            return;
+        }
+        aviso.textContent = texto;
+        aviso.classList.remove('hidden');
+    }
+
     async function cargarInsumosPorGerencia(gerenciaID) {
+        const sel = $('fdInsumoSelect');
+        const nuevo = $('fdInsumoNuevo');
         if (!gerenciaID) {
-            $('fdInsumoSelect').innerHTML = '<option value="">Seleccione insumo</option>';
+            sel.innerHTML = '<option value="">Seleccione insumo</option>';
+            sel.dataset.tienePresupuesto = '';
+            if (nuevo) { nuevo.value = ''; nuevo.classList.add('hidden'); }
+            mostrarAvisoDesviacion('');
             return;
         }
 
         try {
-            const res = await fetch('{{ route("facturas.getInsumosPorGerencia") }}?gerenciaID=' + gerenciaID, {
+            const anio = $('fdAnio') ? $('fdAnio').value : '';
+            const res = await fetch('{{ route("facturas.getInsumosPorGerencia") }}?gerenciaID=' + encodeURIComponent(gerenciaID) + (anio ? '&anio=' + encodeURIComponent(anio) : ''), {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             const data = await res.json();
             const insumos = data.data || [];
-            let html = '<option value="">Seleccione insumo</option>';
+            const tiene = !!data.tiene_presupuesto;
+            sel.dataset.tienePresupuesto = tiene ? '1' : '0';
+            if (nuevo) { nuevo.value = ''; }
+
+            if (!tiene) {
+                sel.innerHTML = '<option value="__nuevo__">Insumo sin presupuesto</option>';
+                if (nuevo) nuevo.classList.remove('hidden');
+                mostrarAvisoDesviacion('Este presupuesto interno no tiene corte en este año. Todo lo que subas es desviación.');
+                return;
+            }
+
+            let html = '<option value="">Seleccione insumo del corte</option>';
             insumos.forEach(nombre => {
                 html += `<option value="${nombre}">${nombre}</option>`;
             });
-            $('fdInsumoSelect').innerHTML = html;
+            html += '<option value="__nuevo__">Agregar insumo (desviación)</option>';
+            sel.innerHTML = html;
+            if (nuevo) nuevo.classList.add('hidden');
+            mostrarAvisoDesviacion('');
         } catch (e) {
             console.error('Error cargando insumos:', e);
         }
@@ -572,21 +645,8 @@
             wrap.classList.remove('hidden');
             wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-        if (typeof Swal !== 'undefined' && Swal.fire) {
-            Swal.fire({
-                icon: 'error',
-                title: 'No se puede guardar',
-                text: mensaje,
-                confirmButtonColor: '#e11d48',
-                customClass: { container: 'swal2-on-modal' },
-            });
-        } else if (typeof swal !== 'undefined') {
-            swal('Error', mensaje, 'error');
-        } else if (typeof iziToast !== 'undefined') {
-            iziToast.error({ title: 'Error', message: mensaje, position: 'topCenter', timeout: 9000 });
-        } else {
-            window.alert(mensaje);
-        }
+        if (window.AppAlert) window.AppAlert.fallo(mensaje);
+        else window.alert(mensaje);
     }
 
     function validar() {
@@ -607,7 +667,8 @@
         }
         if (!$('fdNombre').value.trim()) { show('errFdNombre'); ok = false; }
         if (!$('fdGerencia').value) { show('errFdGerencia'); ok = false; }
-        if (!$('fdInsumoSelect').value) { show('errFdInsumo'); ok = false; }
+        const insumoSel = $('fdInsumoSelect').value;
+        if (!insumoSel || (insumoSel === '__nuevo__' && !$('fdInsumoNuevo').value.trim())) { show('errFdInsumo'); ok = false; }
         if (!$('fdCosto').value || parseFloat($('fdCosto').value) < 0) { show('errFdCosto'); ok = false; }
         return ok;
     }
@@ -623,7 +684,8 @@
         form.append('_token', '{{ csrf_token() }}');
         form.append('Nombre', $('fdNombre').value.trim());
         form.append('GerenciaID', $('fdGerencia').value);
-        form.append('InsumoNombre', $('fdInsumoSelect').value);
+        const insumoSel = $('fdInsumoSelect').value;
+        form.append('InsumoNombre', insumoSel === '__nuevo__' ? $('fdInsumoNuevo').value.trim() : insumoSel);
         const monto = $('fdCosto').value || '';
         form.append('Costo', monto);
         form.append('Importe', monto);
@@ -645,25 +707,10 @@
             try { data = await res.json(); } catch (_) {}
             if (!res.ok) {
                 const fromErrors = data.errors ? Object.values(data.errors).flat().filter(Boolean).join(' ') : '';
-                throw new Error(data.message || data.error || fromErrors || 'No se pudo guardar la factura.');
+                throw new Error(fromErrors || data.message || data.error || 'No se pudo guardar la factura.');
             }
             cerrarModal();
-            if (typeof Swal !== 'undefined' && Swal.fire) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Factura guardada',
-                    text: 'La factura fue registrada correctamente.',
-                    timer: 3000,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end',
-                    background: '#f9fafb',
-                    color: '#1e293b',
-                    customClass: { container: 'swal2-on-modal' },
-                });
-            } else if (typeof iziToast !== 'undefined') {
-                iziToast.success({ title: 'OK', message: 'Factura registrada correctamente.', position: 'topRight', timeout: 3500 });
-            }
+            if (window.AppAlert) window.AppAlert.ok('La factura fue registrada correctamente.', 'Factura guardada');
             if (window.jQuery && window.jQuery('#facturasTable').length) window.jQuery('#facturasTable').DataTable().ajax.reload(null, false);
             if (typeof window.reloadComparativaFromGlobal === 'function') window.reloadComparativaFromGlobal();
         } catch (e) {
@@ -728,6 +775,26 @@
         $('fdGerencia').addEventListener('change', async function () {
             await cargarInsumosPorGerencia(this.value);
         });
+        $('fdInsumoSelect').addEventListener('change', function () {
+            const nuevo = $('fdInsumoNuevo');
+            if (!nuevo) return;
+            const sinPresupuesto = this.dataset.tienePresupuesto === '0';
+            if (this.value === '__nuevo__') {
+                nuevo.classList.remove('hidden');
+                mostrarAvisoDesviacion(sinPresupuesto
+                    ? 'Este presupuesto interno no tiene corte en este año. Todo lo que subas es desviación.'
+                    : 'Este insumo no está en el corte. Se cuenta como desviación.');
+            } else {
+                nuevo.value = '';
+                nuevo.classList.add('hidden');
+                mostrarAvisoDesviacion('');
+            }
+        });
+        if ($('fdAnio')) {
+            $('fdAnio').addEventListener('change', async function () {
+                if ($('fdGerencia').value) await cargarInsumosPorGerencia($('fdGerencia').value);
+            });
+        }
 
         $('inputXml').addEventListener('change', async function () { await handleXmlFile(this.files[0]); });
         setupDragDrop('zonaXml', async file => { $('inputXml').value = ''; await handleXmlFile(file); });

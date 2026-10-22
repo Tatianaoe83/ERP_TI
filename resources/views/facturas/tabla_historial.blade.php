@@ -278,7 +278,7 @@ text-align: right;
 
     const GERENCIA_MAP = {
         @foreach($gerencia as $id => $nombre)
-            @if($id !== ''){{ $id }}: @json($nombre),@endif
+            @if($id !== '')@json((string) $id): @json($nombre),@endif
         @endforeach
     };
 
