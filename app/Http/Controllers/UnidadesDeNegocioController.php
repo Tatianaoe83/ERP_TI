@@ -75,7 +75,7 @@ class UnidadesDeNegocioController extends AppBaseController
 
         $unidadesDeNegocio = $this->unidadesDeNegocioRepository->create($input);
 
-        Flash::success('Unidades De Negocio saved successfully.');
+        Flash::success('Unidad de negocio guardada.');
 
         return redirect(route('unidadesDeNegocios.index'));
     }
@@ -93,7 +93,7 @@ class UnidadesDeNegocioController extends AppBaseController
         $unidadesDeNegocio = $this->unidadesDeNegocioRepository->find($id);
 
         if (empty($unidadesDeNegocio)) {
-            Flash::error('Unidades De Negocio not found');
+            Flash::error('Unidad de negocio no encontrada');
 
             return redirect(route('unidadesDeNegocios.index'));
         }
@@ -113,7 +113,7 @@ class UnidadesDeNegocioController extends AppBaseController
         $unidadesDeNegocio = $this->unidadesDeNegocioRepository->find($id);
 
         if (empty($unidadesDeNegocio)) {
-            Flash::error('Unidades De Negocio not found');
+            Flash::error('Unidad de negocio no encontrada');
 
             return redirect(route('unidadesDeNegocios.index'));
         }
@@ -134,14 +134,14 @@ class UnidadesDeNegocioController extends AppBaseController
         $unidadesDeNegocio = $this->unidadesDeNegocioRepository->find($id);
 
         if (empty($unidadesDeNegocio)) {
-            Flash::error('Unidades De Negocio not found');
+            Flash::error('Unidad de negocio no encontrada');
 
             return redirect(route('unidadesDeNegocios.index'));
         }
 
         $unidadesDeNegocio = $this->unidadesDeNegocioRepository->update($request->all(), $id);
 
-        Flash::success('Unidades De Negocio updated successfully.');
+        Flash::success('Unidad de negocio actualizada.');
 
         return redirect(route('unidadesDeNegocios.index'));
     }
@@ -158,14 +158,14 @@ class UnidadesDeNegocioController extends AppBaseController
         $unidadesDeNegocio = $this->unidadesDeNegocioRepository->find($id);
 
         if (empty($unidadesDeNegocio)) {
-            Flash::error('Unidades De Negocio not found');
+            Flash::error('Unidad de negocio no encontrada');
 
             return redirect(route('unidadesDeNegocios.index'));
         }
 
         $this->unidadesDeNegocioRepository->delete($id);
 
-        Flash::success('Unidades De Negocio deleted successfully.');
+        Flash::success('Unidad de negocio borrada.');
 
         return redirect(route('unidadesDeNegocios.index'));
     }

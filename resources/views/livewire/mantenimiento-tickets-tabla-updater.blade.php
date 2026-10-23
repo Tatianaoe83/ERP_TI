@@ -91,24 +91,24 @@
                         <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ $ticket['categoria'] ?? '-' }}</td>
                         <td class="px-4 py-3">
                             @if(!empty($ticket['prioridad']))
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                @if($ticket['prioridad'] == 'Baja') text-green-700 bg-green-100
-                                @elseif($ticket['prioridad'] == 'Media') text-yellow-700 bg-yellow-100
-                                @elseif($ticket['prioridad'] == 'Alta') text-red-700 bg-red-100
-                                @else text-red-800 bg-red-200
+                            <span class="erp-chip
+                                @if($ticket['prioridad'] == 'Baja') erp-chip--ok
+                                @elseif($ticket['prioridad'] == 'Media') erp-chip--aviso
+                                @elseif($ticket['prioridad'] == 'Alta') erp-chip--alerta
+                                @else erp-chip--neutro
                                 @endif">{{ $ticket['prioridad'] }}</span>
                             @else
-                            <span class="text-xs text-gray-400">Sin prioridad</span>
+                            <span class="erp-chip erp-chip--neutro">Sin prioridad</span>
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                @if($ticket['estatus'] == 'Pendiente') text-yellow-700 bg-yellow-100
-                                @elseif($ticket['estatus'] == 'En proceso') text-blue-700 bg-blue-100
-                                @elseif($ticket['estatus'] == 'Atendido') text-green-700 bg-green-100
-                                @elseif($ticket['estatus'] == 'Pausado') text-orange-700 bg-orange-100
-                                @elseif($ticket['estatus'] == 'Cancelado') text-gray-700 bg-gray-200
-                                @else text-gray-700 bg-gray-100
+                            <span class="erp-chip
+                                @if($ticket['estatus'] == 'Pendiente') erp-chip--aviso
+                                @elseif($ticket['estatus'] == 'En proceso') erp-chip--info
+                                @elseif($ticket['estatus'] == 'Atendido') erp-chip--ok
+                                @elseif($ticket['estatus'] == 'Pausado') erp-chip--acento
+                                @elseif($ticket['estatus'] == 'Cancelado') erp-chip--alerta
+                                @else erp-chip--neutro
                                 @endif">{{ $ticket['estatus'] }}</span>
                         </td>
                         <td class="px-4 py-3 min-w-[180px]">

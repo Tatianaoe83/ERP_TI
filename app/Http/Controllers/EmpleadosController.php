@@ -65,7 +65,7 @@ class EmpleadosController extends AppBaseController
 
         $empleados = $this->empleadosRepository->create($input);
 
-        Flash::success('Empleados saved successfully.');
+        Flash::success('Empleado guardado.');
 
         return redirect(route('empleados.index'));
     }
@@ -82,7 +82,7 @@ class EmpleadosController extends AppBaseController
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            Flash::error('Empleado no encontrado');
 
             return redirect(route('empleados.index'));
         }
@@ -102,7 +102,7 @@ class EmpleadosController extends AppBaseController
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            Flash::error('Empleado no encontrado');
 
             return redirect(route('empleados.index'));
         }
@@ -126,14 +126,14 @@ class EmpleadosController extends AppBaseController
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            Flash::error('Empleado no encontrado');
 
             return redirect(route('empleados.index'));
         }
 
         $empleados = $this->empleadosRepository->update($request->all(), $id);
 
-        Flash::success('Empleados updated successfully.');
+        Flash::success('Empleado actualizado.');
 
         return redirect(route('empleados.index'));
     }

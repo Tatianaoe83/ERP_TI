@@ -181,7 +181,7 @@ class InsumosController extends AppBaseController
         $insumos = $this->insumosRepository->find($id);
 
         if (empty($insumos)) {
-            Flash::error('Insumos not found');
+            Flash::error('Insumo no encontrado');
 
             return redirect(route('insumos.index'));
         }
@@ -201,7 +201,7 @@ class InsumosController extends AppBaseController
         $insumos = $this->insumosRepository->find($id);
         
         if (empty($insumos)) {
-            Flash::error('Insumos not found');
+            Flash::error('Insumo no encontrado');
 
             return redirect(route('insumos.index'));
         }
@@ -229,7 +229,7 @@ class InsumosController extends AppBaseController
         $insumos = $this->insumosRepository->find($id);
 
         if (empty($insumos)) {
-            Flash::error('Insumos not found');
+            Flash::error('Insumo no encontrado');
 
             return redirect(route('insumos.index'));
         }
@@ -339,14 +339,14 @@ class InsumosController extends AppBaseController
         $insumos = $this->insumosRepository->find($id);
 
         if (empty($insumos)) {
-            Flash::error('Insumos not found');
+            Flash::error('Insumo no encontrado');
 
             return redirect(route('insumos.index'));
         }
 
         $this->insumosRepository->delete($id);
 
-        Flash::success('Insumos deleted successfully.');
+        Flash::success('Insumo borrado.');
 
         return redirect(route('insumos.index'));
     }

@@ -194,7 +194,7 @@ class LineasTelefonicasController extends AppBaseController
 
         try {
             $lineasTelefonicas = $this->lineasTelefonicasRepository->create($input);
-            Flash::success('Linea telefonica guardada correctamente');
+            Flash::success('Línea telefónica guardada.');
         } catch (QueryException $e) {
             if ($e->getCode() == 23000) {
                 session()->flash('swal', [
@@ -227,7 +227,7 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
@@ -247,7 +247,7 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
@@ -268,7 +268,7 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
@@ -431,14 +431,14 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
 
         $this->lineasTelefonicasRepository->delete($id);
 
-        Flash::success('Lineas Telefonicas deleted successfully.');
+        Flash::success('Línea telefónica borrada.');
 
         return redirect(route('lineasTelefonicas.index'));
     }

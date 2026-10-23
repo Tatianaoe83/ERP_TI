@@ -516,7 +516,7 @@ class CortesController extends AppBaseController
     {
         $cortes = $this->cortesRepository->find($id);
         if (empty($cortes)) {
-            Flash::error('Cortes not found');
+            Flash::error('Corte no encontrado');
             return redirect(route('cortes.index'));
         }
         return view('cortes.show')->with('cortes', $cortes);
@@ -526,7 +526,7 @@ class CortesController extends AppBaseController
     {
         $cortes = $this->cortesRepository->find($id);
         if (empty($cortes)) {
-            Flash::error('Cortes not found');
+            Flash::error('Corte no encontrado');
             return redirect(route('cortes.index'));
         }
         return view('cortes.edit')->with('cortes', $cortes);
@@ -536,11 +536,11 @@ class CortesController extends AppBaseController
     {
         $cortes = $this->cortesRepository->find($id);
         if (empty($cortes)) {
-            Flash::error('Cortes not found');
+            Flash::error('Corte no encontrado');
             return redirect(route('cortes.index'));
         }
         $this->cortesRepository->update($request->all(), $id);
-        Flash::success('Cortes updated successfully.');
+        Flash::success('Corte actualizado.');
         return redirect(route('cortes.index'));
     }
 
@@ -548,11 +548,11 @@ class CortesController extends AppBaseController
     {
         $cortes = $this->cortesRepository->find($id);
         if (empty($cortes)) {
-            Flash::error('Cortes not found');
+            Flash::error('Corte no encontrado');
             return redirect(route('cortes.index'));
         }
         $this->cortesRepository->delete($id);
-        Flash::success('Cortes deleted successfully.');
+        Flash::success('Corte borrado.');
         return redirect(route('cortes.index'));
     }
 

@@ -241,7 +241,7 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Presupuesto interno <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <select id="fdGerencia" data-no-select2="1" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
+                            <select id="fdGerencia" class="w-full h-10 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                                 <option value="">Seleccione presupuesto interno</option>
                                 @if(isset($gerencias))
                                     @foreach($gerencias as $gerencia)
@@ -257,7 +257,7 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Insumo <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <select id="fdInsumoSelect" data-no-select2="1" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
+                            <select id="fdInsumoSelect" class="w-full h-10 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                                 <option value="">Seleccione insumo</option>
                             </select>
                             <i class="fas fa-chevron-down text-xs text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
@@ -280,7 +280,7 @@
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Mes</label>
                         <div class="relative">
-                            <select id="fdMes" data-no-select2="1" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
+                            <select id="fdMes" class="w-full h-10 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                                 <option value="">Sin mes</option>
                                 <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
                                 <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
@@ -430,21 +430,23 @@
     }
     window.llevarModalAPantalla = llevarModalAPantalla;
 
-    function liberarSelectModal(id) {
-        const el = $(id);
-        if (!el) return;
-        el.setAttribute('data-no-select2', '1');
-        if (window.jQuery && jQuery(el).hasClass('select2-hidden-accessible')) {
-            jQuery(el).select2('destroy');
+    function refrescarSelect(el) {
+        if (el && window.jQuery && jQuery(el).hasClass('select2-hidden-accessible')) {
+            jQuery(el).trigger('change.select2');
         }
     }
 
     function abrirModal() {
         resetModal();
-        ['fdGerencia', 'fdInsumoSelect', 'fdMes'].forEach(liberarSelectModal);
         const modal = llevarModalAPantalla('modalFacturaDirecta');
         if (modal) modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
+        if (window.jQuery && modal) {
+            jQuery(modal).find('select.select2-hidden-accessible').each(function () {
+                try { jQuery(this).select2('destroy'); } catch (e) {}
+            });
+        }
+        if (window.iniciarSelects && modal) window.iniciarSelects(modal);
     }
     function cerrarModal() { $('modalFacturaDirecta').classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
 
@@ -453,13 +455,17 @@
         revocarPdfPreview();
         ['inputXml','inputPdf'].forEach(id => { if ($(id)) $(id).value = ''; });
         ['fdNombre','fdGerencia','fdCosto','fdMes','fdAnio','fdInsumoSelect'].forEach(id => { if ($(id)) $(id).value = ''; });
+        ['fdGerencia','fdMes','fdInsumoSelect'].forEach(id => refrescarSelect($(id)));
         ['spinnerXml','spinnerPdf','errorXml','errorPdf','errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','avisoPdfExtranjero','errFdGuardar','errFdArchivo'].forEach(hide);
         // Habilitar el campo año nuevamente
         if ($('fdAnio')) $('fdAnio').disabled = false;
         resetZonaXml(); resetZonaPdf();
         // Cargar insumos vacíos
         const sel = $('fdInsumoSelect');
-        if (sel) sel.innerHTML = '<option value="">Seleccione insumo</option>';
+        if (sel) {
+            sel.innerHTML = '<option value="">Seleccione insumo</option>';
+            refrescarSelect(sel);
+        }
         const nuevo = $('fdInsumoNuevo');
         if (nuevo) { nuevo.value = ''; nuevo.classList.add('hidden'); }
         const aviso = $('fdAvisoDesviacion');
@@ -493,8 +499,9 @@
     async function cargarInsumosPorGerencia(gerenciaID) {
         const sel = $('fdInsumoSelect');
         const nuevo = $('fdInsumoNuevo');
-        if (!gerenciaID) {
+            if (!gerenciaID) {
             sel.innerHTML = '<option value="">Seleccione insumo</option>';
+            refrescarSelect(sel);
             sel.dataset.tienePresupuesto = '';
             if (nuevo) { nuevo.value = ''; nuevo.classList.add('hidden'); }
             mostrarAvisoDesviacion('');
@@ -514,6 +521,7 @@
 
             if (!tiene) {
                 sel.innerHTML = '<option value="__nuevo__">Insumo sin presupuesto</option>';
+                refrescarSelect(sel);
                 if (nuevo) nuevo.classList.remove('hidden');
                 mostrarAvisoDesviacion('Este presupuesto interno no tiene corte en este año. Todo lo que subas es desviación.');
                 return;
@@ -525,6 +533,7 @@
             });
             html += '<option value="__nuevo__">Agregar insumo (desviación)</option>';
             sel.innerHTML = html;
+            refrescarSelect(sel);
             if (nuevo) nuevo.classList.add('hidden');
             mostrarAvisoDesviacion('');
         } catch (e) {
@@ -540,7 +549,10 @@
             const t = parseFloat(data.total);
             if (!isNaN(t)) $('fdCosto').value = t.toFixed(2);
         }
-        if (data.mes) $('fdMes').value = data.mes;
+        if (data.mes) {
+            $('fdMes').value = data.mes;
+            refrescarSelect($('fdMes'));
+        }
         if (data.anio) $('fdAnio').value = data.anio;
         
         if (origen === 'xml' && data.anio) {

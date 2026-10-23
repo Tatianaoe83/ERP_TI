@@ -273,7 +273,7 @@ class InventarioController extends AppBaseController
 
         $inventario = $this->inventarioRepository->create($input);
 
-        Flash::success('Inventario saved successfully.');
+        Flash::success('Inventario guardado.');
 
         return redirect(route('inventarios.index'));
     }
@@ -290,7 +290,7 @@ class InventarioController extends AppBaseController
         $inventario = $this->inventarioRepository->find($id);
 
         if (empty($inventario)) {
-            Flash::error('Inventario not found');
+            Flash::error('Inventario no encontrado');
 
             return redirect(route('inventarios.index'));
         }

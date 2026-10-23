@@ -213,7 +213,7 @@
                                     @if($alta->empleado_ti_id && auth()->user()->can('editar-empleados'))
                                         <form method="POST" action="{{ route('actualizaciones.presupuesto', $alta->empleado_ti_id) }}" style="display:flex;gap:.4rem;align-items:center;min-width:16rem;">
                                             @csrf
-                                            <select name="PresupuestoInternoID" class="form-control" data-no-select2>
+                                            <select name="PresupuestoInternoID" class="form-control">
                                                 <option value="">Sin presupuesto interno</option>
                                                 @foreach ($presupuestos as $presupuesto)
                                                     <option value="{{ $presupuesto->PresupuestoInternoID }}" {{ (string) optional($alta->empleado)->PresupuestoInternoID === (string) $presupuesto->PresupuestoInternoID ? 'selected' : '' }}>{{ $presupuesto->Nombre }}</option>

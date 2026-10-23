@@ -120,22 +120,22 @@
                         <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $categoria }}</td>
 
                         <td class="px-4 py-3">
-                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full
-                                @if($ticket->Prioridad == 'Baja') bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-900/30 dark:text-green-300
-                                @elseif($ticket->Prioridad == 'Media') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300
-                                @elseif(empty($ticket->Prioridad)) bg-gray-100 text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300
-                                @else bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-300
+                            <span class="erp-chip
+                                @if($ticket->Prioridad == 'Baja') erp-chip--ok
+                                @elseif($ticket->Prioridad == 'Media') erp-chip--aviso
+                                @elseif(empty($ticket->Prioridad)) erp-chip--neutro
+                                @else erp-chip--alerta
                                 @endif">
-                                {{ $ticket->Prioridad ?? 'Sin Prioridad' }}
+                                {{ $ticket->Prioridad ?? 'Sin prioridad' }}
                             </span>
                         </td>
 
                         <td class="px-4 py-3">
-                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full
-                                @if($estadoActual == 'Pendiente') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300
-                                @elseif($estadoActual == 'En progreso') bg-blue-100 text-blue-800 ring-1 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300
-                                @elseif($estadoActual == 'Cerrado') bg-green-100 text-green-800 ring-1 ring-green-200 dark:bg-green-900/30 dark:text-green-300
-                                @else bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300
+                            <span class="erp-chip
+                                @if($estadoActual == 'Pendiente') erp-chip--aviso
+                                @elseif($estadoActual == 'En progreso') erp-chip--info
+                                @elseif($estadoActual == 'Cerrado') erp-chip--ok
+                                @else erp-chip--neutro
                                 @endif">
                                 {{ $estadoActual }}
                             </span>

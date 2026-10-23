@@ -833,50 +833,6 @@
         html.dark .kpi-chip--en_tiempo * {
             color: #93c5fd !important;
         }
-        html.dark .sol-status.bg-white {
-            background: rgba(88, 28, 135, 0.4) !important;
-            color: #e9d5ff !important;
-            border-color: rgba(168, 85, 247, 0.45) !important;
-        }
-
-        .sol-status {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            line-height: 1.2;
-            border: 1px solid transparent;
-            white-space: nowrap;
-        }
-        html.dark .sol-status--revision {
-            background: rgba(88, 28, 135, 0.4) !important;
-            color: #e9d5ff !important;
-            border-color: rgba(168, 85, 247, 0.45) !important;
-        }
-        html.dark .sol-status--cancelada,
-        html.dark .sol-status--rechazada {
-            background: rgba(127, 29, 29, 0.45) !important;
-            color: #fecaca !important;
-            border-color: rgba(248, 113, 113, 0.4) !important;
-        }
-        html.dark .sol-status--pendiente,
-        html.dark .sol-status--default {
-            background: rgba(55, 65, 81, 0.7) !important;
-            color: #e5e7eb !important;
-            border-color: rgba(156, 163, 175, 0.35) !important;
-        }
-        html.dark .sol-status--aprobada {
-            background: rgba(6, 95, 70, 0.4) !important;
-            color: #6ee7b7 !important;
-            border-color: rgba(52, 211, 153, 0.35) !important;
-        }
-        html.dark .sol-status--enviadas {
-            background: rgba(30, 64, 175, 0.4) !important;
-            color: #93c5fd !important;
-            border-color: rgba(96, 165, 250, 0.4) !important;
-        }
         .sol-approvals {
             display: flex;
             align-items: center;
@@ -1091,7 +1047,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022l">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023c">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1105,7 +1061,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022l">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023c">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1290,29 +1246,42 @@
             }
         });
 
+        function selectOculto(el) {
+            var nodo = el;
+            while (nodo && nodo !== document.documentElement) {
+                if (nodo.nodeType === 1) {
+                    var estilo = window.getComputedStyle(nodo);
+                    if (estilo.display === 'none' || estilo.visibility === 'hidden') return true;
+                }
+                nodo = nodo.parentElement;
+            }
+            return false;
+        }
+
         window.iniciarSelects = function (root) {
             if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.select2 !== 'function') return;
             var $scope = root ? jQuery(root) : jQuery(document);
             $scope.find('select').addBack('select').each(function () {
                 var $el = jQuery(this);
-                if ($el.hasClass('select2-hidden-accessible') || $el.is('[data-no-select2]')) return;
-                if ($el.closest('template').length) return;
+                if ($el.closest('template').length || $el.children('template').length) return;
                 var size = parseInt($el.attr('size') || '0', 10);
                 if (size > 1) return;
-                var full = $el.hasClass('form-control') || $el.hasClass('jz1') || $el.hasClass('w-full');
+                if ($el.hasClass('select2-hidden-accessible')) {
+                    var $caja = $el.next('.select2-container');
+                    if (selectOculto(this) || !$caja.length || $caja.outerWidth() >= 8 || $el.data('erpSelectReintento')) return;
+                    $el.data('erpSelectReintento', 1);
+                    try { $el.select2('destroy'); } catch (e) { return; }
+                }
+                if (selectOculto(this)) return;
+                var full = $el.hasClass('form-control') || $el.hasClass('jz1') || $el.hasClass('w-full') || $el.hasClass('jz');
                 var compact = !full && ($el.hasClass('border-0') || $el.hasClass('bg-transparent'));
                 var opts = {
                     width: full ? '100%' : (compact ? (Math.max($el.outerWidth() || 0, 88) + 'px') : 'resolve'),
-                    minimumResultsForSearch: $el.find('option').length > 15 ? 0 : Infinity,
-                    dropdownAutoWidth: compact
+                    minimumResultsForSearch: $el.find('option').length > 12 ? 0 : Infinity,
+                    dropdownAutoWidth: compact,
+                    dropdownParent: jQuery(document.body)
                 };
                 if (compact) opts.containerCssClass = 'select2-compact';
-                if ($el.hasClass('jz1') && jQuery('#editModal').length) {
-                    opts.dropdownParent = jQuery('#editModal');
-                } else {
-                    var $modal = $el.closest('.modal');
-                    if ($modal.length) opts.dropdownParent = $modal;
-                }
                 $el.select2(opts);
                 $el.off('select2:select.erp select2:clear.erp').on('select2:select.erp select2:clear.erp', function () {
                     this.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1320,6 +1289,24 @@
                 });
             });
         };
+
+        document.addEventListener('focusin', function (e) {
+            var destino = e.target;
+            if (destino && destino.closest && destino.closest('.select2-container, .select2-dropdown, .select2-search')) {
+                e.stopImmediatePropagation();
+            }
+        }, true);
+
+        $(document).on('select2:open', function () {
+            window.setTimeout(function () {
+                var campo = document.querySelector('.select2-container--open .select2-search__field');
+                if (campo) campo.focus();
+            }, 0);
+        });
+
+        $(document).on('shown.bs.modal', function (e) {
+            window.iniciarSelects(e.target);
+        });
 
         $(document).ready(function () {
             window.iniciarSelects(document);
@@ -1329,8 +1316,13 @@
         var selectsObs = new MutationObserver(function (cambios) {
             var haySelect = false;
             cambios.forEach(function (cambio) {
+                if (cambio.type === 'attributes') {
+                    var nodoAttr = cambio.target;
+                    if (nodoAttr && nodoAttr.querySelector && nodoAttr.querySelector('select')) haySelect = true;
+                    return;
+                }
                 Array.prototype.forEach.call(cambio.addedNodes || [], function (nodo) {
-                    if (!haySelect && nodo.nodeType === 1 && nodo.tagName !== 'SPAN' && (nodo.tagName === 'SELECT' || (nodo.querySelector && nodo.querySelector('select:not(.select2-hidden-accessible)')))) {
+                    if (!haySelect && nodo.nodeType === 1 && nodo.tagName !== 'SPAN' && (nodo.tagName === 'SELECT' || nodo.tagName === 'OPTION' || (nodo.querySelector && nodo.querySelector('select:not(.select2-hidden-accessible)')))) {
                         haySelect = true;
                     }
                 });
@@ -1339,7 +1331,7 @@
             clearTimeout(selectsTimer);
             selectsTimer = setTimeout(function () { window.iniciarSelects(document); }, 80);
         });
-        selectsObs.observe(document.body, { childList: true, subtree: true });
+        selectsObs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
 
         $('#myTab a').on('click', function(e) {
             e.preventDefault();

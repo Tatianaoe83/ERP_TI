@@ -572,8 +572,16 @@ button:disabled {
     font-family: var(--erp-font) !important;
 }
 
-.select2-container--open {
-    z-index: 110000;
+.select2-container--open,
+.select2-container--open .select2-dropdown,
+.select2-dropdown {
+    z-index: 120000 !important;
+    pointer-events: auto !important;
+}
+
+.select2-search__field {
+    pointer-events: auto !important;
+    width: 100% !important;
 }
 
 .iziToast-wrapper {
@@ -1019,22 +1027,26 @@ html.dark .fixed.inset-0 > .relative.w-full,
 .modal-header,
 .metricas-modal__header,
 .tareas-modal__head,
-.erp-modal-panel__bar {
+.erp-modal-panel__bar,
+.fixed.inset-0 > .relative.flex > .flex-shrink-0,
+.fixed.inset-0 > .relative.w-full > .shrink-0:first-child {
     background: #ffffff !important;
-    color: #0f172a !important;
-    border-bottom: 1px solid rgba(217, 119, 6, 0.35) !important;
+    color: #0a1628 !important;
+    border-bottom: 1px solid rgba(0, 82, 204, 0.22) !important;
 }
 
 html.dark .modal-header,
 html.dark .metricas-modal__header,
 html.dark .tareas-modal__head,
 html.dark .erp-modal-panel__bar,
+html.dark .fixed.inset-0 > .relative.flex > .flex-shrink-0,
+html.dark .fixed.inset-0 > .relative.w-full > .shrink-0:first-child,
 .dark .modal-header,
 .dark .tareas-modal__head,
 .dark .metricas-modal__header {
-    background: rgba(15, 23, 42, 0.98) !important;
+    background: rgba(15, 29, 50, 0.98) !important;
     color: #f8fafc !important;
-    border-bottom: 1px solid rgba(245, 158, 11, 0.4) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .modal-title,
@@ -1432,4 +1444,145 @@ html.dark .header-user-menu {
     background: rgba(15, 29, 50, 0.96) !important;
     color: #f8fafc !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Pastillas de estatus, prioridad y rol: misma forma en todo el sistema. */
+.erp-chip,
+.sol-status,
+.index-badge,
+.index-page__card .badge {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0.22rem 0.72rem !important;
+    border-radius: 999px !important;
+    font-family: Inter, sans-serif;
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em;
+    line-height: 1.3 !important;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 1px solid rgba(10, 22, 40, 0.12) !important;
+    background: rgba(10, 22, 40, 0.05) !important;
+    color: #334155 !important;
+}
+
+.erp-chip--ok,
+.sol-status--aprobada,
+.sol-status--listo,
+.index-badge--success,
+.index-page__card .badge-success {
+    background: rgba(54, 179, 126, 0.14) !important;
+    color: #00875a !important;
+    border-color: rgba(54, 179, 126, 0.4) !important;
+}
+
+.erp-chip--aviso,
+.sol-status--pendiente,
+.sol-status--recotizar,
+.index-badge--warning,
+.index-page__card .badge-warning {
+    background: rgba(255, 171, 0, 0.16) !important;
+    color: #9a6700 !important;
+    border-color: rgba(255, 171, 0, 0.5) !important;
+}
+
+.erp-chip--alerta,
+.sol-status--cancelada,
+.sol-status--rechazada,
+.index-badge--danger,
+.index-page__card .badge-danger {
+    background: rgba(255, 86, 48, 0.12) !important;
+    color: #bf2600 !important;
+    border-color: rgba(255, 86, 48, 0.4) !important;
+}
+
+.erp-chip--info,
+.sol-status--enviadas {
+    background: rgba(0, 82, 204, 0.1) !important;
+    color: #0052cc !important;
+    border-color: rgba(0, 82, 204, 0.32) !important;
+}
+
+.erp-chip--acento,
+.sol-status--revision {
+    background: rgba(101, 84, 192, 0.12) !important;
+    color: #403294 !important;
+    border-color: rgba(101, 84, 192, 0.38) !important;
+}
+
+.erp-chip--neutro,
+.sol-status--default,
+.index-badge--muted,
+.index-badge--dark,
+.index-page__card .badge-secondary,
+.index-page__card .badge-dark {
+    background: rgba(10, 22, 40, 0.05) !important;
+    color: #334155 !important;
+    border-color: rgba(10, 22, 40, 0.16) !important;
+}
+
+html.dark .erp-chip,
+html.dark .sol-status,
+html.dark .index-badge,
+html.dark .index-page__card .badge {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #e8eef6 !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+html.dark .erp-chip--ok,
+html.dark .sol-status--aprobada,
+html.dark .sol-status--listo,
+html.dark .index-badge--success,
+html.dark .index-page__card .badge-success {
+    background: rgba(54, 179, 126, 0.16) !important;
+    color: #57d9a3 !important;
+    border-color: rgba(54, 179, 126, 0.45) !important;
+}
+
+html.dark .erp-chip--aviso,
+html.dark .sol-status--pendiente,
+html.dark .sol-status--recotizar,
+html.dark .index-badge--warning,
+html.dark .index-page__card .badge-warning {
+    background: rgba(255, 171, 0, 0.16) !important;
+    color: #ffc400 !important;
+    border-color: rgba(255, 171, 0, 0.5) !important;
+}
+
+html.dark .erp-chip--alerta,
+html.dark .sol-status--cancelada,
+html.dark .sol-status--rechazada,
+html.dark .index-badge--danger,
+html.dark .index-page__card .badge-danger {
+    background: rgba(255, 86, 48, 0.16) !important;
+    color: #ff7452 !important;
+    border-color: rgba(255, 86, 48, 0.45) !important;
+}
+
+html.dark .erp-chip--info,
+html.dark .sol-status--enviadas {
+    background: rgba(76, 154, 255, 0.16) !important;
+    color: #4c9aff !important;
+    border-color: rgba(76, 154, 255, 0.45) !important;
+}
+
+html.dark .erp-chip--acento,
+html.dark .sol-status--revision {
+    background: rgba(101, 84, 192, 0.2) !important;
+    color: #c0b6ff !important;
+    border-color: rgba(101, 84, 192, 0.48) !important;
+}
+
+html.dark .erp-chip--neutro,
+html.dark .sol-status--default,
+html.dark .index-badge--muted,
+html.dark .index-badge--dark,
+html.dark .index-page__card .badge-secondary,
+html.dark .index-page__card .badge-dark {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #e8eef6 !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
 }

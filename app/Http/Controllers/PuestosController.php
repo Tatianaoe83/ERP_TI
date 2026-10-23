@@ -72,7 +72,7 @@ class PuestosController extends AppBaseController
 
         $puestos = $this->puestosRepository->create($input);
 
-        Flash::success('Puestos saved successfully.');
+        Flash::success('Puesto guardado.');
 
         return redirect(route('puestos.index'));
     }
@@ -89,7 +89,7 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
@@ -109,7 +109,7 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
@@ -130,14 +130,14 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
 
         $puestos = $this->puestosRepository->update($request->all(), $id);
 
-        Flash::success('Puestos updated successfully.');
+        Flash::success('Puesto actualizado.');
 
         return redirect(route('puestos.index'));
     }
@@ -154,14 +154,14 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
 
         $this->puestosRepository->delete($id);
 
-        Flash::success('Puestos deleted successfully.');
+        Flash::success('Puesto borrado.');
 
         return redirect(route('puestos.index'));
     }

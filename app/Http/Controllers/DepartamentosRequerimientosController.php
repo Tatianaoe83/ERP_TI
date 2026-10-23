@@ -55,7 +55,7 @@ class DepartamentosRequerimientosController extends AppBaseController
 
         $departamentosRequerimientos = $this->departamentosRequerimientosRepository->create($input);
 
-        Flash::success('Departamentos Requerimientos saved successfully.');
+        Flash::success('Requerimiento guardado.');
 
         return redirect(route('departamentosRequerimientos.index'));
     }
@@ -72,7 +72,7 @@ class DepartamentosRequerimientosController extends AppBaseController
         $departamentosRequerimientos = $this->departamentosRequerimientosRepository->find($id);
 
         if (empty($departamentosRequerimientos)) {
-            Flash::error('Departamentos Requerimientos not found');
+            Flash::error('Requerimiento no encontrado');
 
             return redirect(route('departamentosRequerimientos.index'));
         }
@@ -92,7 +92,7 @@ class DepartamentosRequerimientosController extends AppBaseController
         $departamentosRequerimientos = $this->departamentosRequerimientosRepository->find($id);
 
         if (empty($departamentosRequerimientos)) {
-            Flash::error('Departamentos Requerimientos not found');
+            Flash::error('Requerimiento no encontrado');
 
             return redirect(route('departamentosRequerimientos.index'));
         }
@@ -113,14 +113,14 @@ class DepartamentosRequerimientosController extends AppBaseController
         $departamentosRequerimientos = $this->departamentosRequerimientosRepository->find($id);
 
         if (empty($departamentosRequerimientos)) {
-            Flash::error('Departamentos Requerimientos not found');
+            Flash::error('Requerimiento no encontrado');
 
             return redirect(route('departamentosRequerimientos.index'));
         }
 
         $departamentosRequerimientos = $this->departamentosRequerimientosRepository->update($request->all(), $id);
 
-        Flash::success('Departamentos Requerimientos updated successfully.');
+        Flash::success('Requerimiento actualizado.');
 
         return redirect(route('departamentosRequerimientos.index'));
     }
@@ -137,14 +137,14 @@ class DepartamentosRequerimientosController extends AppBaseController
         $departamentosRequerimientos = $this->departamentosRequerimientosRepository->find($id);
 
         if (empty($departamentosRequerimientos)) {
-            Flash::error('Departamentos Requerimientos not found');
+            Flash::error('Requerimiento no encontrado');
 
             return redirect(route('departamentosRequerimientos.index'));
         }
 
         $this->departamentosRequerimientosRepository->delete($id);
 
-        Flash::success('Departamentos Requerimientos deleted successfully.');
+        Flash::success('Requerimiento borrado.');
 
         return redirect(route('departamentosRequerimientos.index'));
     }

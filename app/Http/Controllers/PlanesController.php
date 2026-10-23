@@ -79,7 +79,7 @@ class PlanesController extends AppBaseController
 
         $planes = $this->planesRepository->create($input);
 
-        Flash::success('Planes saved successfully.');
+        Flash::success('Plan guardado.');
 
         return redirect(route('planes.index'));
     }
@@ -96,7 +96,7 @@ class PlanesController extends AppBaseController
         $planes = $this->planesRepository->find($id);
 
         if (empty($planes)) {
-            Flash::error('Planes not found');
+            Flash::error('Plan no encontrado');
 
             return redirect(route('planes.index'));
         }
@@ -116,7 +116,7 @@ class PlanesController extends AppBaseController
         $planes = $this->planesRepository->find($id);
 
         if (empty($planes)) {
-            Flash::error('Planes not found');
+            Flash::error('Plan no encontrado');
 
             return redirect(route('planes.index'));
         }
@@ -137,14 +137,14 @@ class PlanesController extends AppBaseController
         $planes = $this->planesRepository->find($id);
 
         if (empty($planes)) {
-            Flash::error('Planes not found');
+            Flash::error('Plan no encontrado');
 
             return redirect(route('planes.index'));
         }
 
         $planes = $this->planesRepository->update($request->all(), $id);
 
-        Flash::success('Planes updated successfully.');
+        Flash::success('Plan actualizado.');
 
         return redirect(route('planes.index'));
     }
@@ -161,14 +161,14 @@ class PlanesController extends AppBaseController
         $planes = $this->planesRepository->find($id);
 
         if (empty($planes)) {
-            Flash::error('Planes not found');
+            Flash::error('Plan no encontrado');
 
             return redirect(route('planes.index'));
         }
 
         $this->planesRepository->delete($id);
 
-        Flash::success('Planes deleted successfully.');
+        Flash::success('Plan borrado.');
 
         return redirect(route('planes.index'));
     }

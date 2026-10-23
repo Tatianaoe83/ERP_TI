@@ -69,7 +69,7 @@ class GerenciaController extends AppBaseController
 
         $gerencia = $this->gerenciaRepository->create($input);
 
-        Flash::success('Gerencia saved successfully.');
+        Flash::success('Gerencia guardada.');
 
         return redirect(route('gerencias.index'));
     }
@@ -86,7 +86,7 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
@@ -106,7 +106,7 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
@@ -127,14 +127,14 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
 
         $gerencia = $this->gerenciaRepository->update($this->cadenaDesdeDireccion($request->all()), $id);
 
-        Flash::success('Gerencia updated successfully.');
+        Flash::success('Gerencia actualizada.');
 
         return redirect(route('gerencias.index'));
     }
@@ -151,14 +151,14 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
 
         $this->gerenciaRepository->delete($id);
 
-        Flash::success('Gerencia deleted successfully.');
+        Flash::success('Gerencia borrada.');
 
         return redirect(route('gerencias.index'));
     }

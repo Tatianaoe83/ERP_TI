@@ -20,7 +20,6 @@
         event.preventDefault();
         var form = $(this).closest('form');
         var title = $(this).data('confirm-title') || '¿Está seguro de que desea borrar este registro?';
-        var successTitle = $(this).data('success-title') || 'Registro borrado';
 
         Swal.fire({
             title: title,
@@ -30,16 +29,7 @@
             denyButtonText: 'Cerrar',
             confirmButtonColor: '#101D49',
         }).then(function (result) {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: successTitle,
-                    icon: 'success',
-                    timer: 900,
-                    showConfirmButton: false,
-                }).then(function () {
-                    form.submit();
-                });
-            }
+            if (result.isConfirmed) form.submit();
         });
     });
 </script>

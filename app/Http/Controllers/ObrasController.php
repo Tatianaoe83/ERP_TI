@@ -84,7 +84,7 @@ class ObrasController extends AppBaseController
 
         $obras = $this->obrasRepository->create($input);
 
-        Flash::success('Obras saved successfully.');
+        Flash::success('Obra guardada.');
 
         return redirect(route('obras.index'));
     }
@@ -101,7 +101,7 @@ class ObrasController extends AppBaseController
         $obras = $this->obrasRepository->find($id);
 
         if (empty($obras)) {
-            Flash::error('Obras not found');
+            Flash::error('Obra no encontrada');
 
             return redirect(route('obras.index'));
         }
@@ -121,7 +121,7 @@ class ObrasController extends AppBaseController
         $obras = $this->obrasRepository->find($id);
 
         if (empty($obras)) {
-            Flash::error('Obras not found');
+            Flash::error('Obra no encontrada');
 
             return redirect(route('obras.index'));
         }
@@ -142,14 +142,14 @@ class ObrasController extends AppBaseController
         $obras = $this->obrasRepository->find($id);
 
         if (empty($obras)) {
-            Flash::error('Obras not found');
+            Flash::error('Obra no encontrada');
 
             return redirect(route('obras.index'));
         }
 
         $obras = $this->obrasRepository->update($request->all(), $id);
 
-        Flash::success('Obras updated successfully.');
+        Flash::success('Obra actualizada.');
 
         return redirect(route('obras.index'));
     }
@@ -166,14 +166,14 @@ class ObrasController extends AppBaseController
         $obras = $this->obrasRepository->find($id);
 
         if (empty($obras)) {
-            Flash::error('Obras not found');
+            Flash::error('Obra no encontrada');
 
             return redirect(route('obras.index'));
         }
 
         $this->obrasRepository->delete($id);
 
-        Flash::success('Obras deleted successfully.');
+        Flash::success('Obra borrada.');
 
         return redirect(route('obras.index'));
     }

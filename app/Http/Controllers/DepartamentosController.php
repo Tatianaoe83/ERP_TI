@@ -383,14 +383,14 @@ class DepartamentosController extends AppBaseController
         $departamentos = $this->departamentosRepository->find($id);
 
         if (empty($departamentos)) {
-            Flash::error('Departamentos not found');
+            Flash::error('Área no encontrada');
 
             return redirect(route('departamentos.index'));
         }
 
         $this->departamentosRepository->delete($id);
 
-        Flash::success('Departamentos deleted successfully.');
+        Flash::success('Área borrada.');
 
         return redirect(route('departamentos.index'));
     }

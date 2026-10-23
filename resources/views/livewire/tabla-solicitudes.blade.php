@@ -95,10 +95,12 @@
                                         'Aprobada' => 'sol-status--aprobada',
                                         'Cotizaciones Enviadas' => 'sol-status--enviadas',
                                         'Pendiente' => 'sol-status--pendiente',
+                                        'Re-cotizar' => 'sol-status--recotizar',
+                                        'Listo' => 'sol-status--listo',
                                         default => 'sol-status--default',
                                     };
                                 @endphp
-                                <span class="sol-status {{ $solStatusMod }} {{ $solicitud->colorEstatus }}"
+                                <span class="erp-chip {{ $solStatusMod }}"
                                     @if($solicitud->estatusDisplay === 'Re-cotizar' && !empty($solicitud->recotizarPropuestasText))
                                     title="Recotizar propuesta(s): {{ trim($solicitud->recotizarPropuestasText, ' ()') }}"
                                     @endif>
