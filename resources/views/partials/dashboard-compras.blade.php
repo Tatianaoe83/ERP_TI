@@ -4,6 +4,15 @@
     $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'anio' => (int) now()->year];
     $estatusChart = collect($statsCompras['por_estatus'] ?? []);
     $categoriaChart = collect($statsCompras['por_categoria'] ?? []);
+    $chartComprasMovimiento = [
+        ['nombre' => 'Activas', 'total' => (int) ($statsCompras['activos'] ?? 0)],
+        ['nombre' => 'Atendidas en el mes', 'total' => (int) ($statsCompras['atendidos_mes'] ?? 0)],
+        ['nombre' => 'Nuevas en el mes', 'total' => (int) ($statsCompras['creados_mes'] ?? 0)],
+    ];
+    $chartComprasPrioridad = collect($statsCompras['por_prioridad'] ?? [])->map(fn ($p) => [
+        'nombre' => $p->Prioridad ?: 'Sin prioridad',
+        'total' => (int) $p->total,
+    ])->values();
 @endphp
 
 <style>
@@ -40,11 +49,19 @@
         <h3>Activas por categoría</h3>
         <canvas id="chartComprasCategoria"></canvas>
     </div>
+    <div class="dash-chart">
+        <h3>Movimiento de {{ $nombreMes }}</h3>
+        <canvas id="chartComprasMovimiento"></canvas>
+    </div>
+    <div class="dash-chart">
+        <h3>Prioridad de activas</h3>
+        <canvas id="chartComprasPrioridad"></canvas>
+    </div>
 </div>
 
 @push('third_party_scripts')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
 <script>
 (function () {
     function bootDashCompras() {
@@ -80,10 +97,45 @@
                         label: 'Activas',
                         data: cats.map(function (f) { return f.total; }),
                         backgroundColor: UxCharts.degradado(categorias),
-                        hoverBackgroundColor: '#4ADE80'
+                        hoverBackgroundColor: '#0066FF'
                     }]
                 },
                 options: UxCharts.barras(false)
+            });
+        }
+        var movimiento = document.getElementById('chartComprasMovimiento');
+        if (movimiento) {
+            var filasM = @json($chartComprasMovimiento);
+            new Chart(movimiento, {
+                type: 'bar',
+                data: {
+                    labels: filasM.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        label: 'Solicitudes',
+                        data: filasM.map(function (f) { return f.total; }),
+                        backgroundColor: ['#0052CC', '#36B37E', '#FFAB00'],
+                        borderRadius: 8
+                    }]
+                },
+                options: UxCharts.barras(false)
+            });
+        }
+        var prioridad = document.getElementById('chartComprasPrioridad');
+        if (prioridad) {
+            var filasP = @json($chartComprasPrioridad);
+            if (!filasP.length) filasP = [{ nombre: 'Sin activas', total: 1 }];
+            var vacia = filasP[0].nombre === 'Sin activas';
+            new Chart(prioridad, {
+                type: 'doughnut',
+                plugins: vacia ? [] : [UxCharts.centro],
+                data: {
+                    labels: filasP.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        data: filasP.map(function (f) { return f.total; }),
+                        backgroundColor: vacia ? ['#E2E8F0'] : UxCharts.tonos(filasP.length)
+                    }]
+                },
+                options: UxCharts.anillo()
             });
         }
     }
@@ -95,122 +147,6 @@
 })();
 </script>
 @endpush
-
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Solicitudes activas</p>
-                <p class="dash-kpi__hint">Pendientes, en proceso y pausadas</p>
-                <p class="dash-kpi__value">{{ $statsCompras['activos'] }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--amber"><i class="fas fa-inbox"></i></span>
-        </div>
-    </div>
-
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Atendidas en {{ $nombreMes }}</p>
-                <p class="dash-kpi__value">{{ $statsCompras['atendidos_mes'] }}</p>
-                <p class="dash-kpi__hint">{{ $statsCompras['anio'] }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--blue"><i class="fas fa-check"></i></span>
-        </div>
-    </div>
-
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Nuevas en {{ $nombreMes }}</p>
-                <p class="dash-kpi__value">{{ $statsCompras['creados_mes'] }}</p>
-                <p class="dash-kpi__hint">Solicitudes registradas</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-plus"></i></span>
-        </div>
-    </div>
-
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Total histórico</p>
-                <p class="dash-kpi__value">{{ $statsCompras['total'] }}</p>
-                <p class="dash-kpi__hint">Mantenimientos de compras</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-layer-group"></i></span>
-        </div>
-    </div>
-</div>
-
-<div class="dash-panel mb-6">
-    <div class="dash-panel__head">
-        <h3 class="dash-panel__title">
-            <i class="fas fa-tasks"></i>
-            Estado de solicitudes
-        </h3>
-        @can('ver-compras')
-            <a href="{{ route('tickets-mantenimiento.index') }}" class="dash-panel__link">Ver tablero</a>
-        @endcan
-    </div>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div class="dash-stat text-center">
-            <p class="dash-stat__label">Pendiente</p>
-            <p class="dash-stat__value">{{ $statsCompras['por_estatus']['Pendiente'] ?? 0 }}</p>
-        </div>
-        <div class="dash-stat text-center">
-            <p class="dash-stat__label">En proceso</p>
-            <p class="dash-stat__value">{{ $statsCompras['por_estatus']['En proceso'] ?? 0 }}</p>
-        </div>
-        <div class="dash-stat text-center">
-            <p class="dash-stat__label">Pausado</p>
-            <p class="dash-stat__value">{{ $statsCompras['por_estatus']['Pausado'] ?? 0 }}</p>
-        </div>
-        <div class="dash-stat text-center">
-            <p class="dash-stat__label">Atendido</p>
-            <p class="dash-stat__value">{{ $statsCompras['por_estatus']['Atendido'] ?? 0 }}</p>
-        </div>
-        <div class="dash-stat text-center">
-            <p class="dash-stat__label">Cancelado</p>
-            <p class="dash-stat__value">{{ $statsCompras['por_estatus']['Cancelado'] ?? 0 }}</p>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-    <div class="dash-panel">
-        <h3 class="dash-panel__title mb-3">
-            <i class="fas fa-tags"></i>
-            Categorías con más solicitudes activas
-        </h3>
-        <div class="space-y-2">
-            @forelse($statsCompras['por_categoria'] as $categoria)
-            <div class="dash-row">
-                <span class="dash-row__name">{{ $categoria->Categoria ?: 'Sin categoría' }}</span>
-                <span class="dash-chip">{{ $categoria->total }}</span>
-            </div>
-            @empty
-            <p class="dash-kpi__hint text-center py-4">No hay solicitudes activas por categoría</p>
-            @endforelse
-        </div>
-    </div>
-
-    <div class="dash-panel">
-        <h3 class="dash-panel__title mb-3">
-            <i class="fas fa-exclamation-triangle"></i>
-            Prioridad de solicitudes activas
-        </h3>
-        <div class="space-y-2">
-            @forelse($statsCompras['por_prioridad'] as $prioridad)
-            <div class="dash-row">
-                <span class="dash-row__name">{{ $prioridad->Prioridad ?: 'Sin prioridad' }}</span>
-                <span class="dash-chip">{{ $prioridad->total }}</span>
-            </div>
-            @empty
-            <p class="dash-kpi__hint text-center py-4">No hay solicitudes activas por prioridad</p>
-            @endforelse
-        </div>
-    </div>
-</div>
 
 <p class="dash-section-title">Accesos rápidos</p>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

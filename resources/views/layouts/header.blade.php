@@ -1,4 +1,4 @@
-<div class="px-3 md:px-4 py-2 md:py-3 flex justify-between items-center dark:bg-[#101010]">
+<div class="px-3 md:px-4 py-2 md:py-3 flex justify-between items-center bg-transparent">
     <div class="flex items-center gap-2 md:gap-4">
         <!-- Botón hamburguesa para móvil -->
         <button id="mobile-menu-button" 
@@ -163,8 +163,8 @@
 
     .header-theme-btn.is-active {
         background: #ffffff;
-        border-color: #e2e8f0;
-        color: #15803d;
+        border-color: #bfdbfe;
+        color: #0052cc;
     }
 
     .header-user-menu__logout {
@@ -186,9 +186,9 @@
     }
 
     .dark .header-user-menu {
-        background: #1C1F26;
-        border-color: #2A2F3A;
-        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+        background: rgba(15, 29, 50, 0.96);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
     }
 
     .dark .header-user-menu__hint {
@@ -196,8 +196,8 @@
     }
 
     .dark .header-theme-switch {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: #2A2F3A;
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.1);
     }
 
     .dark .header-theme-btn {
@@ -210,9 +210,9 @@
     }
 
     .dark .header-theme-btn.is-active {
-        background: rgba(34, 197, 94, 0.16);
-        border-color: rgba(34, 197, 94, 0.35);
-        color: #22c55e;
+        background: rgba(0, 82, 204, 0.28);
+        border-color: rgba(76, 154, 255, 0.45);
+        color: #4c9aff;
     }
 
     .dark .header-user-menu__logout {
@@ -276,6 +276,9 @@
             localStorage.setItem('theme', 'light');
         }
         syncThemeButtons();
+        if (window.UxCharts && typeof window.UxCharts.refrescar === 'function') {
+            window.UxCharts.refrescar();
+        }
     }
 
     function syncThemeButtons() {

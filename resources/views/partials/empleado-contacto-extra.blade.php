@@ -1,17 +1,3 @@
-<div class="flex items-center gap-3" x-show="selected.tipo_persona">
-    <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center"><i class="fas fa-id-badge"></i></div>
-    <div class="text-sm text-gray-700 dark:text-gray-300">
-        <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Tipo:</span>
-        <span x-text="selected.tipo_persona"></span>
-    </div>
-</div>
-<div class="flex items-center gap-3" x-show="selected.estado_empleado">
-    <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center"><i class="fas fa-circle"></i></div>
-    <div class="text-sm text-gray-700 dark:text-gray-300">
-        <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Estado:</span>
-        <span x-text="selected.estado_empleado"></span>
-    </div>
-</div>
 <div class="flex items-center gap-3" x-show="selected.telefono">
     <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center"><i class="fas fa-phone-alt"></i></div>
     <div class="text-sm text-gray-700 dark:text-gray-300">

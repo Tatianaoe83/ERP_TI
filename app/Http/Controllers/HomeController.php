@@ -135,16 +135,22 @@ class HomeController extends Controller
         $totalGerencias = Gerencia::where('Estado', true)->count();
         $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
 
-        $anioActual = now()->year;
-        $mantenimientosAnio = ['pendientes' => 0, 'realizados' => 0, 'anio' => $anioActual];
+        $anio = (int) ($request->input('anio') ?: now()->year);
+        if ($anio < 2000 || $anio > 2100) {
+            $anio = (int) now()->year;
+        }
+        $mantenimientosAnio = ['pendientes' => 0, 'realizados' => 0, 'anio' => $anio];
 
         if (Schema::hasTable('mantenimientos') && Schema::hasColumn('mantenimientos', 'AnioProgramacion')) {
             $mantenimientosBase = DB::table('mantenimientos as m')
                 ->leftJoin('inventarioequipo as ie', 'ie.InventarioID', '=', 'm.InventarioID')
                 ->leftJoin('empleados as e', 'e.EmpleadoID', '=', 'ie.EmpleadoID')
-                ->where('m.AnioProgramacion', $anioActual)
+                ->where('m.AnioProgramacion', $anio)
                 ->where('e.Estado', true)
                 ->whereIn('e.tipo_persona', $tiposOperativos)
+                ->when($idsFiltro !== null, function ($query) use ($idsFiltro) {
+                    $query->whereIn('e.EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
+                })
                 ->where(function ($q) {
                     $q->whereIn('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS, array_map('strval', PresupuestoAsignacion::valoresOperativos()))
                         ->orWhereNull('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS);
@@ -194,31 +200,74 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-        $vacantes = Empleados::where('tipo_persona', 'EXTRAORDINARIO')->where('Estado', true)->count();
-        $equiposPropios = $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPropios(DB::table('inventarioequipo'))->count());
+        $vacantesQuery = Empleados::where('tipo_persona', 'EXTRAORDINARIO')->where('Estado', true);
+        if ($idsFiltro !== null) {
+            $vacantesQuery->whereIn('EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
+        }
+        $vacantes = $vacantesQuery->count();
+        $equiposPropios = $this->contarSeguro(fn () => $this->limitarPorEmpleados(
+            PresupuestoAsignacion::restringirPropios(DB::table('inventarioequipo')),
+            $idsFiltro
+        )->count());
         $presupuestados = [
-            'equipos' => $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPresupuesto(DB::table('inventarioequipo'), 'inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS)->count()),
-            'insumos' => $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPresupuesto(DB::table('inventarioinsumo'), 'inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT)->count()),
-            'lineas' => $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPresupuesto(DB::table('inventariolineas'), 'inventariolineas', PresupuestoAsignacion::COLUMNA_DEFAULT)->count()),
+            'equipos' => $this->contarSeguro(fn () => $this->limitarPorEmpleados(PresupuestoAsignacion::restringirPresupuesto(DB::table('inventarioequipo'), 'inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS), $idsFiltro)->count()),
+            'insumos' => $this->contarSeguro(fn () => $this->limitarPorEmpleados(PresupuestoAsignacion::restringirPresupuesto(DB::table('inventarioinsumo'), 'inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT), $idsFiltro)->count()),
+            'lineas' => $this->contarSeguro(fn () => $this->limitarPorEmpleados(PresupuestoAsignacion::restringirPresupuesto(DB::table('inventariolineas'), 'inventariolineas', PresupuestoAsignacion::COLUMNA_DEFAULT), $idsFiltro)->count()),
         ];
         $presupuestados['total'] = $presupuestados['equipos'] + $presupuestados['insumos'] + $presupuestados['lineas'];
 
-        $anio = now()->year;
-        $mes = now()->month;
+        $ticketsBase = Tickets::query();
+        $tareasBase = TicketTarea::query();
+        $solicitudesBase = Solicitud::query();
+        $auditoriasBase = Auditoria::query();
+        if ($idsFiltro !== null) {
+            $lista = $idsFiltro === [] ? [0] : $idsFiltro;
+            $ticketsBase->whereIn('EmpleadoID', $lista);
+            $tareasBase->whereIn('asignado_id', $lista);
+            $solicitudesBase->whereIn('EmpleadoID', $lista);
+            $auditoriasBase->whereIn('EmpleadoID', $lista);
+        }
+
+        $facturasBase = Facturas::query()->where('Anio', $anio);
+        $idsPresupuesto = $this->idsPresupuestoDecision($request, $idsFiltro);
+        if ($idsPresupuesto !== []) {
+            $facturasBase->whereIn('PresupuestoInternoID', $idsPresupuesto);
+        } else {
+            $facturasBase->whereRaw('1 = 0');
+        }
+
         $operacion = [
-            'tickets_abiertos' => $this->contarSeguro(fn () => Tickets::whereIn('Estatus', ['Pendiente', 'En progreso'])->count()),
-            'tickets_pendientes' => $this->contarSeguro(fn () => Tickets::where('Estatus', 'Pendiente')->count()),
-            'tickets_progreso' => $this->contarSeguro(fn () => Tickets::where('Estatus', 'En progreso')->count()),
-            'tareas_pendientes' => $this->contarSeguro(fn () => TicketTarea::pendientes()->count()),
-            'tareas_hoy' => $this->contarSeguro(fn () => TicketTarea::deHoy()->count()),
-            'tareas_atrasadas' => $this->contarSeguro(fn () => TicketTarea::atrasadas()->count()),
-            'tareas_proximas' => $this->contarSeguro(fn () => TicketTarea::proximas()->count()),
-            'tareas_criticas' => $this->contarSeguro(fn () => TicketTarea::pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count()),
-            'solicitudes_activas' => $this->contarSeguro(fn () => Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cancelado', 'Rechazada', 'Rechazado', 'Aprobada', 'Aprobado'])->count()),
-            'auditorias_anio' => $this->contarSeguro(fn () => Auditoria::whereYear('created_at', $anio)->count()),
-            'facturas_mes' => $this->contarSeguro(fn () => Facturas::where('Anio', $anio)->where('Mes', $mes)->count()),
-            'facturas_importe' => $this->contarSeguro(fn () => (float) Facturas::where('Anio', $anio)->where('Mes', $mes)->sum('Costo'), 0.0),
+            'tickets_abiertos' => $this->contarSeguro(fn () => (clone $ticketsBase)->whereIn('Estatus', ['Pendiente', 'En progreso'])->count()),
+            'tickets_pendientes' => $this->contarSeguro(fn () => (clone $ticketsBase)->where('Estatus', 'Pendiente')->count()),
+            'tickets_progreso' => $this->contarSeguro(fn () => (clone $ticketsBase)->where('Estatus', 'En progreso')->count()),
+            'tickets_estatus' => $this->contarSeguro(function () use ($ticketsBase) {
+                return (clone $ticketsBase)
+                    ->select('Estatus', DB::raw('COUNT(*) as total'))
+                    ->whereNotIn('Estatus', ['Cerrado', 'Cancelado', 'Cancelada', 'Resuelto'])
+                    ->groupBy('Estatus')
+                    ->orderByDesc('total')
+                    ->get();
+            }, collect()),
+            'tareas_pendientes' => $this->contarSeguro(fn () => (clone $tareasBase)->pendientes()->count()),
+            'tareas_hoy' => $this->contarSeguro(fn () => (clone $tareasBase)->deHoy()->count()),
+            'tareas_atrasadas' => $this->contarSeguro(fn () => (clone $tareasBase)->atrasadas()->count()),
+            'tareas_proximas' => $this->contarSeguro(fn () => (clone $tareasBase)->proximas()->count()),
+            'tareas_criticas' => $this->contarSeguro(fn () => (clone $tareasBase)->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count()),
+            'solicitudes_activas' => $this->contarSeguro(fn () => (clone $solicitudesBase)->whereNotIn('Estatus', ['Cancelada', 'Cancelado', 'Rechazada', 'Rechazado', 'Aprobada', 'Aprobado'])->count()),
+            'auditorias_anio' => $this->contarSeguro(fn () => (clone $auditoriasBase)->whereYear('created_at', $anio)->count()),
+            'facturas_mes' => $this->contarSeguro(fn () => (clone $facturasBase)->count()),
+            'facturas_importe' => $this->contarSeguro(fn () => (float) (clone $facturasBase)->sum('Costo'), 0.0),
         ];
+
+        $conEquipo = (int) $this->contarSeguro(function () use ($idsFiltro) {
+            return $this->limitarPorEmpleados(
+                $this->queryAsignadosOperativos('inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS),
+                $idsFiltro
+            )->distinct()->count('inventarioequipo.EmpleadoID');
+        });
+        $decision = $this->resumenPresupuestoOficial($idsPresupuesto, $anio);
+        $decision['sin_equipo'] = max(0, $empleadosActivos - $conEquipo);
+        $decision['anio'] = $anio;
 
         return [
             'empleados' => [
@@ -257,6 +306,7 @@ class HomeController extends Controller
             'equipos_por_categoria' => $this->getEquiposPorCategoria($idsFiltro),
             'estadisticas_gerencia' => $estadisticasPorGerencia,
             'estadisticas_presupuesto' => $estadisticasPorPresupuesto,
+            'decision' => $decision,
         ];
     }
 
@@ -335,6 +385,7 @@ class HomeController extends Controller
             'equipos_por_categoria' => collect(),
             'estadisticas_gerencia' => collect(),
             'estadisticas_presupuesto' => collect(),
+            'decision' => $this->resumenPresupuestoVacio((int) now()->year),
         ];
     }
 
@@ -366,6 +417,10 @@ class HomeController extends Controller
 
         PresupuestoAsignacion::restringirOperativo($query, 'inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT);
         PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'licencias');
+        $ids = $this->idsEmpleadosFiltrados($request);
+        if ($ids !== null) {
+            $query->whereIn('inventarioinsumo.EmpleadoID', $ids === [] ? [0] : $ids);
+        }
 
         return $query
             ->groupBy('NombreInsumo')
@@ -414,6 +469,145 @@ class HomeController extends Controller
         }
 
         return $query->pluck('EmpleadoID')->all();
+    }
+
+    private function idsPresupuestoDecision(Request $request, ?array $idsEmpleados): array
+    {
+        $visibles = $this->catalogoDash()['presupuestos']->keys()->map(fn ($id) => (int) $id)->all();
+        $pedido = (int) $request->input('presupuesto_id');
+        if ($pedido > 0) {
+            return in_array($pedido, $visibles, true) || $visibles === [] ? [$pedido] : [];
+        }
+        if ($idsEmpleados !== null) {
+            if ($idsEmpleados === []) {
+                return [];
+            }
+            return Empleados::query()
+                ->whereIn('EmpleadoID', $idsEmpleados)
+                ->whereNotNull('PresupuestoInternoID')
+                ->where('PresupuestoInternoID', '>', 0)
+                ->distinct()
+                ->pluck('PresupuestoInternoID')
+                ->map(fn ($id) => (int) $id)
+                ->when($visibles !== [], fn ($ids) => $ids->intersect($visibles))
+                ->values()
+                ->all();
+        }
+
+        return $visibles;
+    }
+
+    private function resumenPresupuestoOficial(array $idsPresupuesto, int $anio): array
+    {
+        $resumen = $this->resumenPresupuestoVacio($anio);
+        if ($idsPresupuesto === [] || !Schema::hasTable('cortes') || !Schema::hasTable('facturas')) {
+            return $resumen;
+        }
+
+        $cortes = DB::table('cortes')
+            ->whereNull('deleted_at')
+            ->where('Anio', $anio)
+            ->whereIn('PresupuestoInternoID', $idsPresupuesto)
+            ->get(['PresupuestoInternoID', 'NombreInsumo', 'Mes', 'Costo', 'CostoTotal']);
+
+        $facturas = DB::table('facturas')
+            ->whereNull('deleted_at')
+            ->where('Anio', $anio)
+            ->whereIn('PresupuestoInternoID', $idsPresupuesto)
+            ->get(['PresupuestoInternoID', 'GerenciaID', 'InsumoNombre', 'Mes', 'Costo', 'Importe']);
+
+        $bolsas = [];
+        foreach ($cortes as $row) {
+            $mes = $this->mesNumero($row->Mes);
+            if ($mes < 1) {
+                continue;
+            }
+            $key = 'p-' . (int) $row->PresupuestoInternoID . '|' . mb_strtolower(trim((string) $row->NombreInsumo)) . '|' . $mes;
+            $bolsas[$key]['mes'] = $mes;
+            $bolsas[$key]['presupuesto'] = ($bolsas[$key]['presupuesto'] ?? 0) + (float) ($row->CostoTotal ?? $row->Costo ?? 0);
+            $bolsas[$key]['facturado'] = $bolsas[$key]['facturado'] ?? 0;
+        }
+        foreach ($facturas as $row) {
+            $mes = $this->mesNumero($row->Mes);
+            if ($mes < 1) {
+                continue;
+            }
+            $alcance = (int) $row->PresupuestoInternoID > 0
+                ? 'p-' . (int) $row->PresupuestoInternoID
+                : 'g-' . (int) $row->GerenciaID;
+            $key = $alcance . '|' . mb_strtolower(trim((string) $row->InsumoNombre)) . '|' . $mes;
+            $bolsas[$key]['mes'] = $mes;
+            $bolsas[$key]['presupuesto'] = $bolsas[$key]['presupuesto'] ?? 0;
+            $bolsas[$key]['facturado'] = ($bolsas[$key]['facturado'] ?? 0) + (float) ($row->Costo ?: $row->Importe ?: 0);
+        }
+
+        foreach ($bolsas as $bolsa) {
+            $presupuesto = round((float) $bolsa['presupuesto'], 2);
+            $facturado = round((float) $bolsa['facturado'], 2);
+            $mes = (int) $bolsa['mes'];
+            $resumen['presupuesto'] += $presupuesto;
+            $resumen['facturado'] += $facturado;
+            $resumen['meses'][$mes]['presupuesto'] += $presupuesto;
+            $resumen['meses'][$mes]['facturado'] += $facturado;
+            if ($presupuesto > 0 && $facturado <= 0) {
+                $resumen['no_consumido'] += $presupuesto;
+            } elseif ($facturado > $presupuesto) {
+                $desviacion = round($facturado - $presupuesto, 2);
+                $resumen['desviacion'] += $desviacion;
+                $resumen['meses'][$mes]['desviacion'] += $desviacion;
+            } elseif ($presupuesto > $facturado) {
+                $ahorro = round($presupuesto - $facturado, 2);
+                $resumen['ahorro'] += $ahorro;
+                $resumen['meses'][$mes]['ahorro'] += $ahorro;
+            }
+        }
+
+        foreach (['presupuesto', 'facturado', 'desviacion', 'ahorro', 'no_consumido'] as $campo) {
+            $resumen[$campo] = round($resumen[$campo], 2);
+        }
+
+        return $resumen;
+    }
+
+    private function resumenPresupuestoVacio(int $anio): array
+    {
+        $cortos = [1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic'];
+        $meses = [];
+        foreach ($cortos as $numero => $nombre) {
+            $meses[$numero] = [
+                'nombre' => $nombre,
+                'presupuesto' => 0.0,
+                'facturado' => 0.0,
+                'desviacion' => 0.0,
+                'ahorro' => 0.0,
+            ];
+        }
+
+        return [
+            'anio' => $anio,
+            'presupuesto' => 0.0,
+            'facturado' => 0.0,
+            'desviacion' => 0.0,
+            'ahorro' => 0.0,
+            'no_consumido' => 0.0,
+            'sin_equipo' => 0,
+            'meses' => $meses,
+        ];
+    }
+
+    private function mesNumero($mes): int
+    {
+        if (is_numeric($mes)) {
+            $numero = (int) $mes;
+            return ($numero >= 1 && $numero <= 12) ? $numero : 0;
+        }
+        $nombres = [
+            'enero' => 1, 'febrero' => 2, 'marzo' => 3, 'abril' => 4, 'mayo' => 5, 'junio' => 6,
+            'julio' => 7, 'agosto' => 8, 'septiembre' => 9, 'octubre' => 10, 'noviembre' => 11, 'diciembre' => 12,
+        ];
+        $clave = mb_strtolower(trim((string) $mes));
+
+        return $nombres[$clave] ?? 0;
     }
 
     private function filtrosDash(Request $request): array

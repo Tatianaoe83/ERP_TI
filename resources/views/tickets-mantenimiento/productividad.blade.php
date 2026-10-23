@@ -290,6 +290,14 @@
             <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Tendencia del periodo</h3>
             <div class="h-[210px]"><canvas id="chartMantTendencia"></canvas></div>
         </div>
+        <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Por área</h3>
+            <div class="h-[210px]"><canvas id="chartMantArea"></canvas></div>
+        </div>
+        <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Carga por responsable</h3>
+            <div class="h-[210px]"><canvas id="chartMantResponsable"></canvas></div>
+        </div>
     </div>
 
     @if(!empty($metricasProductividad['tickets_por_responsable']) && count($metricasProductividad['tickets_por_responsable']))
@@ -324,9 +332,9 @@
 </div>
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
 <script>
-let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos;
+let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos, chartMantArea, chartMantResponsable;
 
 function obtenerDatosMantenimiento() {
     const el = document.getElementById('productividad-mantenimiento-json');
@@ -339,10 +347,10 @@ function isDarkMant() {
 }
 
 function destruirGraficasMantenimiento() {
-    [chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos].forEach(ch => {
+    [chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos, chartMantArea, chartMantResponsable].forEach(ch => {
         if (ch && typeof ch.destroy === 'function') ch.destroy();
     });
-    chartMantEstado = chartMantPrioridad = chartMantCategoria = chartMantTendencia = chartMantSlaCumplimiento = chartMantSlaAbiertos = null;
+    chartMantEstado = chartMantPrioridad = chartMantCategoria = chartMantTendencia = chartMantSlaCumplimiento = chartMantSlaAbiertos = chartMantArea = chartMantResponsable = null;
 }
 
 function inicializarGraficasMantenimiento(intento) {
@@ -365,15 +373,15 @@ function inicializarGraficasMantenimiento(intento) {
 
     function colorPorNombre(nombre, indice) {
         const n = String(nombre || '').toLowerCase();
-        if (n.includes('cancel')) return '#94A3B8';
-        if (n.includes('atend') || n.includes('cerr') || n.includes('resuel')) return '#22C55E';
-        if (n.includes('paus')) return '#FBBF24';
-        if (n.includes('proces') || n.includes('progreso')) return '#38BDF8';
-        if (n.includes('pend')) return '#F87171';
-        if (n.includes('alta')) return '#F87171';
-        if (n.includes('media')) return '#FBBF24';
-        if (n.includes('baja')) return '#22C55E';
-        const paleta = (window.UxCharts && UxCharts.paleta) || ['#22C55E', '#38BDF8', '#94A3B8'];
+        if (n.includes('cancel')) return '#A3B3C9';
+        if (n.includes('atend') || n.includes('cerr') || n.includes('resuel')) return '#36B37E';
+        if (n.includes('paus')) return '#FFAB00';
+        if (n.includes('proces') || n.includes('progreso')) return '#4C9AFF';
+        if (n.includes('pend')) return '#FF5630';
+        if (n.includes('alta')) return '#FF5630';
+        if (n.includes('media')) return '#FFAB00';
+        if (n.includes('baja')) return '#36B37E';
+        const paleta = (window.UxCharts && UxCharts.paleta) || ['#0052CC', '#6554C0', '#A3B3C9'];
         return paleta[indice % paleta.length];
     }
 
@@ -438,7 +446,9 @@ function inicializarGraficasMantenimiento(intento) {
                 backgroundColor: etiquetasPrioridad.map(colorPorNombre),
                 borderRadius: 8,
                 borderSkipped: false,
-                maxBarThickness: 22
+                maxBarThickness: 28,
+                categoryPercentage: 0.72,
+                barPercentage: 0.86
             }]
         },
         options: opts(false)
@@ -454,10 +464,12 @@ function inicializarGraficasMantenimiento(intento) {
             datasets: [{
                 label: 'Solicitudes',
                 data: Object.values(categoria),
-                backgroundColor: window.UxCharts ? UxCharts.tonos(etiquetasCategoria.length) : '#22C55E',
+                backgroundColor: window.UxCharts ? UxCharts.tonos(etiquetasCategoria.length) : '#0052CC',
                 borderRadius: 8,
                 borderSkipped: false,
-                maxBarThickness: 22
+                maxBarThickness: 22,
+                categoryPercentage: 0.72,
+                barPercentage: 0.86
             }]
         },
         options: opts(true)
@@ -466,13 +478,16 @@ function inicializarGraficasMantenimiento(intento) {
     const creados = data.creados_por_dia || {};
     const resueltos = data.resueltos_por_dia || {};
     const labels = Object.keys(creados);
-    chartMantTendencia = new Chart(document.getElementById('chartMantTendencia'), {
+    const lienzoTendencia = document.getElementById('chartMantTendencia');
+    const serieCreada = window.UxCharts ? UxCharts.linea(lienzoTendencia, '#6554C0') : { borderColor: '#6554C0', fill: true, tension: 0.35 };
+    const serieAtendida = window.UxCharts ? UxCharts.linea(lienzoTendencia, '#0052CC') : { borderColor: '#0052CC', fill: true, tension: 0.35 };
+    chartMantTendencia = new Chart(lienzoTendencia, {
         type: 'line',
         data: {
             labels: labels.map(d => d.slice(5)),
             datasets: [
-                { label: 'Creadas', data: labels.map(k => creados[k] || 0), borderColor: '#38BDF8', backgroundColor: 'rgba(56,189,248,0.16)', pointBackgroundColor: '#38BDF8', fill: true, tension: 0.35 },
-                { label: 'Atendidas', data: labels.map(k => resueltos[k] || 0), borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,0.16)', pointBackgroundColor: '#22C55E', fill: true, tension: 0.35 }
+                Object.assign({ label: 'Creadas', data: labels.map(k => creados[k] || 0) }, serieCreada),
+                Object.assign({ label: 'Atendidas', data: labels.map(k => resueltos[k] || 0) }, serieAtendida)
             ]
         },
         options: opts()
@@ -490,12 +505,16 @@ function inicializarGraficasMantenimiento(intento) {
                     {
                         label: 'Cumplidos',
                         data: slaPrioridades.map(r => r.cumplidos),
-                        backgroundColor: '#22C55E',
+                        backgroundColor: '#36B37E',
+                        borderRadius: 6,
+                        maxBarThickness: 28
                     },
                     {
                         label: 'Incumplidos',
                         data: slaPrioridades.map(r => r.incumplidos),
-                        backgroundColor: '#F87171',
+                        backgroundColor: '#FF5630',
+                        borderRadius: 6,
+                        maxBarThickness: 28
                     },
                 ],
             },
@@ -509,12 +528,52 @@ function inicializarGraficasMantenimiento(intento) {
             data: {
                 labels: slaPrioridades.map(r => r.prioridad),
                 datasets: [
-                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#38BDF8' },
-                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#FBBF24' },
-                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#F87171' },
+                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#4C9AFF', borderRadius: 6, maxBarThickness: 28 },
+                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#FFAB00', borderRadius: 6, maxBarThickness: 28 },
+                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#FF5630', borderRadius: 6, maxBarThickness: 28 },
                 ],
             },
             options: optsApiladas(),
+        });
+    }
+
+    const areas = data.tickets_por_area || {};
+    const etiquetasArea = Object.keys(areas);
+    const canvasArea = document.getElementById('chartMantArea');
+    if (canvasArea) {
+        const filasArea = etiquetasArea.length ? etiquetasArea : ['Sin área'];
+        chartMantArea = new Chart(canvasArea, {
+            type: 'bar',
+            data: {
+                labels: filasArea,
+                datasets: [{
+                    label: 'Solicitudes',
+                    data: etiquetasArea.length ? filasArea.map(k => areas[k] || 0) : [0],
+                    backgroundColor: window.UxCharts ? UxCharts.tonos(filasArea.length) : '#0052CC',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 22
+                }]
+            },
+            options: opts(true)
+        });
+    }
+
+    const responsables = data.tickets_por_responsable || [];
+    const canvasResponsable = document.getElementById('chartMantResponsable');
+    if (canvasResponsable) {
+        const filasResp = responsables.length ? responsables : [{ nombre: 'Sin responsable', atendidos: 0, en_proceso: 0, pendientes: 0 }];
+        chartMantResponsable = new Chart(canvasResponsable, {
+            type: 'bar',
+            data: {
+                labels: filasResp.map(r => r.nombre),
+                datasets: [
+                    { label: 'Atendidos', data: filasResp.map(r => r.atendidos || 0), backgroundColor: '#36B37E', borderRadius: 6, maxBarThickness: 18 },
+                    { label: 'En proceso', data: filasResp.map(r => r.en_proceso || 0), backgroundColor: '#4C9AFF', borderRadius: 6, maxBarThickness: 18 },
+                    { label: 'Pendientes', data: filasResp.map(r => r.pendientes || 0), backgroundColor: '#FF5630', borderRadius: 6, maxBarThickness: 18 }
+                ]
+            },
+            options: opts(true)
         });
     }
 }

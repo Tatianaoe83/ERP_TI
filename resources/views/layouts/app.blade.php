@@ -18,7 +18,7 @@
     <title>ERP TI Proser</title>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     <!-- Bootstrap 4.1.1 -->
     <link href="{{ mix('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
@@ -431,7 +431,7 @@
         }
 
         .dark #sidebar .sidebar-section-label {
-            color: #6b7280;
+            color: #a3b3c9;
         }
 
         #sidebar .sidebar-link,
@@ -1091,7 +1091,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022d">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022l">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1105,7 +1105,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022d">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261022l">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1116,7 +1116,7 @@
     </div>
     @livewireScripts
     <div id="app" class="h-screen flex flex-col overflow-hidden">
-        <nav class="shrink-0 bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
+        <nav class="erp-banner shrink-0 h-[60px] md:h-[60px] transition-colors">            @include('layouts.header')
         </nav>
         <div class="flex flex-1 min-h-0 overflow-hidden">
             <!-- Overlay para m?vil -->

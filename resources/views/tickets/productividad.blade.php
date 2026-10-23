@@ -462,48 +462,8 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                        {{-- Rapidez --}}
-                        <div
-                            class="p-3 sm:p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Rapidez</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-                                    {{ number_format($metricasProductividad['calificacion_promedio']['fastness'], 1) }}
-                                </span>
-                                <span class="text-sm text-blue-500 dark:text-blue-400">/5</span>
-                            </div>
-                        </div>
-
-                        {{-- Atención --}}
-                        <div
-                            class="p-3 sm:p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-green-700 dark:text-green-400">Atención</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
-                                    {{ number_format($metricasProductividad['calificacion_promedio']['attention'], 1) }}
-                                </span>
-                                <span class="text-sm text-green-500 dark:text-green-400">/5</span>
-                            </div>
-                        </div>
-
-                        {{-- Resolución --}}
-                        <div
-                            class="p-3 sm:p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-purple-700 dark:text-purple-400">Resolución</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
-                                    {{ number_format($metricasProductividad['calificacion_promedio']['resolution'], 1) }}
-                                </span>
-                                <span class="text-sm text-purple-500 dark:text-purple-400">/5</span>
-                            </div>
-                        </div>
+                    <div class="h-[220px]">
+                        <canvas id="chartSatisfaccion" role="img" aria-label="Calificación de satisfacción"></canvas>
                     </div>
                 </div>
             @endif
@@ -513,9 +473,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-blue-200/90 dark:hover:border-blue-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:ring-blue-400/25 focus-within:border-blue-300/80 dark:focus-within:border-blue-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Distribución por Estado</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -527,9 +484,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Tickets Creados vs Resueltos</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -548,9 +502,6 @@
                         <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de
                             respuesta, resolución y total</p>
                     </div>
-                    <span
-                        class="shrink-0 self-start text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                        aria-hidden="true">Hover</span>
                 </div>
                 <div
                     class="h-80 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/30 dark:bg-black/20 group-hover:bg-gray-50/60 dark:group-hover:bg-black/30">
@@ -564,9 +515,6 @@
                 <div class="flex items-center justify-between gap-2 mb-3">
                     <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y
                         Cerrados)</h3>
-                    <span
-                        class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                        aria-hidden="true">Hover</span>
                 </div>
                 <div
                     class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -580,9 +528,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-rose-200/80 dark:hover:border-rose-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-rose-500/20 dark:focus-within:ring-rose-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Tickets por Prioridad</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -594,14 +539,18 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-violet-200/90 dark:hover:border-violet-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-violet-500/20 dark:focus-within:ring-violet-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Distribución por Tipo de Ticket (Top 12)</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
                         <canvas id="chartTipoTicket" role="img" aria-label="Distribución por tipo de ticket"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
+                <h3 class="text-lg font-semibold mb-3 dark:text-white">Carga por responsable</h3>
+                <div class="h-[280px]">
+                    <canvas id="chartCargaResponsable" role="img" aria-label="Carga por responsable"></canvas>
                 </div>
             </div>
 
@@ -699,6 +648,13 @@
             </div>
 
             <!-- Incidencias por Gerencia del Solicitante -->
+            <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
+                <h3 class="text-lg font-semibold mb-3 dark:text-white">Tickets por gerencia del solicitante</h3>
+                <div class="h-[280px]">
+                    <canvas id="chartGerenciaSolicitante" role="img" aria-label="Tickets por gerencia del solicitante"></canvas>
+                </div>
+            </div>
+
             <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
                 <h3 class="text-lg font-semibold mb-4 dark:text-white">Incidencias por Gerencia del Solicitante</h3>
                 <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Distribución de tickets según la gerencia del
@@ -865,9 +821,6 @@
                     <div class="flex items-center justify-between gap-2 mb-4">
                         <h4 class="text-sm font-semibold dark:text-white">Visualización: Incidencias por Tipo y
                             Responsable</h4>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="h-[700px] rounded-lg overflow-hidden transition-[background] duration-300 bg-white/40 dark:bg-black/20 group-hover:bg-white/60 dark:group-hover:bg-black/30">
@@ -1181,9 +1134,9 @@
                                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                                                 @php
                                                     $prioridades = [
-                                                        'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
-                                                        'Media' => ['color' => '#FBBF24', 'bg' => '#FBBF24', 'icon' => 'fa-exclamation-circle'],
-                                                        'Baja' => ['color' => '#4ADE80', 'bg' => '#4ADE80', 'icon' => 'fa-info-circle']
+                                                        'Alta' => ['color' => '#FF5630', 'bg' => '#FF5630', 'icon' => 'fa-exclamation-triangle'],
+                                                        'Media' => ['color' => '#FFAB00', 'bg' => '#FFAB00', 'icon' => 'fa-exclamation-circle'],
+                                                        'Baja' => ['color' => '#36B37E', 'bg' => '#36B37E', 'icon' => 'fa-info-circle']
                                                     ];
                                                 @endphp
                                                 @foreach($prioridades as $prioridad => $config)
@@ -1216,9 +1169,6 @@
                                                 <h5 class="text-sm font-semibold flex items-center gap-2 dark:text-white">
                                                     <i class="fas fa-chart-bar text-[#3B82F6]"></i> Total vs cerrados por mes
                                                 </h5>
-                                                <span
-                                                    class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                                                    aria-hidden="true">Hover</span>
                                             </div>
                                             <div
                                                 class="relative h-64 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/50 dark:bg-black/25 group-hover:bg-gray-50/80 dark:group-hover:bg-black/35">
@@ -1741,7 +1691,7 @@
 
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
 <script src="{{ asset('assets/js/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>
@@ -1884,35 +1834,35 @@
 
     /** Colores y bordes por tema (solo presentación; los datos no cambian). */
     function crearPaletaProductividad(esOscuro) {
-        var serie = ['#22C55E', '#38BDF8', '#94A3B8', '#0EA5E9', '#4ADE80', '#64748B', '#166534', '#7DD3FC', '#CBD5E1', '#0284C7'];
-        var serieHover = ['#4ADE80', '#7DD3FC', '#CBD5E1', '#38BDF8', '#86EFAC', '#94A3B8', '#22C55E', '#BAE6FD', '#E2E8F0', '#0EA5E9'];
+        var serie = ['#0052CC', '#6554C0', '#FFAB00', '#36B37E', '#4C9AFF', '#00875A', '#A3B3C9', '#0066FF', '#8777D9', '#6B7D99'];
+        var serieHover = ['#0066FF', '#8777D9', '#FFD60A', '#57D9A3', '#79B8FF', '#36B37E', '#C5D0DE', '#4C9AFF', '#B8A9E8', '#A3B3C9'];
         var borde = esOscuro ? '#0F172A' : '#ffffff';
         return {
             donaBorde: borde,
-            estado: ['#F87171', '#38BDF8', '#22C55E'],
-            clasificacion: ['#F87171', '#38BDF8'],
+            estado: ['#FF5630', '#4C9AFF', '#36B37E'],
+            clasificacion: ['#FF5630', '#0052CC'],
             clasBorde: [borde, borde],
-            prioridad: ['#F87171', '#FBBF24', '#22C55E'],
-            prioridadHover: ['#FCA5A5', '#FDE68A', '#4ADE80'],
+            prioridad: ['#FF5630', '#FFAB00', '#36B37E'],
+            prioridadHover: ['#FF7452', '#FFC400', '#57D9A3'],
             prioridadBorde: borde,
-            tipoBar: '#22C55E',
-            tipoHover: '#4ADE80',
+            tipoBar: '#0052CC',
+            tipoHover: '#0066FF',
             tipoBorde: borde,
-            lineCreadosStroke: '#38BDF8',
-            lineCreadosFill: 'rgba(56,189,248,0.16)',
-            lineResStroke: '#22C55E',
-            lineResFill: 'rgba(34,197,94,0.16)',
-            puntoCreados: { fill: borde, stroke: '#38BDF8', hFill: '#F8FAFC', hStroke: '#0EA5E9' },
-            puntoRes: { fill: borde, stroke: '#22C55E', hFill: '#F8FAFC', hStroke: '#16A34A' },
+            lineCreadosStroke: '#6554C0',
+            lineCreadosFill: 'rgba(101,84,192,0.18)',
+            lineResStroke: '#0052CC',
+            lineResFill: 'rgba(0,82,204,0.18)',
+            puntoCreados: { fill: borde, stroke: '#6554C0', hFill: '#F8FAFC', hStroke: '#8777D9' },
+            puntoRes: { fill: borde, stroke: '#0052CC', hFill: '#F8FAFC', hStroke: '#0066FF' },
             comp: [
-                { bg: '#38BDF8', h: '#7DD3FC', b: borde },
-                { bg: '#22C55E', h: '#4ADE80', b: borde },
-                { bg: '#94A3B8', h: '#CBD5E1', b: borde }
+                { bg: '#6554C0', h: '#8777D9', b: borde },
+                { bg: '#0052CC', h: '#0066FF', b: borde },
+                { bg: '#A3B3C9', h: '#C5D0DE', b: borde }
             ],
             matriz: serie,
             matrizH: serieHover,
-            empTot: { bg: '#38BDF8', h: '#7DD3FC', b: borde },
-            empCer: { bg: '#22C55E', h: '#4ADE80', b: borde }
+            empTot: { bg: '#4C9AFF', h: '#79B8FF', b: borde },
+            empCer: { bg: '#36B37E', h: '#57D9A3', b: borde }
         };
     }
 
@@ -1943,13 +1893,13 @@
 
     function tooltipEstiloBase(colores, extra) {
         return Object.assign({
-            cornerRadius: 10,
+            cornerRadius: 12,
             titleMarginBottom: 6,
             caretSize: 6,
             bodySpacing: 5,
-            padding: 14,
+            padding: 12,
             backgroundColor: 'rgba(15, 23, 42, 0.94)',
-            titleColor: '#22C55E',
+            titleColor: '#4C9AFF',
             bodyColor: '#F8FAFC',
             borderColor: colores.tooltipBorder,
             borderWidth: 1
@@ -2093,6 +2043,9 @@
         destruir(C.tipoTicket);
         destruir(C.comparacionTiempos6Meses);
         destruir(C.incidenciasMatriz);
+        destruir(C.satisfaccion);
+        destruir(C.cargaResponsable);
+        destruir(C.gerenciaSolicitante);
         C.estado = null;
         C.resueltos = null;
         C.tendencias = null;
@@ -2101,6 +2054,9 @@
         C.tipoTicket = null;
         C.comparacionTiempos6Meses = null;
         C.incidenciasMatriz = null;
+        C.satisfaccion = null;
+        C.cargaResponsable = null;
+        C.gerenciaSolicitante = null;
 
         var md = null;
         try {
@@ -2178,7 +2134,7 @@
         const p = crearPaletaProductividad(dark);
 
         const animacionGraficas = {
-            duration: 720,
+            duration: 560,
             easing: 'easeOutQuart'
         };
 
@@ -2191,6 +2147,9 @@
         if (C.tipoTicket) C.tipoTicket.destroy();
         if (C.comparacionTiempos6Meses) C.comparacionTiempos6Meses.destroy();
         if (C.incidenciasMatriz) C.incidenciasMatriz.destroy();
+        if (C.satisfaccion) C.satisfaccion.destroy();
+        if (C.cargaResponsable) C.cargaResponsable.destroy();
+        if (C.gerenciaSolicitante) C.gerenciaSolicitante.destroy();
 
         // Datos para las gráficas extraídos dinámicamente
         const distribucionEstado = metricasData.distribucion_estado || {};
@@ -2238,7 +2197,7 @@
                     backgroundColor: sumaEstados > 0 ? p.estado : [colores.emptyDoughnut],
                     borderColor: sumaEstados > 0 ? p.donaBorde : colores.tooltipBorder,
                     borderWidth: sumaEstados > 0 ? (dark ? 3 : 2) : 0,
-                    hoverOffset: sumaEstados > 0 ? 16 : 0
+                    hoverOffset: sumaEstados > 0 ? 6 : 0
                 }]
             },
             options: {
@@ -2301,7 +2260,7 @@
                     fill: true,
                     tension: 0.35,
                     pointRadius: dark ? 2.5 : 3,
-                    pointHoverRadius: 9,
+                    pointHoverRadius: 5,
                     pointHitRadius: 18,
                     pointBackgroundColor: p.puntoCreados.fill,
                     pointBorderColor: p.puntoCreados.stroke,
@@ -2319,7 +2278,7 @@
                     fill: true,
                     tension: 0.35,
                     pointRadius: dark ? 2.5 : 3,
-                    pointHoverRadius: 9,
+                    pointHoverRadius: 5,
                     pointHitRadius: 18,
                     pointBackgroundColor: p.puntoRes.fill,
                     pointBorderColor: p.puntoRes.stroke,
@@ -2504,6 +2463,12 @@
         if (ctxClasificacion) {
             const valoresClasificacion = Object.values(ticketsPorClasificacion);
             const sumaClasificacion = valoresClasificacion.reduce((a, b) => a + b, 0);
+            const colorClasificacion = function (nombre) {
+                const n = String(nombre || '').toLowerCase();
+                if (n.indexOf('problem') !== -1) return '#FF5630';
+                if (n.indexOf('servic') !== -1) return '#0052CC';
+                return '#6554C0';
+            };
 
             C.clasificacion = new Chart(ctxClasificacion.getContext('2d'), {
                 type: 'doughnut',
@@ -2512,7 +2477,7 @@
                     labels: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion) : ['Sin tickets este mes'],
                     datasets: [{
                         data: sumaClasificacion > 0 ? valoresClasificacion : [1],
-                        backgroundColor: sumaClasificacion > 0 ? p.clasificacion : [colores.emptyDoughnut],
+                        backgroundColor: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion).map(colorClasificacion) : [colores.emptyDoughnut],
                         borderColor: sumaClasificacion > 0 ? p.clasBorde : [colores.tooltipBorder],
                         borderWidth: sumaClasificacion > 0 ? (dark ? 3 : 2) : 0,
                         hoverOffset: sumaClasificacion > 0 ? 16 : 0
@@ -2945,6 +2910,70 @@
                         datalabels: datalabelsMatrizApilada()
                     }
                 }
+            });
+        }
+
+        const optsBarras = function (horizontal) {
+            if (window.UxCharts) return UxCharts.barras(horizontal);
+            return { responsive: true, maintainAspectRatio: false, indexAxis: horizontal ? 'y' : 'x' };
+        };
+
+        const canvasSat = document.getElementById('chartSatisfaccion');
+        if (canvasSat) {
+            const cal = metricasData.calificacion_promedio || {};
+            const optsSat = optsBarras(false);
+            if (optsSat.scales && optsSat.scales.y) optsSat.scales.y.max = 5;
+            C.satisfaccion = new Chart(canvasSat, {
+                type: 'bar',
+                data: {
+                    labels: ['Rapidez', 'Atención', 'Resolución'],
+                    datasets: [{
+                        label: 'Promedio sobre 5',
+                        data: [Number(cal.fastness) || 0, Number(cal.attention) || 0, Number(cal.resolution) || 0],
+                        backgroundColor: ['#4C9AFF', '#36B37E', '#6554C0'],
+                        borderRadius: 8,
+                        maxBarThickness: 42
+                    }]
+                },
+                options: optsSat
+            });
+        }
+
+        const canvasCarga = document.getElementById('chartCargaResponsable');
+        if (canvasCarga) {
+            const filas = metricasData.tickets_por_responsable || [];
+            const lista = filas.length ? filas : [{ nombre: 'Sin datos', cerrados: 0, en_progreso: 0, pendientes: 0 }];
+            C.cargaResponsable = new Chart(canvasCarga, {
+                type: 'bar',
+                data: {
+                    labels: lista.map(function (f) { return f.nombre; }),
+                    datasets: [
+                        { label: 'Cerrados', data: lista.map(function (f) { return f.cerrados || 0; }), backgroundColor: '#36B37E', borderRadius: 6, maxBarThickness: 16 },
+                        { label: 'En progreso', data: lista.map(function (f) { return f.en_progreso || 0; }), backgroundColor: '#4C9AFF', borderRadius: 6, maxBarThickness: 16 },
+                        { label: 'Pendientes', data: lista.map(function (f) { return f.pendientes || 0; }), backgroundColor: '#FF5630', borderRadius: 6, maxBarThickness: 16 }
+                    ]
+                },
+                options: optsBarras(true)
+            });
+        }
+
+        const canvasGerencia = document.getElementById('chartGerenciaSolicitante');
+        if (canvasGerencia) {
+            const filasG = (metricasData.tickets_por_gerencia_solicitante || []).slice(0, 10);
+            const listaG = filasG.length ? filasG : [{ gerencia: 'Sin datos', total: 0 }];
+            C.gerenciaSolicitante = new Chart(canvasGerencia, {
+                type: 'bar',
+                data: {
+                    labels: listaG.map(function (f) { return f.gerencia; }),
+                    datasets: [{
+                        label: 'Tickets',
+                        data: listaG.map(function (f) { return f.total || 0; }),
+                        backgroundColor: window.UxCharts ? UxCharts.tonos(listaG.length) : '#0052CC',
+                        borderRadius: 8,
+                        maxBarThickness: 22
+                    }]
+                },
+                options: optsBarras(true)
             });
         }
     }
