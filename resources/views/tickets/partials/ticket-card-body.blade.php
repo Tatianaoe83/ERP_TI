@@ -17,10 +17,10 @@
         @endif
     </div>
     @if(!empty($prioridad))
-    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0
-        @if($prioridad=='Baja') bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-900/30 dark:text-green-300 dark:ring-green-800
-        @elseif($prioridad=='Media') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:ring-yellow-800
-        @else bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-300 dark:ring-red-800
+    <span class="erp-chip shrink-0
+        @if($prioridad=='Baja') erp-chip--ok
+        @elseif($prioridad=='Media') erp-chip--aviso
+        @else erp-chip--alerta
         @endif">
         {{ $prioridad }}
     </span>

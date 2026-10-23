@@ -28,9 +28,9 @@ class InventarioDataTable extends DataTable
             })
             ->addColumn('estado_disponibilidad', function ($row) {
             if ($row->Disponible == 1) {
-                return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
+                return '<span class="erp-chip erp-chip--ok">Disponible</span>';
             } else {
-                return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
+                return '<span class="erp-chip erp-chip--alerta">Asignada</span>';
             }
         })
         ->rawColumns(['action', 'estado_disponibilidad'])

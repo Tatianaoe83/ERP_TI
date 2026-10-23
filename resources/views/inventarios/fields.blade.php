@@ -849,6 +849,31 @@
 @include('layouts.partials.index-page-js')
 
 <script>
+    (function () {
+        if (!window.Swal || Swal.__erpAviso) return;
+        var original = Swal.fire.bind(Swal);
+        Swal.fire = function (opts) {
+            if (!opts || typeof opts !== 'object' || opts.showCancelButton || opts.showDenyButton || opts.input) {
+                return original.apply(Swal, arguments);
+            }
+            var titulo = opts.title || '';
+            var texto = opts.text || '';
+            if (!texto && opts.html) {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = opts.html;
+                texto = (tmp.textContent || '').trim();
+            }
+            var icon = opts.icon || 'info';
+            if (window.AppAlert) {
+                if (icon === 'success') AppAlert.ok(texto || titulo, texto ? titulo : undefined);
+                else if (icon === 'warning') AppAlert.cuidado(texto || titulo, texto ? titulo : undefined);
+                else if (icon === 'error') AppAlert.fallo(texto || titulo, texto ? titulo : undefined);
+                else AppAlert.aviso(texto || titulo, texto ? titulo : undefined);
+            }
+            return Promise.resolve({ isConfirmed: true, isDenied: false, isDismissed: false });
+        };
+        Swal.__erpAviso = true;
+    })();
     var empleadoInventarioActivo = @json($empleadoActivo);
     var permitePresupuestado = @json($permitePresupuestado);
     var presupuestadoForzado = @json($presupuestadoForzado);

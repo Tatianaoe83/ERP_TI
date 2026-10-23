@@ -152,7 +152,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
-                <span class="text-sm px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 font-semibold">
+                <span class="erp-chip erp-chip--ok">
                     Cumplimiento: {{ $sla['pct_cumplimiento'] ?? 0 }}%
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -248,9 +248,9 @@
                             <td class="py-2 px-4 dark:text-gray-300">{{ $critico['estatus'] }}</td>
                             <td class="py-2 px-4">
                                 @if($critico['estado_sla'] === 'vencido')
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">Vencido</span>
+                                    <span class="erp-chip erp-chip--alerta">Vencido</span>
                                 @else
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">En riesgo</span>
+                                    <span class="erp-chip erp-chip--aviso">En riesgo</span>
                                 @endif
                             </td>
                             <td class="py-2 px-4 text-gray-600 dark:text-gray-400">{{ $critico['meta_texto'] }}</td>

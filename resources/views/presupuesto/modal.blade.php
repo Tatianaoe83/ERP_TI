@@ -7,11 +7,11 @@
 
     <div class="modal-dialog modal-lg">
 
-        <div class="modal-content dark:bg-[#101010] bg-white">
+        <div class="modal-content">
 
-            <div class="modal-header border-gray-200 dark:border-secondary">
+            <div class="modal-header">
 
-                <h5 class="modal-title text-danger" id="modalFaltantesLabel">
+                <h5 class="modal-title" id="modalFaltantesLabel">
                     <i class="fas fa-exclamation-triangle"></i>
                     Resumen de Validación de Gerencia
                 </h5>
@@ -31,8 +31,7 @@
                     es necesario corregir los siguientes puntos:
                 </p>
 
-                <div class="mt-4 p-4 bg-gray-100 dark:bg-[#1a1a1a] rounded border border-gray-200 dark:border-secondary text-[#101D49] dark:text-gray-200"
-                    id="infoAdicionalEmpleados">
+                <div class="mt-4 p-4 rounded border" id="infoAdicionalEmpleados">
 
                     <h6 class="mb-3 border-bottom border-gray-300 dark:border-secondary pb-2 text-[#101D49] dark:text-white">
                         <i class="fas fa-users"></i>
@@ -45,7 +44,7 @@
                             <strong>Total De Empleados:</strong>
 
                             <span id="totalEmpleadosModal"
-                                class="badge bg-success fs-6">
+                                class="erp-chip erp-chip--ok">
                                 0
                             </span>
                         </p>
@@ -58,7 +57,7 @@
                             </strong>
 
                             <span id="sinMesPagoMensualModal"
-                                class="badge bg-danger fs-6">
+                                class="erp-chip erp-chip--alerta">
                                 0
                             </span>
                         </p>
@@ -71,7 +70,7 @@
                             </strong>
 
                             <span id="sinMesPagoAnualModal"
-                                class="badge bg-danger fs-6">
+                                class="erp-chip erp-chip--alerta">
                                 0
                             </span>
                         </p>
@@ -84,7 +83,7 @@
                             </strong>
 
                             <span id="lineasSinAsignarConFechaModal"
-                                class="badge bg-danger fs-6">
+                                class="erp-chip erp-chip--alerta">
                                 0
                             </span>
                         </p>
@@ -97,7 +96,7 @@
                             </strong>
 
                             <span id="insumosSinAsignarConFechaModal"
-                                class="badge bg-danger fs-6">
+                                class="erp-chip erp-chip--alerta">
                                 0
                             </span>
                         </p>

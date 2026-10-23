@@ -1450,6 +1450,8 @@ html.dark .header-user-menu {
 .erp-chip,
 .sol-status,
 .index-badge,
+.badge,
+.act-pill,
 .index-page__card .badge {
     display: inline-flex !important;
     align-items: center;
@@ -1472,6 +1474,10 @@ html.dark .header-user-menu {
 .sol-status--aprobada,
 .sol-status--listo,
 .index-badge--success,
+.badge-success,
+.badge.bg-success,
+.act-pill--ok,
+.act-pill--alta,
 .index-page__card .badge-success {
     background: rgba(54, 179, 126, 0.14) !important;
     color: #00875a !important;
@@ -1482,6 +1488,9 @@ html.dark .header-user-menu {
 .sol-status--pendiente,
 .sol-status--recotizar,
 .index-badge--warning,
+.badge-warning,
+.badge.bg-warning,
+.act-pill--baja,
 .index-page__card .badge-warning {
     background: rgba(255, 171, 0, 0.16) !important;
     color: #9a6700 !important;
@@ -1492,6 +1501,8 @@ html.dark .header-user-menu {
 .sol-status--cancelada,
 .sol-status--rechazada,
 .index-badge--danger,
+.badge-danger,
+.badge.bg-danger,
 .index-page__card .badge-danger {
     background: rgba(255, 86, 48, 0.12) !important;
     color: #bf2600 !important;
@@ -1499,7 +1510,11 @@ html.dark .header-user-menu {
 }
 
 .erp-chip--info,
-.sol-status--enviadas {
+.sol-status--enviadas,
+.badge-info,
+.badge.bg-info,
+.badge.bg-primary,
+.act-pill--cambio {
     background: rgba(0, 82, 204, 0.1) !important;
     color: #0052cc !important;
     border-color: rgba(0, 82, 204, 0.32) !important;
@@ -1516,6 +1531,10 @@ html.dark .header-user-menu {
 .sol-status--default,
 .index-badge--muted,
 .index-badge--dark,
+.badge-secondary,
+.badge.bg-secondary,
+.badge.bg-light,
+.act-pill--aviso,
 .index-page__card .badge-secondary,
 .index-page__card .badge-dark {
     background: rgba(10, 22, 40, 0.05) !important;
@@ -1526,6 +1545,8 @@ html.dark .header-user-menu {
 html.dark .erp-chip,
 html.dark .sol-status,
 html.dark .index-badge,
+html.dark .badge,
+html.dark .act-pill,
 html.dark .index-page__card .badge {
     background: rgba(255, 255, 255, 0.06) !important;
     color: #e8eef6 !important;
@@ -1536,6 +1557,10 @@ html.dark .erp-chip--ok,
 html.dark .sol-status--aprobada,
 html.dark .sol-status--listo,
 html.dark .index-badge--success,
+html.dark .badge-success,
+html.dark .badge.bg-success,
+html.dark .act-pill--ok,
+html.dark .act-pill--alta,
 html.dark .index-page__card .badge-success {
     background: rgba(54, 179, 126, 0.16) !important;
     color: #57d9a3 !important;
@@ -1546,6 +1571,9 @@ html.dark .erp-chip--aviso,
 html.dark .sol-status--pendiente,
 html.dark .sol-status--recotizar,
 html.dark .index-badge--warning,
+html.dark .badge-warning,
+html.dark .badge.bg-warning,
+html.dark .act-pill--baja,
 html.dark .index-page__card .badge-warning {
     background: rgba(255, 171, 0, 0.16) !important;
     color: #ffc400 !important;
@@ -1556,6 +1584,8 @@ html.dark .erp-chip--alerta,
 html.dark .sol-status--cancelada,
 html.dark .sol-status--rechazada,
 html.dark .index-badge--danger,
+html.dark .badge-danger,
+html.dark .badge.bg-danger,
 html.dark .index-page__card .badge-danger {
     background: rgba(255, 86, 48, 0.16) !important;
     color: #ff7452 !important;
@@ -1563,7 +1593,11 @@ html.dark .index-page__card .badge-danger {
 }
 
 html.dark .erp-chip--info,
-html.dark .sol-status--enviadas {
+html.dark .sol-status--enviadas,
+html.dark .badge-info,
+html.dark .badge.bg-info,
+html.dark .badge.bg-primary,
+html.dark .act-pill--cambio {
     background: rgba(76, 154, 255, 0.16) !important;
     color: #4c9aff !important;
     border-color: rgba(76, 154, 255, 0.45) !important;
@@ -1576,10 +1610,135 @@ html.dark .sol-status--revision {
     border-color: rgba(101, 84, 192, 0.48) !important;
 }
 
+/* Paginado único: tablas, Laravel y Livewire. */
+.erp-page,
+.dataTables_wrapper .dataTables_paginate,
+ul.pagination {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.75rem 0 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.dataTables_wrapper .dataTables_paginate > span {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 !important;
+}
+
+.erp-page__btn,
+.dataTables_wrapper .dataTables_paginate .paginate_button,
+ul.pagination .page-link {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    margin: 0 !important;
+    padding: 0 0.55rem !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #0a1628 !important;
+    font-family: Inter, sans-serif;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.erp-page__btn:hover,
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+ul.pagination .page-link:hover {
+    background: rgba(0, 82, 204, 0.08) !important;
+    border-color: #0052cc !important;
+    color: #0052cc !important;
+}
+
+.erp-page__btn.is-current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover,
+ul.pagination .page-item.active .page-link,
+ul.pagination .page-item.active .page-link:hover {
+    background: #0052cc !important;
+    border-color: #0052cc !important;
+    color: #ffffff !important;
+}
+
+.erp-page__btn.is-disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover,
+ul.pagination .page-item.disabled .page-link {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #94a3b8 !important;
+    box-shadow: none !important;
+    cursor: default;
+    pointer-events: none;
+}
+
+.erp-page__gap,
+.dataTables_wrapper .dataTables_paginate .ellipsis {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 0.15rem;
+    color: #64748b;
+}
+
+html.dark .erp-page__btn,
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button,
+html.dark ul.pagination .page-link {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #e8eef6 !important;
+}
+
+html.dark .erp-page__btn:hover,
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+html.dark ul.pagination .page-link:hover {
+    background: rgba(0, 82, 204, 0.22) !important;
+    border-color: #4c9aff !important;
+    color: #ffffff !important;
+}
+
+html.dark .erp-page__btn.is-current,
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover,
+html.dark ul.pagination .page-item.active .page-link {
+    background: #0052cc !important;
+    border-color: #0052cc !important;
+    color: #ffffff !important;
+}
+
+html.dark .erp-page__btn.is-disabled,
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+html.dark .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover,
+html.dark ul.pagination .page-item.disabled .page-link {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #6b7d99 !important;
+}
+
 html.dark .erp-chip--neutro,
 html.dark .sol-status--default,
 html.dark .index-badge--muted,
 html.dark .index-badge--dark,
+html.dark .badge-secondary,
+html.dark .badge.bg-secondary,
+html.dark .badge.bg-light,
+html.dark .act-pill--aviso,
 html.dark .index-page__card .badge-secondary,
 html.dark .index-page__card .badge-dark {
     background: rgba(255, 255, 255, 0.06) !important;

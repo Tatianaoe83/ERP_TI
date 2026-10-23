@@ -228,15 +228,11 @@
                         solicitudes
                     </p>
                     @if($todasSolicitudes->hasPages())
-                    <nav class="flex items-center gap-1">
+                    <nav class="erp-page" aria-label="Paginación">
                         @if($todasSolicitudes->onFirstPage())
-                        <span class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed text-xs">
-                            <i class="fas fa-chevron-left"></i>
-                        </span>
+                        <span class="erp-page__btn is-disabled"><i class="fas fa-chevron-left"></i></span>
                         @else
-                        <button type="button" wire:click="previousPage" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
+                        <button type="button" wire:click="previousPage" class="erp-page__btn"><i class="fas fa-chevron-left"></i></button>
                         @endif
                         @php
                         $rangoPaginas = $todasSolicitudes->getUrlRange(
@@ -246,23 +242,19 @@
                         @endphp
                         @foreach($rangoPaginas as $page => $url)
                         @if($page == $todasSolicitudes->currentPage())
-                        <span class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 text-white text-sm font-semibold">{{ $page }}</span>
+                        <span class="erp-page__btn is-current">{{ $page }}</span>
                         @else
-                        <button type="button" wire:click="gotoPage({{ $page }})" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">{{ $page }}</button>
+                        <button type="button" wire:click="gotoPage({{ $page }})" class="erp-page__btn">{{ $page }}</button>
                         @endif
                         @endforeach
                         @if($todasSolicitudes->currentPage() < $todasSolicitudes->lastPage() - 2)
-                            <span class="px-1 text-slate-400">...</span>
-                            <button type="button" wire:click="gotoPage({{ $todasSolicitudes->lastPage() }})" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">{{ $todasSolicitudes->lastPage() }}</button>
+                            <span class="erp-page__gap">...</span>
+                            <button type="button" wire:click="gotoPage({{ $todasSolicitudes->lastPage() }})" class="erp-page__btn">{{ $todasSolicitudes->lastPage() }}</button>
                             @endif
                             @if($todasSolicitudes->hasMorePages())
-                            <button type="button" wire:click="nextPage" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
+                            <button type="button" wire:click="nextPage" class="erp-page__btn"><i class="fas fa-chevron-right"></i></button>
                             @else
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed text-xs">
-                                <i class="fas fa-chevron-right"></i>
-                            </span>
+                            <span class="erp-page__btn is-disabled"><i class="fas fa-chevron-right"></i></span>
                             @endif
                     </nav>
                     @endif

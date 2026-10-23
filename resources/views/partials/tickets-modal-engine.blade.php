@@ -648,10 +648,10 @@
                         if (prioridadElement && ticket.prioridad) {
                             prioridadElement.textContent = ticket.prioridad;
                             // Actualizar clases según prioridad
-                            prioridadElement.className = `text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                                ticket.prioridad === 'Baja' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                ticket.prioridad === 'Media' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            prioridadElement.className = `erp-chip shrink-0 ${
+                                ticket.prioridad === 'Baja' ? 'erp-chip--ok' :
+                                ticket.prioridad === 'Media' ? 'erp-chip--aviso' :
+                                'erp-chip--alerta'
                             }`;
                         }
                         
@@ -1098,9 +1098,9 @@
                         const badgeEstado = tiempoContainer.querySelector('.badge-estado');
                         if (badgeEstado) {
                             const estado = tiempoInfo.estado;
-                            badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                estado === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
+                            badgeEstado.className = `badge-estado erp-chip ${
+                                estado === 'agotado' ? 'erp-chip--alerta' :
+                                (estado === 'por_vencer' ? 'erp-chip--aviso' : 'erp-chip--ok')
                             }`;
                             badgeEstado.innerHTML = estado === 'agotado' 
                                 ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
@@ -1941,15 +1941,15 @@
                                 (badge.classList.contains('rounded-full') && !badge.textContent.includes('Ticket'))) {
                                 badge.textContent = ticketData.Prioridad;
                                             // Actualizar clases de color según prioridad
-                                            const clasesBase = badge.className.split(' ').filter(c => 
-                                                !c.startsWith('bg-') && !c.startsWith('text-')
+                                            const clasesBase = badge.className.split(' ').filter(c =>
+                                                !c.startsWith('bg-') && !c.startsWith('text-') && !c.startsWith('ring-') && !c.startsWith('dark:') && !c.startsWith('erp-chip')
                                             ).join(' ');
-                                const clasesColor = ticketData.Prioridad === 'Baja' 
-                                                ? 'bg-green-200 text-green-600' 
-                                    : ticketData.Prioridad === 'Media' 
-                                                ? 'bg-yellow-200 text-yellow-600' 
-                                                : 'bg-red-200 text-red-600';
-                                            badge.className = clasesBase + ' ' + clasesColor;
+                                const clasesColor = ticketData.Prioridad === 'Baja'
+                                                ? 'erp-chip--ok'
+                                    : ticketData.Prioridad === 'Media'
+                                                ? 'erp-chip--aviso'
+                                                : 'erp-chip--alerta';
+                                            badge.className = (clasesBase + ' erp-chip ' + clasesColor).replace(/\s+/g, ' ').trim();
                                         }
                                     });
                                 });

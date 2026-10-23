@@ -1631,20 +1631,20 @@
                                     <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap"
                                         x-text="ticket.Gerencia"></td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                                        <span class="erp-chip"
                                             :class="{
-                                            'bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-600/20 dark:text-red-400 dark:ring-red-600/40':         ticket.Prioridad === 'Alta',
-                                            'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:ring-yellow-500/40': ticket.Prioridad === 'Media',
-                                            'bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-600/20 dark:text-green-400 dark:ring-green-600/40':   ticket.Prioridad === 'Baja'
+                                            'erp-chip--alerta': ticket.Prioridad === 'Alta',
+                                            'erp-chip--aviso': ticket.Prioridad === 'Media',
+                                            'erp-chip--ok': ticket.Prioridad === 'Baja'
                                         }" x-text="ticket.Prioridad">
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                                        <span class="erp-chip"
                                             :class="{
-                                            'bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-slate-600/40 dark:text-slate-300 dark:ring-slate-500/40':  ticket.Estatus === 'Pendiente',
-                                            'bg-blue-100 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-600/20 dark:text-blue-400 dark:ring-blue-500/40':     ticket.Estatus === 'En progreso',
-                                            'bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-600/20 dark:text-green-400 dark:ring-green-500/40':  ticket.Estatus === 'Cerrado'
+                                            'erp-chip--aviso': ticket.Estatus === 'Pendiente',
+                                            'erp-chip--info': ticket.Estatus === 'En progreso',
+                                            'erp-chip--ok': ticket.Estatus === 'Cerrado'
                                         }" x-text="ticket.Estatus">
                                         </span>
                                     </td>

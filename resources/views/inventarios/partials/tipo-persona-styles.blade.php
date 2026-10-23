@@ -1,70 +1,106 @@
 <style>
-    .inv-tipo-badge {
+    .inv-tipo-badge,
+    .inv-chip,
+    .inv-mes-pill,
+    .inv-locked-tag,
+    .inv-opt-tag {
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
-        padding: 0.28rem 0.65rem;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        line-height: 1.2;
-        white-space: nowrap;
-    }
-
-    .inv-tipo-fisica {
-        background: #eff6ff;
-        color: #1d4ed8;
-        border: 1px solid #bfdbfe;
-    }
-
-    .inv-tipo-referenciado {
-        background: #f5f3ff;
-        color: #6d28d9;
-        border: 1px solid #ddd6fe;
-    }
-
-    .inv-tipo-extraordinario {
-        background: #fff7ed;
-        color: #c2410c;
-        border: 1px solid #fed7aa;
-    }
-
-    .inv-chip {
-        display: inline-flex;
-        align-items: center;
+        justify-content: center;
         gap: 0.3rem;
-        padding: 0.22rem 0.55rem;
-        border-radius: 0.4rem;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
+        padding: 0.22rem 0.72rem;
+        border-radius: 999px;
+        font-family: Inter, sans-serif;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1.3;
         white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .inv-tipo-fisica,
+    .inv-chip-share {
+        background: rgba(0, 82, 204, 0.1);
+        color: #0052cc;
+        border-color: rgba(0, 82, 204, 0.32);
+    }
+
+    .inv-tipo-referenciado,
+    .inv-chip-propio {
+        background: rgba(101, 84, 192, 0.12);
+        color: #403294;
+        border-color: rgba(101, 84, 192, 0.38);
+    }
+
+    .inv-tipo-extraordinario,
+    .inv-chip-extra,
+    .inv-mes-pill,
+    .inv-opt-tag {
+        background: rgba(255, 171, 0, 0.16);
+        color: #9a6700;
+        border-color: rgba(255, 171, 0, 0.5);
     }
 
     .inv-chip-stock {
-        background: #ecfdf5;
-        color: #047857;
-        border: 1px solid #a7f3d0;
+        background: rgba(54, 179, 126, 0.14);
+        color: #00875a;
+        border-color: rgba(54, 179, 126, 0.4);
     }
 
-    .inv-chip-extra {
-        background: #fff7ed;
-        color: #c2410c;
-        border: 1px solid #fdba74;
+    .inv-chip-off,
+    .inv-locked-tag {
+        background: rgba(10, 22, 40, 0.05);
+        color: #334155;
+        border-color: rgba(10, 22, 40, 0.16);
     }
 
-    .inv-chip-share {
-        background: #eff6ff;
-        color: #1d4ed8;
-        border: 1px solid #bfdbfe;
+    html.dark .inv-tipo-fisica,
+    html.dark .inv-chip-share,
+    .dark .inv-tipo-fisica,
+    .dark .inv-chip-share {
+        background: rgba(76, 154, 255, 0.16);
+        color: #4c9aff;
+        border-color: rgba(76, 154, 255, 0.45);
     }
 
-    .inv-chip-propio {
-        background: #f5f3ff;
-        color: #6d28d9;
-        border: 1px solid #ddd6fe;
+    html.dark .inv-tipo-referenciado,
+    html.dark .inv-chip-propio,
+    .dark .inv-tipo-referenciado,
+    .dark .inv-chip-propio {
+        background: rgba(101, 84, 192, 0.2);
+        color: #c0b6ff;
+        border-color: rgba(101, 84, 192, 0.48);
+    }
+
+    html.dark .inv-tipo-extraordinario,
+    html.dark .inv-chip-extra,
+    html.dark .inv-mes-pill,
+    html.dark .inv-opt-tag,
+    .dark .inv-tipo-extraordinario,
+    .dark .inv-chip-extra,
+    .dark .inv-mes-pill,
+    .dark .inv-opt-tag {
+        background: rgba(255, 171, 0, 0.16);
+        color: #ffc400;
+        border-color: rgba(255, 171, 0, 0.5);
+    }
+
+    html.dark .inv-chip-stock,
+    .dark .inv-chip-stock {
+        background: rgba(54, 179, 126, 0.16);
+        color: #57d9a3;
+        border-color: rgba(54, 179, 126, 0.45);
+    }
+
+    html.dark .inv-chip-off,
+    html.dark .inv-locked-tag,
+    .dark .inv-chip-off,
+    .dark .inv-locked-tag {
+        background: rgba(255, 255, 255, 0.06);
+        color: #e8eef6;
+        border-color: rgba(255, 255, 255, 0.16);
     }
 
     .inv-leyenda {

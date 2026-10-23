@@ -53,13 +53,13 @@
                                 {{ $presupuesto->Nombre }}
                             @endif
                         </td>
-                        <td>{{ $presupuesto->empleados_count }}</td>
+                        <td><span class="erp-chip erp-chip--info">{{ $presupuesto->empleados_count }}</span></td>
                         @if(auth()->user()->can('editar-empleados'))
                             <td>
-                                <form method="POST" action="{{ route('presupuestos-internos.destroy', $presupuesto->PresupuestoInternoID) }}" onsubmit="return confirm('¿Eliminar este presupuesto interno?');">
+                                <form method="POST" action="{{ route('presupuestos-internos.destroy', $presupuesto->PresupuestoInternoID) }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="index-page__btn-secondary">Eliminar</button>
+                                    <button type="submit" class="index-page__btn-secondary index-action-confirm" data-confirm-title="¿Eliminar este presupuesto interno?">Eliminar</button>
                                 </form>
                             </td>
                         @endif
@@ -73,4 +73,7 @@
         </table>
     </div>
 </x-index-page>
+@push('third_party_scripts')
+@include('layouts.partials.index-page-js')
+@endpush
 @endsection
