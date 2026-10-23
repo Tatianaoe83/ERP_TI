@@ -212,6 +212,7 @@ class ReportesEspecificosController extends AppBaseController
             'inventarioequipo.Caracteristicas',
             'inventarioequipo.NumSerie',
             'inventarioequipo.FechaAsignacion',
+            'inventarioequipo.FechaDeCompra',
             'inventarioequipo.CategoriaEquipo',
         ])
             ->whereNull('empleados.deleted_at');
@@ -243,6 +244,7 @@ class ReportesEspecificosController extends AppBaseController
             'inventarioequipo.Caracteristicas',
             'inventarioequipo.NumSerie',
             'inventarioequipo.FechaAsignacion',
+            'inventarioequipo.FechaDeCompra',
             'inventarioequipo.CategoriaEquipo',
         ])
             ->whereNull('empleados.deleted_at');
