@@ -12,6 +12,24 @@ class SeederLineasTelcel extends Seeder
     // Telcel en companiaslineastelefonicas
     const TELCEL = 1;
 
+    // Renta sin IVA del Excel de Telcel 24/10/2026 por plan; se guarda redondeada siempre hacia arriba
+    const PRECIOS_SIN_IVA = [
+        'TELCEL PLUS EMP 1 CONTROLADO' => 197.41,
+        'TMSLE 1000 CONTROLADO' => 197.41,
+        'TELCEL PLUS EMP 1.5 CONTROLADO' => 231.90,
+        'TELCEL PLUS EMP 2 CONTROLADO' => 283.62,
+        'TMSLE 2000 CONTROLADO' => 283.62,
+        'INT EN TU CASA PLUS 3' => 343.97,
+        'INTERNET EMPRESA CONTROLADO 3.5' => 361.21,
+        'TELCEL PLUS EMP 3 CONTROLADO' => 369.83,
+        'TELCEL PLUS EMP 4 TRADICIONAL' => 430.17,
+        'TELCEL PLUS EMP 4 CONTROLADO' => 473.28,
+        'TELCEL PLUS EMP 5 TRADICIONAL' => 516.38,
+        'TELCEL EMPRESA CONTROLADO VPN 5' => 559.48,
+        'TELCEL EMPRESA 6' => 602.59,
+        'TELCEL PLUS EMP 12 TRADICIONAL' => 1119.83,
+    ];
+
     public function run()
     {
         $planes = [
@@ -19,10 +37,10 @@ class SeederLineasTelcel extends Seeder
             'BASE' => $this->planExistente('TELCEL PLUS EMP 1 CONTROLADO'),
             'VPN1' => $this->planExistente('TELCEL PLUS EMP 1.5 CONTROLADO'),
             'C4'   => $this->planExistente('TELCEL PLUS EMP 4 CONTROLADO'),
-            // No existían en la tabla de planes, se crean con el precio que tenían en la línea
-            'I35'  => Planes::firstOrCreate(['CompaniaID' => self::TELCEL, 'NombrePlan' => 'INTERNET EMPRESA CONTROLADO 3.5'], ['PrecioPlan' => 361.21]),
-            'VPN5' => Planes::firstOrCreate(['CompaniaID' => self::TELCEL, 'NombrePlan' => 'TELCEL EMPRESA CONTROLADO VPN 5'], ['PrecioPlan' => 559.48]),
-            'E6'   => Planes::firstOrCreate(['CompaniaID' => self::TELCEL, 'NombrePlan' => 'TELCEL EMPRESA 6'], ['PrecioPlan' => 602.59]),
+            // No existían en la tabla de planes, se crean con el precio del Excel
+            'I35'  => $this->planNuevo('INTERNET EMPRESA CONTROLADO 3.5'),
+            'VPN5' => $this->planNuevo('TELCEL EMPRESA CONTROLADO VPN 5'),
+            'E6'   => $this->planNuevo('TELCEL EMPRESA 6'),
         ];
 
         $cambios = [
@@ -75,7 +93,32 @@ class SeederLineasTelcel extends Seeder
             $creadas++;
         }
 
-        $this->command->info("Líneas Telcel actualizadas: {$actualizadas}, creadas: {$creadas}");
+        // Precio del plan al entero de arriba; aplica a todas las líneas que lo usan
+        $preciosCambiados = 0;
+        foreach (self::PRECIOS_SIN_IVA as $nombre => $sinIva) {
+            // Puede haber planes repetidos con el mismo nombre (EMP 12 TRADICIONAL)
+            $repetidos = Planes::where('CompaniaID', self::TELCEL)->whereRaw('TRIM(NombrePlan) = ?', [$nombre])->get();
+            foreach ($repetidos as $plan) {
+                if ((float) $plan->PrecioPlan == ceil($sinIva)) {
+                    continue;
+                }
+                $plan->update(['PrecioPlan' => ceil($sinIva)]);
+                foreach (LineasTelefonicas::where('PlanID', $plan->ID)->pluck('NumTelefonico') as $numero) {
+                    $this->sincronizarInventario($numero, $plan);
+                }
+                $preciosCambiados++;
+            }
+        }
+
+        $this->command->info("Líneas Telcel actualizadas: {$actualizadas}, creadas: {$creadas}, planes con precio nuevo: {$preciosCambiados}");
+    }
+
+    private function planNuevo($nombre)
+    {
+        return Planes::firstOrCreate(
+            ['CompaniaID' => self::TELCEL, 'NombrePlan' => $nombre],
+            ['PrecioPlan' => ceil(self::PRECIOS_SIN_IVA[$nombre])]
+        );
     }
 
     private function planExistente($nombre)
