@@ -1047,7 +1047,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023e">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023i">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1061,7 +1061,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023e">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023i">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1263,7 +1263,7 @@
             var $scope = root ? jQuery(root) : jQuery(document);
             $scope.find('select').addBack('select').each(function () {
                 var $el = jQuery(this);
-                if ($el.closest('template').length || $el.children('template').length) return;
+                if ($el.closest('template').length || $el.children('template').length || $el.closest('.dataTables_length').length) return;
                 var size = parseInt($el.attr('size') || '0', 10);
                 if (size > 1) return;
                 if ($el.hasClass('select2-hidden-accessible')) {
@@ -1277,7 +1277,7 @@
                 var compact = !full && ($el.hasClass('border-0') || $el.hasClass('bg-transparent'));
                 var opts = {
                     width: full ? '100%' : (compact ? (Math.max($el.outerWidth() || 0, 88) + 'px') : 'resolve'),
-                    minimumResultsForSearch: $el.find('option').length > 12 ? 0 : Infinity,
+                    minimumResultsForSearch: 0,
                     dropdownAutoWidth: compact,
                     dropdownParent: jQuery(document.body)
                 };
@@ -1331,7 +1331,7 @@
             clearTimeout(selectsTimer);
             selectsTimer = setTimeout(function () { window.iniciarSelects(document); }, 80);
         });
-        selectsObs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+        selectsObs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
 
         $('#myTab a').on('click', function(e) {
             e.preventDefault();
@@ -1504,6 +1504,7 @@
             root.querySelectorAll('[data-app-panel]').forEach(function (panel) {
                 panel.hidden = panel.getAttribute('data-app-panel') !== id;
             });
+            if (window.iniciarSelects) window.iniciarSelects(root);
             root.dispatchEvent(new CustomEvent('app-tab-change', { bubbles: true, detail: { tab: id } }));
         }
     };
@@ -1530,6 +1531,7 @@
             root.querySelectorAll('[data-vista-panel]').forEach(function (panel) {
                 panel.hidden = panel.getAttribute('data-vista-panel') !== vista;
             });
+            if (window.iniciarSelects) window.iniciarSelects(root);
             var key = root.getAttribute('data-vista-storage');
             if (key && !options.skipStorage) {
                 try { localStorage.setItem(key, vista); } catch (e) {}

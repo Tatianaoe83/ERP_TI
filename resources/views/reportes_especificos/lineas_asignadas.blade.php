@@ -61,12 +61,12 @@
                 <label for="fecha_hasta">Fecha hasta</label>
                 <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ $filtros['fecha_hasta'] ?? '' }}" class="form-control">
             </div>
-            <div class="index-page__filters-actions">
+            <div class="form-group d-flex align-items-end" style="gap:0.5rem;">
                 <button type="submit" class="index-page__btn-primary">
                     <i class="fas fa-search"></i> Aplicar filtros
                 </button>
-                <a href="{{ route('reportes-especificos.lineas-asignadas') }}" class="index-page__btn-secondary">
-                    <i class="fas fa-times"></i> Limpiar
+                <a href="{{ route('reportes-especificos.lineas-asignadas') }}" class="index-page__btn-primary">
+                    <i class="fa fa-times"></i> Limpiar filtros
                 </a>
             </div>
         </form>

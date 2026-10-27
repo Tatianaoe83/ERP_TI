@@ -237,13 +237,13 @@
                         const valorActual = val ? val.replace(/"/g, '&quot;') : '';
                         
                         return `
-                    <div class="insumo-select-wrap relative inline-block" data-factura="${row.FacturasID}" data-valor="${valorActual}">
+                    <div class="insumo-select-wrap relative" data-factura="${row.FacturasID}" data-valor="${valorActual}">
                         <select class="insumo-select pr-9 pl-3 py-2 text-xs font-medium rounded-lg outline-none transition-all cursor-pointer appearance-none
                                        bg-gray-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700
                                        text-slate-700 dark:text-slate-200 hover:border-violet-400 dark:hover:border-violet-500
                                        focus:border-violet-500 dark:focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm
                                        disabled:opacity-50 disabled:cursor-not-allowed"
-                            style="width: 240px; max-width: 240px;" data-loaded="false" data-factura="${row.FacturasID}" data-valor="${valorActual}">
+                            data-loaded="false" data-factura="${row.FacturasID}" data-valor="${valorActual}">
                             ${val ? `<option value="${valorActual}">${valorActual.length > 32 ? valorActual.substring(0, 32) + '...' : valorActual}</option>` : '<option value="">— Sin asignar —</option>'}
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
@@ -302,7 +302,7 @@
                     orderable: false,
                     render: function(data, type, row) {
                         return `
-                    <div class="mes-select-wrap relative inline-block" data-factura="${row.FacturasID}">
+                    <div class="mes-select-wrap relative" data-factura="${row.FacturasID}">
                         <select class="mes-select pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg outline-none transition-all cursor-pointer appearance-none
                                        bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700
                                        text-slate-700 dark:text-slate-200 hover:border-sky-400 dark:hover:border-sky-500
@@ -1038,6 +1038,14 @@
         });
 
         $('#gerenci_id, #mesFilter, #añoFilter').on('change', function() {
+            aplicarFiltrosGlobalesFacturas();
+        });
+
+        $('#limpiarFiltrosFacturas').on('click', function() {
+            var anio = $('#formFilter').attr('data-anio-default') || '';
+            $('#gerenci_id, #mesFilter').val('');
+            $('#añoFilter').val(anio);
+            $('#gerenci_id, #mesFilter, #añoFilter').trigger('change.select2');
             aplicarFiltrosGlobalesFacturas();
         });
 

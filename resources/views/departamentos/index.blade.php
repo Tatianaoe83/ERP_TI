@@ -14,7 +14,7 @@
         <form method="GET">
             <div class="form-group">
                 <label for="filtro_direccion">Dirección</label>
-                <select id="filtro_direccion" name="direccion_id" class="form-control" onchange="this.form.submit()">
+                <select id="filtro_direccion" name="direccion_id" class="jz1 form-control" onchange="this.form.submit()">
                     <option value="">Todas las direcciones</option>
                     @foreach ($direcciones as $direccion)
                         <option value="{{ $direccion->DireccionID }}" {{ request('direccion_id') == $direccion->DireccionID ? 'selected' : '' }}>{{ $direccion->NombreDireccion }}</option>
@@ -23,12 +23,17 @@
             </div>
             <div class="form-group">
                 <label for="filtro_gerencia">Gerencia</label>
-                <select id="filtro_gerencia" name="gerencia_id" class="form-control" onchange="this.form.submit()">
+                <select id="filtro_gerencia" name="gerencia_id" class="jz1 form-control" onchange="this.form.submit()">
                     <option value="">Todas las gerencias</option>
                     @foreach ($gerencias as $gerencia)
                         <option value="{{ $gerencia->GerenciaID }}" {{ request('gerencia_id') == $gerencia->GerenciaID ? 'selected' : '' }}>{{ $gerencia->NombreGerencia }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="form-group d-flex align-items-end">
+                <a href="{{ request()->url() }}" class="index-page__btn-primary">
+                    <i class="fa fa-times"></i> Limpiar filtros
+                </a>
             </div>
         </form>
     </x-slot>

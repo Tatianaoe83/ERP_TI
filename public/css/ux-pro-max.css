@@ -619,57 +619,58 @@ html.dark .select2-results__option {
 }
 
 html.dark .select2-container--default .select2-results__option--highlighted[aria-selected],
-<<<<<<< Updated upstream
 html.dark .select2-results__option--highlighted {
     background: var(--erp-accent) !important;
     color: #f8fafc !important;
 }
 
 html.dark .select2-container--default .select2-results__option[aria-selected="true"] {
-    background: rgba(245, 158, 11, 0.16) !important;
-    color: #fde68a !important;
-=======
-html.dark .select2-results__option--highlighted,
-html.dark .select2-container--default .select2-results__option[aria-selected="true"] {
-    background: #0052cc !important;
+    background: rgba(0, 82, 204, 0.28) !important;
     color: #ffffff !important;
 }
 
-.select2-container:not(.select2-compact) {
-    width: 100% !important;
+.select2-container {
     display: block;
+    width: 100% !important;
 }
 
 .select2-container--default .select2-selection--single {
-    height: 42px !important;
+    height: 2.5rem !important;
     border-radius: 8px !important;
+    display: flex;
+    align-items: center;
 }
 
 .select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 40px !important;
-    padding-left: 12px !important;
+    line-height: 2.5rem !important;
+    padding-left: 0.75rem !important;
 }
 
 .select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 40px !important;
+    height: 2.5rem !important;
 }
 
 .select2-dropdown {
     border-radius: 8px !important;
     overflow: hidden;
-    box-shadow: 0 12px 32px rgba(10, 22, 40, 0.28);
+    box-shadow: 0 12px 28px rgba(10, 22, 40, 0.28);
 }
 
-.select2-search--dropdown {
+.select2-search--dropdown,
+.select2-search--dropdown.select2-search--hide {
     display: block !important;
     padding: 8px !important;
 }
 
-.select2-container--default .select2-search--dropdown .select2-search__field {
-    border-radius: 6px !important;
-    height: 34px;
-    padding: 0 8px;
->>>>>>> Stashed changes
+select.select2-hidden-accessible {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
 }
 
 /* Acciones de los listados: mismo botón de icono en todos los índices. */
@@ -1653,6 +1654,65 @@ html.dark .sol-status--revision {
     border-color: rgba(101, 84, 192, 0.48) !important;
 }
 
+.index-page .index-page__dt-footer {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    background: var(--index-card, #fff);
+}
+
+.index-page__dt-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    min-width: 0;
+}
+
+.index-page .dataTables_length {
+    float: none !important;
+    margin: 0 !important;
+}
+
+.index-page .dataTables_length label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.index-page .dataTables_length select {
+    height: 2rem;
+    min-width: 4.2rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #0a1628;
+    padding: 0 0.4rem;
+}
+
+html.dark .index-page .index-page__dt-footer {
+    background: #0f1d32;
+}
+
+html.dark .index-page .dataTables_length label {
+    color: #a3b3c9;
+}
+
+html.dark .index-page .dataTables_length select {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #e8eef6;
+}
+
 /* Paginado único: tablas, Laravel y Livewire. */
 .erp-page,
 .dataTables_wrapper .dataTables_paginate,
@@ -1772,6 +1832,68 @@ html.dark ul.pagination .page-item.disabled .page-link {
     background: transparent !important;
     border-color: transparent !important;
     color: #6b7d99 !important;
+}
+
+.index-page .dataTables_wrapper,
+.index-page .index-page__table-wrap {
+    width: 100%;
+    max-width: 100%;
+}
+
+.index-page .index-table,
+.index-page table.dataTable {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+}
+
+.index-page .index-table thead th,
+.index-page table.dataTable thead th,
+.index-page .index-table tbody td,
+.index-page table.dataTable tbody td {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: top;
+}
+
+.index-page .index-table th:last-child,
+.index-page .index-table td:last-child,
+.index-page table.dataTable th:last-child,
+.index-page table.dataTable td:last-child {
+    width: 7.5rem;
+    white-space: nowrap !important;
+    vertical-align: middle;
+    overflow: visible;
+}
+
+.index-page .index-table tbody td:not(:last-child),
+.index-page table.dataTable tbody td:not(:last-child) {
+    overflow: hidden;
+}
+
+.index-page .insumo-select-wrap,
+.index-page .mes-select-wrap {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.index-page .index-table select,
+.index-page table.dataTable select {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+}
+
+.index-page table.dataTable > tbody > tr.child span.dtr-data,
+.index-page table.dataTable > tbody > tr.child span.dtr-title {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 html.dark .erp-chip--neutro,

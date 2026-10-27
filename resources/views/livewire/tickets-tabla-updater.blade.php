@@ -1,4 +1,37 @@
 <div wire:poll.5s.visible="actualizarDatos" wire:init="actualizarDatos">
+    <div class="index-page__filters">
+        <div class="form-group">
+            <label for="ticket-buscar">Buscar</label>
+            <input id="ticket-buscar" type="text"
+                wire:model.debounce.500ms="search"
+                placeholder="Buscar ticket..."
+                class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="ticket-prioridad">Prioridad</label>
+            <select id="ticket-prioridad" wire:model.live="filtroPrioridad" class="form-control">
+                <option value="">Todas las prioridades</option>
+                <option value="sin">Sin Prioridad</option>
+                <option value="Baja">Baja</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="ticket-estado">Estado</label>
+            <select id="ticket-estado" wire:model.live="filtroEstado" class="form-control">
+                <option value="">Todos los estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En progreso">En progreso</option>
+                <option value="Cerrado">Cerrado</option>
+            </select>
+        </div>
+        <div class="form-group d-flex align-items-end">
+            <button wire:click="limpiarFiltros" type="button" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
+            </button>
+        </div>
+    </div>
     <div class="rounded-xl overflow-hidden w-full max-w-full bg-white dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
 
         <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A] dark:bg-[#1C1F26]">
@@ -13,36 +46,6 @@
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 Total: {{ $ticketsTabla->total() }}
             </div>
-        </div>
-
-        <div class="px-4 py-3 bg-gray-50 dark:bg-[#1C1F26] border-b border-gray-200 dark:border-[#2A2F3A] grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input type="text"
-                wire:model.debounce.500ms="search"
-                placeholder="Buscar ticket..."
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
-
-            <select wire:model.live="filtroPrioridad"
-                class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
-                <option value="">Todas las prioridades</option>
-                <option value="sin">Sin Prioridad</option>
-                <option value="Baja">Baja</option>
-                <option value="Media">Media</option>
-                <option value="Alta">Alta</option>
-            </select>
-
-            <select wire:model.live="filtroEstado"
-                class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
-                <option value="">Todos los estados</option>
-                <option value="Pendiente">Pendiente</option>
-                <option value="En progreso">En progreso</option>
-                <option value="Cerrado">Cerrado</option>
-            </select>
-
-            <button wire:click="limpiarFiltros"
-                type="button"
-                class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
-                Limpiar filtros
-            </button>
         </div>
 
         <div class="overflow-x-auto">

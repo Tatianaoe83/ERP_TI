@@ -22,9 +22,7 @@
         @endcan
     </x-slot>
 
-    <div class="index-page__card">
-        @livewire('mantenimientos-table')
-    </div>
+    @livewire('mantenimientos-table')
 
     @can('editar-mantenimientos')
     @php

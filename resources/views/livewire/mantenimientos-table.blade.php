@@ -52,7 +52,7 @@
         }
         .mant-filters {
             display: grid !important;
-            grid-template-columns: minmax(200px, 2.2fr) repeat(3, minmax(110px, 1fr));
+            grid-template-columns: repeat(3, minmax(140px, 1fr));
             gap: 0.75rem 1rem;
             align-items: start;
             padding: 0.9rem 1rem 0.35rem;
@@ -92,6 +92,18 @@
         .dark #mantenimientos-page .index-table thead th {
             color: #e5e7eb !important;
         }
+        .mant-col-menu {
+            min-width: 14rem;
+            padding: 0.35rem;
+            border-radius: 0.65rem;
+        }
+        .mant-col-menu .dropdown-item {
+            border-radius: 0.4rem;
+            font-size: 0.85rem;
+        }
+        .index-page__dt-footer .erp-page {
+            margin: 0 !important;
+        }
         @media (max-width: 768px) {
             .mant-filters {
                 grid-template-columns: 1fr;
@@ -100,17 +112,7 @@
     </style>
     @endpush
     @endonce
-    <div class="mant-filters">
-        <div class="form-group">
-            <label for="buscar-mantenimientos">Buscar</label>
-            <input
-                id="buscar-mantenimientos"
-                type="text"
-                wire:model.debounce.400ms="search"
-                class="form-control"
-                placeholder="Empleado, gerencia, folio, comentario, tipo o estatus..."
-            >
-        </div>
+    <div class="index-page__filters">
         <div class="form-group">
             <label for="anio-mantenimientos">Año</label>
             <select id="anio-mantenimientos" wire:model="anio" class="form-control">
@@ -137,7 +139,14 @@
                 <option value="50">50</option>
             </select>
         </div>
+        <div class="form-group d-flex align-items-end">
+            <button type="button" wire:click="limpiarFiltros" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
+            </button>
+        </div>
     </div>
+
+    <div class="index-page__card">
 
     @php
         $totalMant = $mantenimientos->total();
@@ -150,6 +159,42 @@
     @endphp
     <span id="mant-count-sync" class="d-none" data-total="{{ $totalMant }}" data-label="{{ $countMant }}"></span>
 
+    @php
+        $columnasMant = [
+            'empleado' => 'Empleado',
+            'gerencia' => 'Gerencia',
+            'folio' => 'Folio',
+            'estatus' => 'Estatus',
+            'tipo' => 'Tipo',
+            'fecha' => 'Fecha de mantenimiento',
+        ];
+    @endphp
+    <div class="index-page__dt-toolbar">
+        <div class="dropdown">
+            <button type="button" class="index-page__colvis" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-columns"></i> Columnas
+            </button>
+            <div class="dropdown-menu mant-col-menu">
+                @foreach($columnasMant as $clave => $titulo)
+                    <button type="button" class="dropdown-item" wire:click="toggleColumna('{{ $clave }}')">
+                        <i class="fas {{ in_array($clave, $columnasOcultas, true) ? 'fa-square' : 'fa-check-square' }} mr-2"></i>{{ $titulo }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
+        <div class="dataTables_filter">
+            <label>
+                Buscar
+                <input
+                    type="search"
+                    wire:model.debounce.400ms="search"
+                    placeholder="Buscar..."
+                    aria-label="Buscar en la tabla"
+                >
+            </label>
+        </div>
+    </div>
+
     @if($mantenimientos->isEmpty())
         <div class="mant-empty-state">
             <i class="fas fa-info-circle"></i>
@@ -160,12 +205,11 @@
             <table class="table index-table w-full align-middle">
                 <thead>
                     <tr>
-                        <th>Empleado</th>
-                        <th>Gerencia</th>
-                        <th>Folio</th>
-                        <th>Estatus</th>
-                        <th>Tipo</th>
-                        <th>Fecha de mantenimiento</th>
+                        @foreach($columnasMant as $clave => $titulo)
+                            @unless(in_array($clave, $columnasOcultas, true))
+                                <th>{{ $titulo }}</th>
+                            @endunless
+                        @endforeach
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -173,22 +217,38 @@
                     @foreach($mantenimientos as $item)
                         @php
                             $estatusVisual = $item->EstatusMantenimiento;
-                            $estatusClase = $estatusVisual === 'Realizado' ? 'mant-status-success' : ($estatusVisual === 'Baja' ? 'mant-status-warning' : 'mant-status-danger');
+                            $estatusClase = match ($estatusVisual) {
+                                'Realizado' => 'erp-chip--ok',
+                                'Baja' => 'erp-chip--alerta',
+                                'Sin persona física' => 'erp-chip--acento',
+                                default => 'erp-chip--aviso',
+                            };
                         @endphp
                         <tr wire:key="mant-{{ $item->id }}">
+                            @unless(in_array('empleado', $columnasOcultas, true))
                             <td>
                                 <div class="mant-employee-name">{{ $item->NombreEmpleado }}</div>
                             </td>
+                            @endunless
+                            @unless(in_array('gerencia', $columnasOcultas, true))
                             <td>{{ $item->NombreGerencia ?? '-' }}</td>
-                            {{-- Folio guardado al generar; si viene vacío, el actual del inventario --}}
+                            @endunless
+                            @unless(in_array('folio', $columnasOcultas, true))
                             <td>{{ $item->Folio ?: (optional($item->inventarioEquipo)->Folio ?: '-') }}</td>
+                            @endunless
+                            @unless(in_array('estatus', $columnasOcultas, true))
                             <td>
-                                <span class="mant-status-badge {{ $estatusClase }}">
+                                <span class="erp-chip {{ $estatusClase }}">
                                     {{ $estatusVisual }}
                                 </span>
                             </td>
+                            @endunless
+                            @unless(in_array('tipo', $columnasOcultas, true))
                             <td>{{ $item->TipoMantenimiento }}</td>
+                            @endunless
+                            @unless(in_array('fecha', $columnasOcultas, true))
                             <td>{{ \Carbon\Carbon::parse($item->FechaReprogramada ?: $item->FechaMantenimiento)->translatedFormat('l, d \\d\\e F \\d\\e Y') }}</td>
+                            @endunless
                             <td>
                                 <div class="index-actions">
                                     <button
@@ -239,11 +299,8 @@
 
     <div class="index-page__dt-footer">
         <div class="dataTables_info" role="status">{{ $infoMant }}</div>
-        @if(!$mantenimientos->isEmpty())
-            <div class="dataTables_paginate">
-                {{ $mantenimientos->links() }}
-            </div>
-        @endif
+        {{ $mantenimientos->links('livewire.paginacion-compacta') }}
+    </div>
     </div>
 
     @if($modalReprogramarAbierto)
@@ -306,7 +363,19 @@
                             @foreach($detalle as $label => $valor)
                                 <div class="col-md-6 mb-3">
                                     <div class="small text-muted">{{ $label }}</div>
-                                    <div class="font-weight-bold">{{ $valor }}</div>
+                                    @if($label === 'Estatus')
+                                        @php
+                                            $detalleClase = match ($valor) {
+                                                'Realizado' => 'erp-chip--ok',
+                                                'Baja' => 'erp-chip--alerta',
+                                                'Sin persona física' => 'erp-chip--acento',
+                                                default => 'erp-chip--aviso',
+                                            };
+                                        @endphp
+                                        <span class="erp-chip {{ $detalleClase }}">{{ $valor }}</span>
+                                    @else
+                                        <div class="font-weight-bold">{{ $valor }}</div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -415,34 +484,6 @@
                 font-size: 12px;
                 line-height: 1.25;
                 margin-top: 2px;
-            }
-
-            .mant-status-badge {
-                border-radius: 999px;
-                display: inline-flex;
-                font-size: 12px;
-                font-weight: 700;
-                justify-content: center;
-                line-height: 1.2;
-                min-width: 112px;
-                padding: 8px 12px;
-                text-align: center;
-                white-space: normal;
-            }
-
-            .mant-status-success {
-                background: #dcfce7;
-                color: #166534;
-            }
-
-            .mant-status-danger {
-                background: #fee2e2;
-                color: #b91c1c;
-            }
-
-            .mant-status-warning {
-                background: #ffedd5;
-                color: #9a3412;
             }
 
             .mant-actions {

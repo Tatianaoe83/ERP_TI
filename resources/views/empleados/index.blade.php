@@ -62,7 +62,7 @@
             </select>
         </div>
         <div class="form-group d-flex align-items-end">
-            <button id="limpiarFiltros" type="button" class="index-page__btn-primary" style="background:#6b7280;">
+            <button id="limpiarFiltros" type="button" class="index-page__btn-primary">
                 <i class="fa fa-times"></i> Limpiar filtros
             </button>
         </div>

@@ -27,17 +27,21 @@
     .dash-chart h3 { margin: 0 0 0.35rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
     html.dark .dash-chart h3, .dark .dash-chart h3 { color: #94a3b8; }
 </style>
-<form method="GET" action="{{ route('home') }}" class="dash-filtros">
+<form method="GET" action="{{ route('home') }}" class="index-page__filters">
     <input type="hidden" name="tab" value="compras">
-    <div class="dash-filtro">
-        <span>Año</span>
-        <select name="anio" class="form-control">
+    <div class="form-group">
+        <label for="dash-compras-anio">Año</label>
+        <select id="dash-compras-anio" name="anio" class="jz form-control" onchange="this.form.submit()">
             @for($y = (int) now()->year; $y >= (int) now()->year - 4; $y--)
                 <option value="{{ $y }}" @if((int) $filtrosDash['anio'] === $y) selected @endif>{{ $y }}</option>
             @endfor
         </select>
     </div>
-    <button type="submit" class="index-page__btn-primary">Filtrar</button>
+    <div class="form-group d-flex align-items-end">
+        <a href="{{ route('home', ['tab' => 'compras']) }}" class="index-page__btn-primary">
+            <i class="fa fa-times"></i> Limpiar filtros
+        </a>
+    </div>
 </form>
 
 <div class="dash-charts">

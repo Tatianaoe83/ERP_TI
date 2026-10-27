@@ -1331,6 +1331,14 @@ class TablaSolicitudes extends Component
         }
     }
 
+    public function limpiarFiltros(): void
+    {
+        $this->filtroEstatus = '';
+        $this->search = '';
+        $this->perPage = 10;
+        $this->resetPage();
+    }
+
     /**
      * Limpia registros SolicitudActivo en BD que no cumplen las 3 condiciones de persistencia.
      * Se ejecuta al cerrar el modal sin guardar para eliminar registros creados automáticamente.

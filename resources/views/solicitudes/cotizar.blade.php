@@ -64,6 +64,144 @@
         background: #242933;
         border-bottom-color: #374151;
     }
+    .cotizar-pedido__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.85rem;
+    }
+    .cotizar-pedido__meta {
+        font-size: 0.8rem;
+        color: #64748b;
+        white-space: nowrap;
+    }
+    .cotizar-pedido__caja {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.85rem 0.9rem 0.75rem;
+    }
+    .cotizar-pedido__partida + .cotizar-pedido__partida {
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    .cotizar-pedido__fila {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+    .cotizar-pedido__punto {
+        width: 0.7rem;
+        height: 0.7rem;
+        border: 2px solid #94a3b8;
+        border-radius: 999px;
+        flex-shrink: 0;
+    }
+    .cotizar-pedido__titulo {
+        min-width: 0;
+        flex: 1;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #0f172a;
+    }
+    .cotizar-pedido__cant {
+        font-size: 0.75rem;
+        color: #64748b;
+        white-space: nowrap;
+    }
+    .cotizar-pedido__aviso {
+        margin: 0.35rem 0 0 1.25rem;
+        font-size: 0.72rem;
+        line-height: 1.35;
+        color: #475569;
+    }
+    .cotizar-pedido__productos {
+        margin: 0.45rem 0 0;
+        padding: 0 0 0 1.25rem;
+        list-style: none;
+    }
+    .cotizar-pedido__productos li {
+        display: block;
+        margin-top: 0.55rem;
+    }
+    .cotizar-pedido__prod {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: #334155;
+    }
+    .cotizar-pedido__prod-nombre {
+        min-width: 0;
+        display: flex;
+        gap: 0.35rem;
+    }
+    .cotizar-pedido__prod-nombre span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .cotizar-pedido__prod-cant {
+        color: #64748b;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+    .cotizar-pedido__cot {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.12rem 0.65rem;
+        margin: 0.35rem 0 0 1.15rem;
+        font-size: 0.72rem;
+        color: #64748b;
+    }
+    .cotizar-pedido__cot span:nth-child(odd) {
+        color: #94a3b8;
+    }
+    .cotizar-pedido__cot strong {
+        color: #0f172a;
+        font-weight: 700;
+        text-align: right;
+    }
+    .cotizar-pedido__pie {
+        margin: 0.85rem 0 0;
+        padding-top: 0.7rem;
+        border-top: 1px solid #e5e7eb;
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+    .cotizar-pedido__pie p {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin: 0.2rem 0 0;
+    }
+    .cotizar-pedido__pie strong {
+        color: #0f172a;
+        font-weight: 700;
+    }
+    .dark .cotizar-pedido__meta,
+    .dark .cotizar-pedido__cant,
+    .dark .cotizar-pedido__aviso,
+    .dark .cotizar-pedido__pie { color: #94a3b8; }
+    .dark .cotizar-pedido__caja {
+        background: #0b1220;
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    .dark .cotizar-pedido__partida + .cotizar-pedido__partida,
+    .dark .cotizar-pedido__pie { border-top-color: rgba(255, 255, 255, 0.08); }
+    .dark .cotizar-pedido__punto { border-color: #cbd5e1; }
+    .dark .cotizar-pedido__titulo,
+    .dark .cotizar-pedido__prod,
+    .dark .cotizar-pedido__cot strong,
+    .dark .cotizar-pedido__pie strong { color: #f8fafc; }
+    .dark .cotizar-pedido__prod-cant,
+    .dark .cotizar-pedido__cot { color: #94a3b8; }
 </style>
 
 <x-index-page
@@ -95,6 +233,53 @@
     <div x-show="!cargando" x-cloak class="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-5 lg:gap-6 items-start">
         
         <div class="xl:col-span-3 space-y-4 md:space-y-5">
+
+            <div class="cotizar-card cotizar-pedido">
+                <div class="cotizar-pedido__head">
+                    <h2>Resumen</h2>
+                    <span class="cotizar-pedido__meta" x-text="propuestas.length + (propuestas.length === 1 ? ' propuesta' : ' propuestas')"></span>
+                </div>
+
+                <div class="cotizar-pedido__caja">
+                    <template x-for="propuesta in propuestas" :key="'resumen-' + propuesta.id">
+                        <div class="cotizar-pedido__partida">
+                            <div class="cotizar-pedido__fila">
+                                <span class="cotizar-pedido__punto" aria-hidden="true"></span>
+                                <span class="cotizar-pedido__titulo" x-text="propuesta.nombre || ('Propuesta ' + propuesta.numero)"></span>
+                                <span class="cotizar-pedido__cant" x-text="etiquetaGanador(propuesta)"></span>
+                            </div>
+                            <p class="cotizar-pedido__aviso" x-show="variasOpciones(propuesta)" x-cloak>Solo un ganador por propuesta</p>
+                            <ul class="cotizar-pedido__productos">
+                                <template x-for="producto in propuesta.productos" :key="'resumen-prod-' + producto.id">
+                                    <li>
+                                        <div class="cotizar-pedido__prod">
+                                            <span class="cotizar-pedido__prod-nombre">
+                                                <span aria-hidden="true">·</span>
+                                                <span x-text="producto.nombre || 'Nuevo producto'"></span>
+                                            </span>
+                                            <span class="cotizar-pedido__prod-cant" x-text="'x' + (propuesta.cantidad || 1) + ' ' + (producto.unidad || 'PIEZA')"></span>
+                                        </div>
+                                        <template x-for="(cot, cotIndex) in producto.cotizaciones" :key="'resumen-cot-' + producto.id + '-' + cotIndex">
+                                            <div class="cotizar-pedido__cot">
+                                                <span>Proveedor</span>
+                                                <span x-text="cot.proveedor || 'Sin proveedor'"></span>
+                                                <span>P. unit.</span>
+                                                <span x-text="dinero(cot.precioUnitario)"></span>
+                                                <span>Total</span>
+                                                <strong x-text="dinero(totalCotizacion(propuesta, cot))"></strong>
+                                            </div>
+                                        </template>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                    <div class="cotizar-pedido__pie">
+                        <p>Ganadores: <strong x-text="ganadoresRequeridos"></strong></p>
+                        <p>Total: <strong x-text="dinero(totalGeneral)"></strong></p>
+                    </div>
+                </div>
+            </div>
 
             <div class="cotizar-card">
                 <div class="flex items-center gap-3 mb-3 md:mb-4">
@@ -418,8 +603,53 @@
                 }, 0);
             },
 
+            dinero(valor) {
+                const n = parseFloat(valor) || 0;
+                return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+
+            totalCotizacion(propuesta, cot) {
+                const cantidad = Math.max(1, parseInt(propuesta.cantidad, 10) || 1);
+                const unitario = parseFloat(cot.precioUnitario) || 0;
+                const envio = parseFloat(cot.costoEnvio) || 0;
+                return (cantidad * unitario) + envio;
+            },
+
             cotizacionesConPrecio(producto) {
                 return producto.cotizaciones.filter(c => (parseFloat(c.precioUnitario) || 0) > 0);
+            },
+
+            cotizacionesPropuesta(propuesta) {
+                return propuesta.productos.reduce((total, producto) => total + this.cotizacionesConPrecio(producto).length, 0);
+            },
+
+            propuestaLista(propuesta) {
+                return this.cotizacionesPropuesta(propuesta) > 0;
+            },
+
+            conteoCotizaciones(propuesta) {
+                return (propuesta.productos || []).reduce((total, producto) => total + (producto.cotizaciones || []).length, 0);
+            },
+
+            variasOpciones(propuesta) {
+                return (propuesta.productos || []).length > 1 || this.conteoCotizaciones(propuesta) > 1;
+            },
+
+            etiquetaGanador(propuesta) {
+                return this.variasOpciones(propuesta) ? '1 ganador' : 'Único ganador';
+            },
+
+            get propuestasAEnviar() {
+                return this.propuestas.filter((propuesta) => this.propuestaLista(propuesta)).length;
+            },
+
+            get ganadoresRequeridos() {
+                return this.propuestas.length;
+            },
+
+            get textoGanadores() {
+                const total = this.ganadoresRequeridos;
+                return total === 1 ? '1 ganador' : total + ' ganadores';
             },
 
             nuevaPropuesta(numero) {
@@ -680,7 +910,7 @@
             async enviarAlGerente() {
                 const ok = await Swal.fire({
                     title: '¿Enviar cotizaciones al gerente?',
-                    text: 'Se enviará un correo para que elija 1 ganador por propuesta.',
+                    text: 'Se enviarán ' + this.propuestasAEnviar + ' propuestas. El gerente debe elegir ' + this.ganadoresRequeridos + ' ganadores (1 por propuesta).',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Sí, enviar',

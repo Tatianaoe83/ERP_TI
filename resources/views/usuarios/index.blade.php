@@ -61,12 +61,16 @@
             $('#tableUsu').DataTable({
                 retrieve: true,
                 responsive: true,
+                autoWidth: false,
                 paging: true,
+                pagingType: 'simple_numbers',
                 pageLength: 10,
+                lengthChange: true,
+                lengthMenu: [[10, 15, 25, 50], [10, 15, 25, 50]],
                 searching: true,
                 ordering: true,
                 info: true,
-                dom: "<'index-page__dt-toolbar'Bf>t<'index-page__dt-footer'ip>",
+                dom: "<'index-page__dt-toolbar'Bf>t<'index-page__dt-footer'<'index-page__dt-meta'li>p>",
                 buttons: [{
                     extend: 'colvis',
                     className: 'index-page__colvis',
@@ -74,6 +78,7 @@
                 }],
                 language: {
                     sProcessing: 'Procesando...',
+                    sLengthMenu: 'Mostrar _MENU_',
                     sZeroRecords: 'No se encontraron resultados',
                     sEmptyTable: 'Ningún dato disponible en esta tabla',
                     sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',

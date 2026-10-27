@@ -138,47 +138,46 @@
     ];
 @endphp
 
-<form method="GET" action="{{ route('home') }}" id="dashFiltros" class="dash-filtros">
-    <div class="dash-filtro dash-filtro--wide">
-        <span>Presupuesto interno</span>
-        <select name="presupuesto_id" class="form-control">
+<form method="GET" action="{{ route('home') }}" id="dashFiltros" class="index-page__filters">
+    <div class="form-group">
+        <label for="dash-presupuesto">Presupuesto interno</label>
+        <select id="dash-presupuesto" name="presupuesto_id" class="jz form-control">
             <option value="">Todos</option>
             @foreach($catalogoDash['presupuestos'] as $id => $nombre)
                 <option value="{{ $id }}" @if((int) $filtrosDash['presupuesto_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
     </div>
-    <div class="dash-filtro">
-        <span>Gerencia</span>
-        <select name="gerencia_id" class="form-control">
+    <div class="form-group">
+        <label for="dash-gerencia">Gerencia</label>
+        <select id="dash-gerencia" name="gerencia_id" class="jz form-control">
             <option value="">Todas</option>
             @foreach($catalogoDash['gerencias'] as $id => $nombre)
                 <option value="{{ $id }}" @if((int) $filtrosDash['gerencia_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
     </div>
-    <div class="dash-filtro">
-        <span>Centro de costos</span>
-        <select name="centro_id" class="form-control">
+    <div class="form-group">
+        <label for="dash-centro">Centro de costos</label>
+        <select id="dash-centro" name="centro_id" class="jz form-control">
             <option value="">Todos</option>
             @foreach($catalogoDash['centros'] as $id => $nombre)
                 <option value="{{ $id }}" @if((int) $filtrosDash['centro_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
     </div>
-    <div class="dash-filtro">
-        <span>Año</span>
-        <select name="anio" class="form-control">
+    <div class="form-group">
+        <label for="dash-anio">Año</label>
+        <select id="dash-anio" name="anio" class="jz form-control">
             @for($anioOpcion = (int) now()->year; $anioOpcion >= (int) now()->year - 2; $anioOpcion--)
                 <option value="{{ $anioOpcion }}" @if($anioDash === $anioOpcion) selected @endif>{{ $anioOpcion }}</option>
             @endfor
         </select>
     </div>
-    <div class="dash-filtro dash-filtro--acciones">
-        <button type="submit" class="index-page__btn-primary">Filtrar</button>
-        @if($filtrosDash['gerencia_id'] || $filtrosDash['centro_id'] || $filtrosDash['presupuesto_id'])
-            <a href="{{ route('home') }}" class="index-page__btn-secondary">Limpiar</a>
-        @endif
+    <div class="form-group d-flex align-items-end">
+        <a href="{{ route('home') }}" class="index-page__btn-primary">
+            <i class="fa fa-times"></i> Limpiar filtros
+        </a>
     </div>
 </form>
 

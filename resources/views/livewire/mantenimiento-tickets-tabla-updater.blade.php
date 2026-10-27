@@ -5,51 +5,55 @@
         <p class="text-sm">Cargando solicitudes...</p>
     </div>
     @else
-    <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
-
-        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Total: {{ $total }} solicitudes
-            </div>
-        </div>
-
-        <div class="px-4 py-3 bg-gray-50 dark:bg-[#1C1F26] border-b border-gray-200 dark:border-[#2A2F3A] grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <input type="text"
+    <div class="index-page__filters">
+        <div class="form-group">
+            <label for="mant-ticket-buscar">Buscar</label>
+            <input id="mant-ticket-buscar" type="text"
                 wire:model.debounce.500ms="search"
                 placeholder="Buscar solicitud..."
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
-
-            <select wire:model="filtroPrioridad"
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+                class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="mant-ticket-prioridad">Prioridad</label>
+            <select id="mant-ticket-prioridad" wire:model="filtroPrioridad" class="form-control">
                 <option value="">Todas las prioridades</option>
                 <option value="sin">Sin prioridad</option>
                 @foreach(\App\Models\TicketMantenimiento::PRIORIDADES as $prioridad)
                 <option value="{{ $prioridad }}">{{ $prioridad }}</option>
                 @endforeach
             </select>
-
-            <select wire:model="filtroEstado"
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+        </div>
+        <div class="form-group">
+            <label for="mant-ticket-estado">Estado</label>
+            <select id="mant-ticket-estado" wire:model="filtroEstado" class="form-control">
                 <option value="">Todos los estados</option>
                 @foreach(\App\Models\TicketMantenimiento::ESTATUS as $estatus)
                 <option value="{{ $estatus }}">{{ $estatus }}</option>
                 @endforeach
             </select>
-
-            <select wire:model="filtroCategoria"
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+        </div>
+        <div class="form-group">
+            <label for="mant-ticket-categoria">Categoría</label>
+            <select id="mant-ticket-categoria" wire:model="filtroCategoria" class="form-control">
                 <option value="">Todas las categorías</option>
                 <option value="sin">Sin categoría</option>
                 @foreach(\App\Models\TicketMantenimiento::CATEGORIAS as $categoria)
                 <option value="{{ $categoria }}">{{ $categoria }}</option>
                 @endforeach
             </select>
-
-            <button wire:click="limpiarFiltros"
-                type="button"
-                class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
-                Limpiar filtros
+        </div>
+        <div class="form-group d-flex align-items-end">
+            <button wire:click="limpiarFiltros" type="button" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
             </button>
+        </div>
+    </div>
+    <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
+
+        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Total: {{ $total }} solicitudes
+            </div>
         </div>
 
         <div class="overflow-x-auto">

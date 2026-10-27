@@ -92,13 +92,13 @@
             <div class="form-group">
                 <label for="gerenci_id">Presupuesto interno</label>
                 {!! Form::select('gerenci_id', $gerencia, null, [
-                    'class' => 'form-control',
+                    'class' => 'jz form-control',
                     'id' => 'gerenci_id'
                 ]) !!}
             </div>
             <div class="form-group">
                 <label for="mesFilter">Mes</label>
-                <select id="mesFilter" class="form-control">
+                <select id="mesFilter" class="jz form-control">
                     <option value="">Todos los meses</option>
                     @foreach($meses as $num => $nombre)
                     <option value="{{ $num }}">{{ $nombre }}</option>
@@ -107,12 +107,17 @@
             </div>
             <div class="form-group">
                 <label for="añoFilter">Año</label>
-                <select id="añoFilter" class="form-control">
+                <select id="añoFilter" class="jz form-control">
                     <option value="">Todos los años</option>
                     @foreach($years as $año)
                     <option value="{{ $año }}" {{ (int) $año === $anioActualFiltro ? 'selected' : '' }}>{{ $año }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="form-group d-flex align-items-end">
+                <button type="button" id="limpiarFiltrosFacturas" class="index-page__btn-primary">
+                    <i class="fa fa-times"></i> Limpiar filtros
+                </button>
             </div>
         </form>
     </x-slot>

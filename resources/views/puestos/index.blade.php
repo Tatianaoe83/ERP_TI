@@ -14,7 +14,7 @@
         <form method="GET">
             <div class="form-group">
                 <label for="filtro_area">Área</label>
-                <select id="filtro_area" name="area_id" class="form-control" onchange="this.form.submit()">
+                <select id="filtro_area" name="area_id" class="jz1 form-control" onchange="this.form.submit()">
                     <option value="">Todas las áreas</option>
                     @foreach ($areas as $area)
                         <option value="{{ $area->DepartamentoID }}" {{ request('area_id') == $area->DepartamentoID ? 'selected' : '' }}>
@@ -22,6 +22,11 @@
                         </option>
                     @endforeach
                 </select>
+            </div>
+            <div class="form-group d-flex align-items-end">
+                <a href="{{ request()->url() }}" class="index-page__btn-primary">
+                    <i class="fa fa-times"></i> Limpiar filtros
+                </a>
             </div>
         </form>
     </x-slot>

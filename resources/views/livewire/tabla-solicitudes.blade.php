@@ -16,44 +16,43 @@
     @click="abrirModalDesdeClick($event)">
 
     @if(!$soloModal)
-    <div class="index-page__card overflow-hidden">
-
-        <div class="index-page__dt-toolbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.85rem 1rem;padding:0.95rem 1rem 0.85rem;">
-            <div class="form-group" style="min-width:180px;flex:0 1 220px;">
-                <label class="sr-only" for="filtroEstatus">Estatus</label>
-                <select wire:model.live="filtroEstatus" class="form-control">
-                    <option value="">Todos los estatus</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En revisión">En revisión</option>
-                    <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
-                    <option value="Re-cotizar">Re-cotizar</option>
-                    <option value="Aprobada">Aprobada</option>
-                    <option value="Cancelada">Cancelada</option>
-                </select>
-            </div>
-            <div class="form-group" style="flex:1 1 240px;min-width:200px;position:relative;">
-                <label class="sr-only" for="searchSolicitudes">Buscar</label>
-                <input type="text"
-                    wire:model.live.debounce.300ms="search"
-                    placeholder="Buscar ID, empleado o motivo..."
-                    class="form-control">
-            </div>
-            <div class="form-group" style="min-width:110px;flex:0 0 110px;">
-                <label class="sr-only">Mostrar</label>
-                <select wire:model.live="perPage" class="form-control">
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-            </div>
-            @if($filtroEstatus)
-            <button type="button" wire:click="$set('filtroEstatus', '')" class="index-page__btn-secondary">
-                Limpiar filtro
-            </button>
-            @endif
+    <div class="index-page__filters">
+        <div class="form-group">
+            <label for="filtroEstatus">Estatus</label>
+            <select id="filtroEstatus" wire:model.live="filtroEstatus" class="form-control">
+                <option value="">Todos los estatus</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En revisión">En revisión</option>
+                <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
+                <option value="Re-cotizar">Re-cotizar</option>
+                <option value="Aprobada">Aprobada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
         </div>
+        <div class="form-group">
+            <label for="searchSolicitudes">Buscar</label>
+            <input id="searchSolicitudes" type="text"
+                wire:model.live.debounce.300ms="search"
+                placeholder="Buscar ID, empleado o motivo..."
+                class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="solicitudesPorPagina">Por página</label>
+            <select id="solicitudesPorPagina" wire:model.live="perPage" class="form-control">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+        <div class="form-group d-flex align-items-end">
+            <button type="button" wire:click="limpiarFiltros" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
+            </button>
+        </div>
+    </div>
+    <div class="index-page__card overflow-hidden">
 
         <div @if(!$modalAsignacionAbierto) wire:poll.15s @endif>
 

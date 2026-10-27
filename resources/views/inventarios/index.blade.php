@@ -257,8 +257,8 @@
                 <option value="2">Todos</option>
             </select>
         </div>
-        <div class="index-page__filters-actions">
-            <button type="button" id="limpiar-filtros-inv" class="index-page__btn-secondary">
+        <div class="form-group d-flex align-items-end">
+            <button type="button" id="limpiar-filtros-inv" class="index-page__btn-primary">
                 <i class="fa fa-times"></i> Limpiar filtros
             </button>
         </div>
