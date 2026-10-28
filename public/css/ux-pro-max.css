@@ -1250,7 +1250,6 @@ a.bg-green-600 {
 
 .btn-primary:hover,
 .index-page__btn-primary:hover,
-.swal2-styled.swal2-confirm:hover,
 button.bg-blue-600:hover,
 a.bg-blue-600:hover {
     transform: translateY(-2px);

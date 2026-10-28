@@ -68,7 +68,7 @@
         }
 
         /* SweetAlert siempre por encima de los modales (z-[9999]) */
-        .swal2-container { z-index: 100000 !important; }
+        .swal2-container { z-index: 300000 !important; }
 
         /* Labels de formularios: Stisla usa #34395e y no se ve en modo oscuro */
         html.dark .form-group > label,
@@ -1049,7 +1049,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023n">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023o">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1063,7 +1063,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023n">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023o">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">

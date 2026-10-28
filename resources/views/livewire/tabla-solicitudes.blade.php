@@ -232,7 +232,7 @@
     <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
         wire:keydown.escape.window="closeAsignacion" tabindex="-1"
         x-data="{ __ready: true }">
-        <div class="absolute inset-0" wire:click="closeAsignacion"></div>
+        <div class="absolute inset-0" @click="if (window.__bloqueoCierreAsignacion || document.querySelector('.swal2-container')) return; $wire.closeAsignacion()"></div>
         <div class="relative z-10 w-full max-w-7xl mx-2 lg:mx-6 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden"
             wire:ignore.self>
             <div id="insumos-catalogo-asignacion" class="hidden" data-tiene="{{ $insumosTienenPresupuesto ? '1' : '0' }}">{!! json_encode($insumosDisponibles ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) !!}</div>
@@ -946,7 +946,7 @@
             if (panel) return;
             panel = document.createElement('div');
             panel.id = '__insumo-panel';
-            panel.style.cssText = 'display:none;position:fixed;z-index:999999;width:300px;';
+            panel.style.cssText = 'display:none;position:fixed;z-index:150000;width:300px;';
             panel.className = 'insumo-dd rounded-xl overflow-hidden';
             panel.innerHTML =
                 '<div class="insumo-dd__search">' +
@@ -977,12 +977,13 @@
                 if (e.key === 'Escape') close();
             });
             document.addEventListener('mousedown', function(e) {
+                if (e.target && e.target.closest && e.target.closest('.swal2-container')) return;
                 if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && e.target !== currentBtn && currentBtn && !currentBtn.contains(e.target)) {
                     close();
                 }
             });
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && panel && panel.style.display !== 'none') close();
+                if (e.key === 'Escape' && panel && panel.style.display !== 'none' && !(e.target && e.target.closest && e.target.closest('.swal2-container'))) close();
             });
         }
 
@@ -1119,45 +1120,76 @@
             close();
         }
 
-        function agregarDesvio() {
-            var pIdx = currentPIdx;
-            var uIdx = currentUIdx;
-            var btn = currentBtn;
-            var wId = getWireId();
-            var catalogo = leerCatalogo();
-            var texto = catalogo.tiene
-                ? 'Este insumo no está en el corte. Se cuenta como desviación.'
-                : 'Este presupuesto interno no tiene corte. El insumo se cuenta como desviación.';
-            var pedido = (typeof Swal !== 'undefined')
-                ? Swal.fire({
-                    title: 'Insumo nuevo',
-                    text: texto,
-                    input: 'text',
-                    inputPlaceholder: 'Nombre del insumo',
-                    showCancelButton: true,
-                    confirmButtonText: 'Usar insumo',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#d97706'
-                })
-                : Promise.resolve({ isConfirmed: true, value: window.prompt(texto) });
-            Promise.resolve(pedido).then(function(res) {
-                if (!res || !res.isConfirmed) return;
-                var nombre = String(res.value || '').trim();
-                if (!nombre || !wId || !btn) return;
-                btn.dataset.insumoId = '';
-                btn.dataset.desvio = '1';
-                btn.className = 'w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-left group bg-amber-50 border-amber-300 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-700/50';
-                var corto = nombre.length > 22 ? nombre.substring(0, 22) + '…' : nombre;
-                btn.innerHTML = '<i class="fas fa-exclamation-triangle text-amber-500 text-[10px] shrink-0"></i>' +
-                    '<span class="text-[11px] font-medium text-amber-800 dark:text-amber-200 truncate flex-1">' +
-                    corto.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
+        function aplicarDesvio(btn, wId, pIdx, uIdx, nombre) {
+            nombre = String(nombre || '').trim();
+            if (!nombre || !wId || !btn) return;
+            btn.dataset.insumoId = '';
+            btn.dataset.desvio = '1';
+            btn.className = 'w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-left group bg-amber-50 border-amber-300 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-700/50';
+            var corto = nombre.length > 22 ? nombre.substring(0, 22) + '…' : nombre;
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle text-amber-500 text-[10px] shrink-0"></i>' +
+                '<span class="text-[11px] font-medium text-amber-800 dark:text-amber-200 truncate flex-1">' +
+                corto.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
+            window.__bloqueoCierreAsignacion = true;
+            setTimeout(function() { window.__bloqueoCierreAsignacion = false; }, 500);
+            setTimeout(function() {
                 try {
                     var lwComponent = Livewire.find(wId);
                     if (lwComponent) lwComponent.actualizarInsumoConcepto(pIdx, uIdx, 0, nombre);
                 } catch (e) {
                     console.error(e);
                 }
-                close();
+            }, 0);
+        }
+
+        function agregarDesvio() {
+            var pIdx = currentPIdx;
+            var uIdx = currentUIdx;
+            var btn = currentBtn;
+            var wId = getWireId();
+            if (panel) panel.style.display = 'none';
+            var catalogo = leerCatalogo();
+            var texto = catalogo.tiene
+                ? 'Este insumo no está en el corte. Se cuenta como desviación.'
+                : 'Este presupuesto interno no tiene corte. El insumo se cuenta como desviación.';
+            if (typeof Swal === 'undefined') {
+                aplicarDesvio(btn, wId, pIdx, uIdx, window.prompt(texto));
+                return;
+            }
+            Swal.fire({
+                title: 'Insumo nuevo',
+                text: texto,
+                input: 'text',
+                inputPlaceholder: 'Nombre del insumo',
+                showCancelButton: true,
+                confirmButtonText: 'Usar insumo',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d97706',
+                returnFocus: false,
+                heightAuto: false,
+                target: document.body,
+                customClass: { container: 'swal-modal-asignacion' },
+                didOpen: function() {
+                    var campo = Swal.getInput();
+                    var popup = Swal.getPopup();
+                    if (campo) campo.focus();
+                    if (popup) {
+                        popup.addEventListener('keydown', function(ev) {
+                            if (ev.key === 'Escape') ev.stopPropagation();
+                        });
+                    }
+                },
+                preConfirm: function(valor) {
+                    var nombre = String(valor || '').trim();
+                    if (!nombre) {
+                        Swal.showValidationMessage('Escribe el nombre del insumo');
+                        return false;
+                    }
+                    return nombre;
+                }
+            }).then(function(res) {
+                if (!res || !res.isConfirmed) return;
+                aplicarDesvio(btn, wId, pIdx, uIdx, res.value);
             });
         }
 
