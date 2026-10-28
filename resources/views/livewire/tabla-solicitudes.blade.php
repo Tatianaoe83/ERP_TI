@@ -52,40 +52,38 @@
             </button>
         </div>
     </div>
-    <div class="index-page__card overflow-hidden">
+    <div class="index-page__card">
 
         <div @if(!$modalAsignacionAbierto) wire:poll.15s @endif>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full index-table">
-                    <thead class="bg-slate-50 dark:bg-slate-800">
+            <div class="index-page__table-wrap table-responsive">
+                <table class="table index-table w-full">
+                    <thead>
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">ID</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Empleado</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Motivo</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estatus</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aprobaciones</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Facturas</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Creado</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
+                            <th>ID</th>
+                            <th>Empleado</th>
+                            <th>Motivo</th>
+                            <th>Estatus</th>
+                            <th>Aprobaciones</th>
+                            <th>Facturas</th>
+                            <th>Creado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-gray-50 dark:bg-slate-900"
-                        wire:key="solicitudes-body-page-{{ $todasSolicitudes->currentPage() }}">
+                    <tbody wire:key="solicitudes-body-page-{{ $todasSolicitudes->currentPage() }}">
                         @forelse ($todasSolicitudes as $solicitud)
-                        <tr wire:key="solicitud-row-{{ $todasSolicitudes->currentPage() }}-{{ $solicitud->SolicitudID }}"
-                            class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">#{{ $solicitud->SolicitudID }}</span>
+                        <tr wire:key="solicitud-row-{{ $todasSolicitudes->currentPage() }}-{{ $solicitud->SolicitudID }}">
+                            <td>
+                                <strong>#{{ $solicitud->SolicitudID }}</strong>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->nombreFormateado }}</div>
-                                <div class="text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($solicitud->empleadoid->Correo ?? 'N/A', 25) }}</div>
+                            <td>
+                                <div>{{ $solicitud->nombreFormateado }}</div>
+                                <div>{{ $solicitud->empleadoid->Correo ?? 'N/A' }}</div>
                             </td>
-                            <td class="px-4 py-3">
-                                <span class="text-sm text-slate-700 dark:text-slate-300">{{ Str::limit($solicitud->Motivo ?? 'N/A', 30) }}</span>
+                            <td>
+                                {{ $solicitud->Motivo ?? 'N/A' }}
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
+                            <td>
                                 @php
                                     $solStatusMod = match($solicitud->estatusDisplay) {
                                         'En revisión' => 'sol-status--revision',
@@ -106,7 +104,7 @@
                                     {{ $solicitud->estatusDisplay }}{{ $solicitud->recotizarPropuestasText ?? '' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3">
+                            <td>
                                 <div class="sol-approvals">
                                     @if($solicitud->pasoSupervisor)
                                     @if($solicitud->pasoSupervisor->status === 'approved')
@@ -143,29 +141,29 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
+                            <td>
                                 @if($solicitud->totalFacturasNecesarias > 0)
                                 @if($solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias)
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                    <i class="fas fa-check-circle text-[10px]"></i> {{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }} Completas
+                                <span class="erp-chip erp-chip--ok">
+                                    <i class="fas fa-check-circle"></i> {{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }} Completas
                                 </span>
                                 @elseif($solicitud->facturasSubidas > 0)
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                    <i class="fas fa-exclamation-triangle text-[10px]"></i> {{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }} Parcial
+                                <span class="erp-chip erp-chip--aviso">
+                                    <i class="fas fa-exclamation-triangle"></i> {{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }} Parcial
                                 </span>
                                 @else
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">
-                                    <i class="fas fa-times-circle text-[10px]"></i> 0/{{ $solicitud->totalFacturasNecesarias }} Pendiente
+                                <span class="erp-chip erp-chip--alerta">
+                                    <i class="fas fa-times-circle"></i> 0/{{ $solicitud->totalFacturasNecesarias }} Pendiente
                                 </span>
                                 @endif
                                 @else
-                                <span class="text-xs text-slate-400 dark:text-slate-500">N/A</span>
+                                <span class="erp-chip erp-chip--neutro">N/A</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="text-sm text-slate-700 dark:text-slate-300">{{ $solicitud->created_at->format('d/m/Y') }}</span>
+                            <td>
+                                {{ $solicitud->created_at->format('d/m/Y') }}
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
+                            <td>
                                 @php
                                     $yaSubio = $solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias && $solicitud->totalFacturasNecesarias > 0;
                                     $puedeCerrar = !in_array($solicitud->estatusDisplay, ['Cancelada', 'Rechazada'], true);
@@ -205,9 +203,8 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                <i class="fas fa-inbox text-4xl mb-3 block text-slate-300 dark:text-slate-600"></i>
-                                <p class="text-base font-medium">No hay solicitudes registradas</p>
+                            <td colspan="8">
+                                No hay solicitudes registradas
                             </td>
                         </tr>
                         @endforelse
@@ -215,49 +212,15 @@
                 </table>
             </div>
 
-            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">
-                        Mostrando
-                        <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $todasSolicitudes->firstItem() ?? 0 }}</span>
-                        a
-                        <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $todasSolicitudes->lastItem() ?? 0 }}</span>
-                        de
-                        <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $todasSolicitudes->total() }}</span>
-                        solicitudes
-                    </p>
-                    @if($todasSolicitudes->hasPages())
-                    <nav class="erp-page" aria-label="Paginación">
-                        @if($todasSolicitudes->onFirstPage())
-                        <span class="erp-page__btn is-disabled"><i class="fas fa-chevron-left"></i></span>
-                        @else
-                        <button type="button" wire:click="previousPage" class="erp-page__btn"><i class="fas fa-chevron-left"></i></button>
-                        @endif
-                        @php
-                        $rangoPaginas = $todasSolicitudes->getUrlRange(
-                        max(1, $todasSolicitudes->currentPage() - 1),
-                        min($todasSolicitudes->lastPage(), $todasSolicitudes->currentPage() + 1)
-                        );
-                        @endphp
-                        @foreach($rangoPaginas as $page => $url)
-                        @if($page == $todasSolicitudes->currentPage())
-                        <span class="erp-page__btn is-current">{{ $page }}</span>
-                        @else
-                        <button type="button" wire:click="gotoPage({{ $page }})" class="erp-page__btn">{{ $page }}</button>
-                        @endif
-                        @endforeach
-                        @if($todasSolicitudes->currentPage() < $todasSolicitudes->lastPage() - 2)
-                            <span class="erp-page__gap">...</span>
-                            <button type="button" wire:click="gotoPage({{ $todasSolicitudes->lastPage() }})" class="erp-page__btn">{{ $todasSolicitudes->lastPage() }}</button>
-                            @endif
-                            @if($todasSolicitudes->hasMorePages())
-                            <button type="button" wire:click="nextPage" class="erp-page__btn"><i class="fas fa-chevron-right"></i></button>
-                            @else
-                            <span class="erp-page__btn is-disabled"><i class="fas fa-chevron-right"></i></span>
-                            @endif
-                    </nav>
-                    @endif
-                </div>
+            @php
+                $totalSol = $todasSolicitudes->total();
+                $infoSol = $totalSol > 0
+                    ? 'Mostrando ' . ($todasSolicitudes->firstItem() ?? 0) . ' a ' . ($todasSolicitudes->lastItem() ?? 0) . ' de ' . $totalSol
+                    : 'Mostrando 0 a 0 de 0';
+            @endphp
+            <div class="index-page__dt-footer">
+                <div class="dataTables_info" role="status">{{ $infoSol }}</div>
+                {{ $todasSolicitudes->links('livewire.paginacion-compacta') }}
             </div>
         </div>
     </div>
@@ -268,11 +231,11 @@
     @php $modalYaTieneFacturas = $modalEsSoloLectura; @endphp
     <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
         wire:keydown.escape.window="closeAsignacion" tabindex="-1"
-        x-data="{ __ready: true }"
-        x-init="window.__insumosCatalogo = @js($insumosDisponibles ?? [])">
+        x-data="{ __ready: true }">
         <div class="absolute inset-0" wire:click="closeAsignacion"></div>
         <div class="relative z-10 w-full max-w-7xl mx-2 lg:mx-6 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden"
             wire:ignore.self>
+            <div id="insumos-catalogo-asignacion" class="hidden" data-tiene="{{ $insumosTienenPresupuesto ? '1' : '0' }}">{!! json_encode($insumosDisponibles ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) !!}</div>
 
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4 shrink-0">
                 <div>
@@ -399,6 +362,13 @@
                                         <i class="fas fa-file-code text-violet-500"></i>
                                         <span class="truncate max-w-[7rem]">{{ basename($xmlSavedPath) }}</span>
                                         </a>
+                                        @if($parsedOk)
+                                        <p class="text-[11px] leading-tight font-semibold tabular-nums text-slate-800 dark:text-slate-100 mt-1">
+                                            ${{ number_format((float) ($parsed['total'] ?? $parsed['subtotal'] ?? 0), 2, '.', ',') }}
+                                            <span class="font-normal text-slate-500">{{ $parsed['moneda'] ?? 'MXN' }}</span>
+                                        </p>
+                                        <p class="text-[10px] leading-tight text-slate-500 dark:text-slate-400">Total del XML</p>
+                                        @endif
                                         @else
                                         <span class="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-xs font-medium bg-slate-100 border border-slate-200 text-slate-500 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400">
                                             <i class="fas fa-globe"></i> Sin XML
@@ -427,6 +397,13 @@
                                             @error("facturaXml.$pIndex.$uIndex")
                                             <p class="text-[10px] text-red-600 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> {{ $message }}</p>
                                             @enderror
+                                            @endif
+                                            @if($parsedOk)
+                                            <p class="text-[11px] leading-tight font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                                                ${{ number_format((float) ($parsed['total'] ?? $parsed['subtotal'] ?? 0), 2, '.', ',') }}
+                                                <span class="font-normal text-slate-500">{{ $parsed['moneda'] ?? 'MXN' }}</span>
+                                            </p>
+                                            <p class="text-[10px] leading-tight text-slate-500 dark:text-slate-400">Total del XML</p>
                                             @endif
                                         </div>
                                         @endif
@@ -690,9 +667,11 @@
                 'emisor' => $parsed['emisor'] ?? '',
                 'mes' => $parsed['mes'] ?? '',
                 'anio' => $parsed['anio'] ?? '',
-                'total' => $parsed['subtotal'] ?? $parsed['total'] ?? '0',
+                'total' => $parsed['total'] ?? $parsed['subtotal'] ?? '0',
                 'moneda' => $parsed['moneda'] ?? 'MXN',
                 'insumoId' => $parsed['insumoId'] ?? null,
+                'insumoNombre' => $parsed['insumoNombre'] ?? '',
+                'insumoDesvio' => !empty($parsed['insumoDesvio']),
                 'nombreEquipo' => $p['nombreEquipo'] ?? 'Sin nombre',
                 'proveedor' => $p['proveedor'] ?? 'Sin proveedor',
                 'pIndex' => $pi,
@@ -704,7 +683,7 @@
                 $facturasConInsumo = $todasFacturasParseadas->count() - $facturasSinInsumo;
                 @endphp
 
-                @if($todasFacturasParseadas->isNotEmpty() && !empty($insumosDisponibles))
+                @if($todasFacturasParseadas->isNotEmpty() && $insumosCargados && $presupuestoInternoAsignacion)
                 <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" x-data="{ expandido: true }">
                     <button type="button" @click="expandido = !expandido"
                         class="w-full px-5 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
@@ -726,9 +705,14 @@
 
                     <div x-show="expandido" x-transition>
                         <div class="px-5 py-2.5 bg-sky-50 dark:bg-slate-800 border-b border-sky-100 dark:border-slate-700">
-                            <p class="text-xs text-sky-700 dark:text-sky-400">
+                                <p class="text-xs text-sky-700 dark:text-sky-400">
                                 <i class="fas fa-lightbulb text-sky-500 mr-1"></i>
-                                Asigna el insumo del catálogo que corresponde a cada factura.
+                                Insumos del presupuesto interno{{ $presupuestoInternoNombre !== '' ? ' '.$presupuestoInternoNombre : '' }}.
+                                @if($insumosTienenPresupuesto)
+                                    Si el de la factura no está en el corte, agrégalo como desviación.
+                                @else
+                                    Este presupuesto no tiene corte. El insumo que agregues cuenta como desviación.
+                                @endif
                             </p>
                         </div>
 
@@ -754,6 +738,7 @@
                                     $fPIndex = $facturaData['pIndex'];
                                     $fUIndex = $facturaData['uIndex'];
                                     $tieneMatch = !empty($facturaData['insumoId']);
+                                    $esDesvio = !empty($facturaData['insumoDesvio']) && !empty($facturaData['insumoNombre']);
                                     $insumoActual = $tieneMatch ? (int)$facturaData['insumoId'] : null;
                                     $nombreInsumoActual = '';
                                     if ($insumoActual) {
@@ -776,15 +761,21 @@
                                             <button type="button"
                                                 id="insumo-btn-{{ $fPIndex }}-{{ $fUIndex }}"
                                                 data-insumo-id="{{ $insumoActual ?? '' }}"
+                                                data-desvio="{{ $esDesvio ? '1' : '0' }}"
                                                 onclick="window.__insumoDD.open({{ $fPIndex }}, {{ $fUIndex }}, this)"
                                                 class="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-left group
                                                     {{ $tieneMatch
                                                         ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-700/50 dark:hover:bg-emerald-900/40'
-                                                        : 'bg-amber-50 border-dashed border-2 border-amber-300 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-700/50 dark:hover:bg-amber-900/50' }}">
+                                                        : ($esDesvio
+                                                            ? 'bg-amber-50 border-amber-300 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-700/50'
+                                                            : 'bg-amber-50 border-dashed border-2 border-amber-300 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-700/50 dark:hover:bg-amber-900/50') }}">
                                                 @if($tieneMatch)
                                                 <i class="fas fa-check-circle text-emerald-500 dark:text-emerald-400 text-[10px] shrink-0"></i>
                                                 <span class="text-[11px] font-medium text-emerald-800 dark:text-emerald-200 truncate flex-1">{{ Str::limit($nombreInsumoActual, 22) }}</span>
                                                 <i class="fas fa-pencil-alt text-[8px] text-emerald-400 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity"></i>
+                                                @elseif($esDesvio)
+                                                <i class="fas fa-exclamation-triangle text-amber-500 text-[10px] shrink-0"></i>
+                                                <span class="text-[11px] font-medium text-amber-800 dark:text-amber-200 truncate flex-1">{{ Str::limit($facturaData['insumoNombre'], 22) }}</span>
                                                 @else
                                                 <i class="fas fa-plus-circle text-amber-500 dark:text-amber-400 text-[10px] shrink-0"></i>
                                                 <span class="text-[11px] font-medium text-amber-700 dark:text-amber-300">Asignar insumo</span>
@@ -800,13 +791,23 @@
                 </div>
                 @endif
                 
-                @if($todasFacturasParseadas->isNotEmpty() && empty($insumosDisponibles))
+                @if($todasFacturasParseadas->isNotEmpty() && $insumosCargados && !$presupuestoInternoAsignacion)
+                <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-exclamation-triangle text-amber-500 text-lg shrink-0"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Este usuario no tiene presupuesto interno</p>
+                            <p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5">La factura se guarda contra el presupuesto interno. Elige un usuario que lo tenga asignado.</p>
+                        </div>
+                    </div>
+                </div>
+                @elseif($todasFacturasParseadas->isNotEmpty() && !$insumosCargados)
                 <div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-info-circle text-blue-500 text-lg shrink-0"></i>
                         <div>
                             <p class="text-sm font-semibold text-blue-900 dark:text-blue-200">Asigna un usuario final para cargar insumos</p>
-                            <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">Los insumos disponibles se mostrarán según la gerencia del usuario seleccionado.</p>
+                            <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">Se muestran los insumos del presupuesto interno de ese usuario.</p>
                         </div>
                     </div>
                 </div>
@@ -946,19 +947,18 @@
             panel = document.createElement('div');
             panel.id = '__insumo-panel';
             panel.style.cssText = 'display:none;position:fixed;z-index:999999;width:300px;';
-            panel.className = 'rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/5 overflow-hidden';
+            panel.className = 'insumo-dd rounded-xl overflow-hidden';
             panel.innerHTML =
-                '<div class="p-2.5 bg-gray-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">' +
+                '<div class="insumo-dd__search">' +
                 '<div class="relative">' +
-                '<input type="text" id="__insumo-search" placeholder="Escribe para buscar insumo..." ' +
-                'class="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all">' +
-                '<i class="fas fa-search text-[9px] text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>' +
+                '<input type="text" id="__insumo-search" placeholder="Escribe para buscar insumo...">' +
+                '<i class="fas fa-search text-[9px] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>' +
                 '</div>' +
                 '</div>' +
-                '<div id="__insumo-list" class="max-h-64 overflow-y-auto overscroll-contain bg-gray-50 dark:bg-slate-900"></div>' +
-                '<div class="px-3 py-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between">' +
-                '<span id="__insumo-count" class="text-[10px] text-slate-400 dark:text-slate-500"></span>' +
-                '<button type="button" onclick="window.__insumoDD.close()" class="text-[10px] text-slate-400 hover:text-slate-600 transition-colors px-2 py-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700">' +
+                '<div id="__insumo-list" class="insumo-dd__list"></div>' +
+                '<div class="insumo-dd__foot">' +
+                '<span id="__insumo-count"></span>' +
+                '<button type="button" class="insumo-dd__cerrar" onclick="window.__insumoDD.close()">' +
                 '<i class="fas fa-times mr-1"></i>Cerrar' +
                 '</button>' +
                 '</div>';
@@ -986,44 +986,52 @@
             });
         }
 
+        function leerCatalogo() {
+            var nodo = document.getElementById('insumos-catalogo-asignacion');
+            if (!nodo) return { items: [], tiene: false };
+            var items = [];
+            try { items = JSON.parse(nodo.textContent || '[]'); } catch (e) { items = []; }
+            if (!Array.isArray(items)) items = [];
+            return { items: items, tiene: nodo.getAttribute('data-tiene') === '1' };
+        }
+
         function renderList() {
             var q = input.value.trim().toLowerCase();
-            var todos = window.__insumosCatalogo || [];
+            var catalogo = leerCatalogo();
+            var todos = catalogo.items;
             var countEl = document.getElementById('__insumo-count');
             var html = '';
-
-            // Botón quitar si ya tiene insumo
             var btn = currentBtn;
-            if (btn && btn.dataset.insumoId) {
-                html += '<button type="button" onclick="window.__insumoDD.select(null, \'\')" ' +
-                    'class="w-full px-3 py-2 text-left text-xs flex items-center gap-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors border-b border-slate-100 dark:border-slate-800">' +
+
+            html += '<button type="button" class="insumo-dd__desvio" onclick="window.__insumoDD.agregarDesvio()">' +
+                '<i class="fas fa-plus-circle shrink-0"></i><span>Agregar insumo (desviación)</span></button>';
+
+            if (btn && (btn.dataset.insumoId || btn.dataset.desvio === '1')) {
+                html += '<button type="button" class="insumo-dd__quitar" onclick="window.__insumoDD.select(null, \'\')">' +
                     '<i class="fas fa-times-circle shrink-0"></i><span>Quitar insumo asignado</span></button>';
             }
 
-            if (!q) {
-                html += '<div class="px-4 py-6 text-center flex flex-col items-center gap-2">' +
-                    '<i class="fas fa-keyboard text-slate-300 dark:text-slate-600 text-xl"></i>' +
-                    '<span class="text-xs text-slate-400">Escribe al menos una letra para buscar</span></div>';
-                if (countEl) countEl.textContent = todos.length + ' insumos disponibles';
+            var lista = todos.filter(function(i) {
+                return !q || String(i.nombre || '').toLowerCase().indexOf(q) !== -1;
+            }).slice(0, 40);
+
+            if (!todos.length) {
+                html += '<div class="insumo-dd__empty">Este presupuesto interno no tiene corte. El insumo que agregues cuenta como desviación.</div>';
+            } else if (!lista.length) {
+                html += '<div class="insumo-dd__empty">Sin resultados. Puedes agregarlo como desviación.</div>';
             } else {
-                var filtered = todos.filter(function(i) {
-                    return i.nombre.toLowerCase().includes(q);
-                }).slice(0, 40);
-                if (filtered.length === 0) {
-                    html += '<div class="px-4 py-6 text-center flex flex-col items-center gap-2">' +
-                        '<i class="fas fa-search text-slate-300 dark:text-slate-600 text-xl"></i>' +
-                        '<span class="text-xs text-slate-400">Sin resultados para "' + q.replace(/</g, '&lt;') + '"</span></div>';
-                } else {
-                    for (var i = 0; i < filtered.length; i++) {
-                        var ins = filtered[i];
-                        var safeName = (ins.nombre || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-                        html += '<button type="button" onclick="window.__insumoDD.select(' + ins.id + ', \'' + safeName + '\')" ' +
-                            'class="w-full px-3 py-2.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center gap-2 group">' +
-                            '<i class="fas fa-tag text-[9px] text-slate-300 dark:text-slate-600 group-hover:text-violet-400 transition-colors shrink-0"></i>' +
-                            '<span class="truncate">' + ins.nombre.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span></button>';
-                    }
+                for (var i = 0; i < lista.length; i++) {
+                    var ins = lista[i];
+                    var safeName = (ins.nombre || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+                    html += '<button type="button" class="insumo-dd__item" onclick="window.__insumoDD.select(' + ins.id + ', \'' + safeName + '\')">' +
+                        '<i class="fas fa-tag text-[9px] shrink-0"></i>' +
+                        '<span class="truncate">' + String(ins.nombre || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span></button>';
                 }
-                if (countEl) countEl.textContent = filtered.length + ' resultado(s)';
+            }
+            if (countEl) {
+                countEl.textContent = todos.length
+                    ? (lista.length + ' de ' + todos.length)
+                    : 'Sin corte';
             }
             listEl.innerHTML = html;
         }
@@ -1067,6 +1075,7 @@
             if (wId && currentBtn) {
                 if (insumoId) {
                     currentBtn.dataset.insumoId = insumoId;
+                    currentBtn.dataset.desvio = '0';
 
                     // Actualizar clases al estilo "seleccionado" (verde)
                     currentBtn.className = 'w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-left group' +
@@ -1086,8 +1095,8 @@
                         '<i class="fas fa-pencil-alt text-[8px] text-emerald-400 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity"></i>';
 
                 } else {
-                    // Quitar insumo → volver al estado "pendiente" (ámbar)
                     currentBtn.dataset.insumoId = '';
+                    currentBtn.dataset.desvio = '0';
 
                     currentBtn.className = 'w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-left group' +
                         ' bg-amber-50 border-dashed border-2 border-amber-300 hover:bg-amber-100' +
@@ -1101,7 +1110,7 @@
                 try {
                     var lwComponent = Livewire.find(wId);
                     if (lwComponent && typeof lwComponent.actualizarInsumoConcepto === 'function') {
-                        lwComponent.actualizarInsumoConcepto(currentPIdx, currentUIdx, insumoId);
+                        lwComponent.actualizarInsumoConcepto(currentPIdx, currentUIdx, insumoId || 0, insumoNombre || '');
                     }
                 } catch (e) {
                     console.error('Error calling actualizarInsumoConcepto:', e);
@@ -1110,10 +1119,53 @@
             close();
         }
 
+        function agregarDesvio() {
+            var pIdx = currentPIdx;
+            var uIdx = currentUIdx;
+            var btn = currentBtn;
+            var wId = getWireId();
+            var catalogo = leerCatalogo();
+            var texto = catalogo.tiene
+                ? 'Este insumo no está en el corte. Se cuenta como desviación.'
+                : 'Este presupuesto interno no tiene corte. El insumo se cuenta como desviación.';
+            var pedido = (typeof Swal !== 'undefined')
+                ? Swal.fire({
+                    title: 'Insumo nuevo',
+                    text: texto,
+                    input: 'text',
+                    inputPlaceholder: 'Nombre del insumo',
+                    showCancelButton: true,
+                    confirmButtonText: 'Usar insumo',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#d97706'
+                })
+                : Promise.resolve({ isConfirmed: true, value: window.prompt(texto) });
+            Promise.resolve(pedido).then(function(res) {
+                if (!res || !res.isConfirmed) return;
+                var nombre = String(res.value || '').trim();
+                if (!nombre || !wId || !btn) return;
+                btn.dataset.insumoId = '';
+                btn.dataset.desvio = '1';
+                btn.className = 'w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-colors text-left group bg-amber-50 border-amber-300 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-700/50';
+                var corto = nombre.length > 22 ? nombre.substring(0, 22) + '…' : nombre;
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle text-amber-500 text-[10px] shrink-0"></i>' +
+                    '<span class="text-[11px] font-medium text-amber-800 dark:text-amber-200 truncate flex-1">' +
+                    corto.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
+                try {
+                    var lwComponent = Livewire.find(wId);
+                    if (lwComponent) lwComponent.actualizarInsumoConcepto(pIdx, uIdx, 0, nombre);
+                } catch (e) {
+                    console.error(e);
+                }
+                close();
+            });
+        }
+
         return {
             open: open,
             close: close,
-            select: select
+            select: select,
+            agregarDesvio: agregarDesvio
         };
     })();
 

@@ -42,7 +42,8 @@ class PlanesController extends AppBaseController
                 'planes.ID',
                 'companiaslineastelefonicas.Compania as nombre_compania',
                 'planes.NombrePlan',
-                'planes.PrecioPlan'
+                'planes.PrecioPlan',
+                \DB::raw('(SELECT COUNT(*) FROM lineastelefonicas WHERE lineastelefonicas.PlanID = planes.ID AND lineastelefonicas.deleted_at IS NULL) as lineas_vinculadas'),
             ]);
             
             return DataTables::of($unidades)

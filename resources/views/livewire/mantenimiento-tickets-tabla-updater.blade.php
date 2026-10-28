@@ -48,33 +48,26 @@
             </button>
         </div>
     </div>
-    <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
-
-        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Total: {{ $total }} solicitudes
-            </div>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full border-collapse">
-                <thead class="bg-gray-100 dark:bg-[#242933]">
+    <div class="index-page__card">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table index-table--sin-accion w-full">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Asunto</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Solicitante</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Categoría</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Prioridad</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Estado</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase min-w-[180px]">SLA</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Responsable</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Fecha</th>
+                        <th>ID</th>
+                        <th>Asunto</th>
+                        <th>Solicitante</th>
+                        <th>Categoría</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>SLA</th>
+                        <th>Responsable</th>
+                        <th>Fecha</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
+                <tbody>
                     @forelse($tickets as $ticket)
                     <tr wire:key="mantenimiento-tabla-{{ $ticket['id'] }}"
-                        class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
+                        class="cursor-pointer"
                         data-ticket-id="{{ $ticket['id'] }}"
                         {{-- Sin htmlspecialchars: Blade ya escapa con {{ }}; escapar dos veces deja &quot; literal en el dataset --}}
                         data-ticket-asunto="{{ $ticket['asunto'] ?? '' }}"
@@ -89,11 +82,11 @@
                         data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i:s') }}"
                         data-ticket-imagen="{{ is_array($ticket['imagen'] ?? null) ? json_encode($ticket['imagen'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : ($ticket['imagen'] ?? '') }}"
                         @click="abrirModalDesdeElemento($el)">
-                        <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">#{{ $ticket['id'] }}</td>
-                        <td class="px-4 py-3 max-w-xs truncate text-gray-600 dark:text-gray-300">{{ $ticket['asunto'] }}</td>
-                        <td class="px-4 py-3 text-gray-900 dark:text-gray-200" title="{{ $ticket['solicitante'] ?? '' }}">{{ $ticket['solicitante_corto'] ?: '-' }}</td>
-                        <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ $ticket['categoria'] ?? '-' }}</td>
-                        <td class="px-4 py-3">
+                        <td><strong>#{{ $ticket['id'] }}</strong></td>
+                        <td>{{ $ticket['asunto'] }}</td>
+                        <td>{{ $ticket['solicitante'] ?: '-' }}</td>
+                        <td>{{ $ticket['categoria'] ?? '-' }}</td>
+                        <td>
                             @if(!empty($ticket['prioridad']))
                             <span class="erp-chip
                                 @if($ticket['prioridad'] == 'Baja') erp-chip--ok
@@ -105,7 +98,7 @@
                             <span class="erp-chip erp-chip--neutro">Sin prioridad</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3">
+                        <td>
                             <span class="erp-chip
                                 @if($ticket['estatus'] == 'Pendiente') erp-chip--aviso
                                 @elseif($ticket['estatus'] == 'En proceso') erp-chip--info
@@ -115,31 +108,42 @@
                                 @else erp-chip--neutro
                                 @endif">{{ $ticket['estatus'] }}</span>
                         </td>
-                        <td class="px-4 py-3 min-w-[180px]">
+                        <td>
                             @if(!empty($ticket['sla']))
                                 @include('tickets-mantenimiento.partials.sla-tarjeta', ['sla' => $ticket['sla']])
                             @else
-                                <span class="text-xs text-gray-400">—</span>
+                                —
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $ticket['responsable_nombre'] ?: '-' }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i') }}</td>
+                        <td>{{ $ticket['responsable_nombre'] ?: '-' }}</td>
+                        <td>{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="px-6 py-12 text-center text-sm text-gray-500">No hay solicitudes disponibles.</td>
+                        <td colspan="9">No hay solicitudes disponibles.</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        @include('tickets-mantenimiento.partials.paginador', [
-            'pagina' => $pagina,
-            'ultima' => $this->ultimaPagina(),
-            'wireAnterior' => 'irAPagina(' . ($pagina - 1) . ')',
-            'wireSiguiente' => 'irAPagina(' . ($pagina + 1) . ')',
-        ])
+        @php
+            $porPaginaMant = \App\Http\Livewire\MantenimientoTicketsTablaUpdater::POR_PAGINA;
+            $desdeMant = $total > 0 ? (($pagina - 1) * $porPaginaMant) + 1 : 0;
+            $hastaMant = $total > 0 ? min($total, $pagina * $porPaginaMant) : 0;
+            $infoMant = $total > 0
+                ? 'Mostrando ' . $desdeMant . ' a ' . $hastaMant . ' de ' . $total
+                : 'Mostrando 0 a 0 de 0';
+        @endphp
+        <div class="index-page__dt-footer">
+            <div class="dataTables_info" role="status">{{ $infoMant }}</div>
+            @include('tickets-mantenimiento.partials.paginador', [
+                'pagina' => $pagina,
+                'ultima' => $this->ultimaPagina(),
+                'wireAnterior' => 'irAPagina(' . ($pagina - 1) . ')',
+                'wireSiguiente' => 'irAPagina(' . ($pagina + 1) . ')',
+            ])
+        </div>
     </div>
     @endif
 </div>

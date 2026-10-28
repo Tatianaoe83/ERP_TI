@@ -128,13 +128,13 @@
         </div>
         <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio resolución</p>
-            <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white leading-none">{{ $metricasProductividad['tiempo_promedio_resolucion'] ?: '0' }}</p>
-            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
+            <p class="text-xl font-bold mt-1 text-gray-900 dark:text-white leading-snug">{{ \App\Models\TicketMantenimiento::formatearDuracionLaboral($metricasProductividad['tiempo_promedio_resolucion'] ?? 0) }}</p>
+            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">Lunes a viernes, 9:00–18:00</p>
         </div>
         <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio respuesta</p>
-            <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white leading-none">{{ $metricasProductividad['tiempo_promedio_respuesta'] ?: '0' }}</p>
-            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
+            <p class="text-xl font-bold mt-1 text-gray-900 dark:text-white leading-snug">{{ \App\Models\TicketMantenimiento::formatearDuracionLaboral($metricasProductividad['tiempo_promedio_respuesta'] ?? 0) }}</p>
+            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">Lunes a viernes, 9:00–18:00</p>
         </div>
     </div>
 
@@ -198,9 +198,9 @@
                         <p class="font-bold text-blue-800 dark:text-blue-200">{{ $row['en_tiempo'] }}</p>
                     </div>
                 </div>
-                @if($row['tiempo_promedio_dias'] > 0)
+                @if(!empty($row['tiempo_promedio_texto']))
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Promedio atendidos: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ $row['tiempo_promedio_dias'] }} días laborales</span>
+                    Promedio atendidos: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ $row['tiempo_promedio_texto'] }}</span>
                 </p>
                 @endif
             </div>
@@ -226,17 +226,17 @@
                     Solicitudes en riesgo o vencidas ({{ count($sla['tickets_criticos']) }})
                 </h4>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-50 dark:bg-[#242933] text-left text-gray-500 dark:text-gray-400">
+            <div class="index-page__table-wrap table-responsive">
+                <table class="table index-table index-table--sin-accion w-full">
+                    <thead>
                         <tr>
-                            <th class="py-2 px-4">ID</th>
-                            <th class="py-2 px-4">Asunto</th>
-                            <th class="py-2 px-4">Prioridad</th>
-                            <th class="py-2 px-4">Estado</th>
-                            <th class="py-2 px-4">SLA</th>
-                            <th class="py-2 px-4">Transcurrido</th>
-                            <th class="py-2 px-4">Uso meta</th>
+                            <th>ID</th>
+                            <th>Asunto</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th>SLA</th>
+                            <th>Transcurrido</th>
+                            <th>Uso meta</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -253,8 +253,7 @@
                                     <span class="erp-chip erp-chip--aviso">En riesgo</span>
                                 @endif
                             </td>
-                            <td class="py-2 px-4 text-gray-600 dark:text-gray-400">{{ $critico['meta_texto'] }}</td>
-                            <td class="py-2 px-4 dark:text-gray-300">{{ $critico['dias_laborales_transcurridos'] }} días</td>
+                            <td class="py-2 px-4 dark:text-gray-300">{{ \App\Models\TicketMantenimiento::formatearDuracionLaboral($critico['horas_transcurridas'] ?? 0) }}</td>
                             <td class="py-2 px-4">
                                 <div class="flex items-center gap-2">
                                     <div class="w-16 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -303,25 +302,25 @@
     @if(!empty($metricasProductividad['tickets_por_responsable']) && count($metricasProductividad['tickets_por_responsable']))
     <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
         <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Por responsable</h3>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table index-table--sin-accion w-full">
                 <thead>
-                    <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                        <th class="py-2 pr-4">Responsable</th>
-                        <th class="py-2 px-4">Total</th>
-                        <th class="py-2 px-4">Atendidos</th>
-                        <th class="py-2 px-4">En proceso</th>
-                        <th class="py-2 px-4">Pendientes</th>
+                    <tr>
+                        <th>Responsable</th>
+                        <th>Total</th>
+                        <th>Atendidos</th>
+                        <th>En proceso</th>
+                        <th>Pendientes</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($metricasProductividad['tickets_por_responsable'] as $row)
-                    <tr class="border-b border-gray-100 dark:border-gray-800">
-                        <td class="py-2 pr-4 font-medium dark:text-gray-200">{{ $row['nombre'] }}</td>
-                        <td class="py-2 px-4 dark:text-gray-300">{{ $row['total'] }}</td>
-                        <td class="py-2 px-4 text-green-600 dark:text-green-400">{{ $row['atendidos'] }}</td>
-                        <td class="py-2 px-4 text-blue-600 dark:text-blue-400">{{ $row['en_proceso'] }}</td>
-                        <td class="py-2 px-4 text-yellow-600 dark:text-yellow-400">{{ $row['pendientes'] }}</td>
+                    <tr>
+                        <td>{{ $row['nombre'] }}</td>
+                        <td>{{ $row['total'] }}</td>
+                        <td><span class="erp-chip erp-chip--ok">{{ $row['atendidos'] }}</span></td>
+                        <td><span class="erp-chip erp-chip--info">{{ $row['en_proceso'] }}</span></td>
+                        <td><span class="erp-chip erp-chip--aviso">{{ $row['pendientes'] }}</span></td>
                     </tr>
                     @endforeach
                 </tbody>

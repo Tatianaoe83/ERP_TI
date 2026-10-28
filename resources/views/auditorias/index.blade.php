@@ -5,9 +5,9 @@
     $puedeBorrar  = auth()->check() && auth()->user()->can('borrar-auditorias');
 
     $estados = [
-        'pendiente' => ['clase' => 'cambio', 'icono' => 'fa-clock-rotate-left', 'texto' => 'Pendiente'],
-        'alDia'     => ['clase' => 'igual',  'icono' => 'fa-circle-check',      'texto' => 'Vigente'],
-        'sinNada'   => ['clase' => 'todas',  'icono' => 'fa-minus',             'texto' => 'Nada que auditar'],
+        'pendiente' => ['chip' => 'erp-chip--aviso', 'icono' => 'fa-clock-rotate-left', 'texto' => 'Pendiente'],
+        'alDia'     => ['chip' => 'erp-chip--ok',     'icono' => 'fa-circle-check',      'texto' => 'Vigente'],
+        'sinNada'   => ['chip' => 'erp-chip--neutro', 'icono' => 'fa-minus',             'texto' => 'Nada que auditar'],
     ];
 @endphp
 
@@ -24,17 +24,47 @@
     :card="false"
 >
     <x-slot name="headerActions">
-        <a href="{{ route('auditorias.exportar') }}" class="aud-btn aud-btn--ghost"
+        <a href="{{ route('auditorias.exportar') }}" class="index-page__btn-secondary"
            title="Detalle por empleado más las hojas filtrables de equipos y licencias">
             <i class="fas fa-file-excel" aria-hidden="true"></i> Exportar
         </a>
 
         @if($puedeGenerar)
-        <button type="button" class="aud-btn aud-btn--primary" id="btnAbrirLicencias"
+        <button type="button" class="index-page__btn-primary" id="btnAbrirLicencias"
                 aria-haspopup="dialog" aria-controls="modalGenerar">
             <i class="fas fa-play" aria-hidden="true"></i> Generar auditoría
         </button>
         @endif
+    </x-slot>
+
+    <x-slot name="filters">
+        <div class="form-group">
+            <label for="filtroListaGerencia">Gerencia</label>
+            <select id="filtroListaGerencia" class="jz1 form-control" autocomplete="off">
+                <option value="">Todas</option>
+                @foreach($filtroGerencias as $opcion)
+                    <option value="{{ $opcion }}">{{ $opcion }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtroListaObra">Obra</label>
+            <select id="filtroListaObra" class="jz1 form-control" autocomplete="off">
+                <option value="">Todas</option>
+                @foreach($filtroObras as $opcion)
+                    <option value="{{ $opcion }}">{{ $opcion }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtroListaEmpleado">Empleado</label>
+            <input type="search" id="filtroListaEmpleado" class="form-control" autocomplete="off" placeholder="Buscar por nombre...">
+        </div>
+        <div class="form-group d-flex align-items-end">
+            <button type="button" id="limpiarFiltrosAuditorias" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
+            </button>
+        </div>
     </x-slot>
 
     @if($errors->any())
@@ -65,36 +95,6 @@
         </div>
     </div>
 
-
-    {{-- Filtros de la lista: Gerencia, Obra y Empleado, independientes entre
-         sí —elegir uno no acota las opciones de los otros—. No van por GET:
-         filtran el DataTable ya cargado en el navegador, sin recargar nada. --}}
-    <div class="aud-filtros" id="filtrosAuditorias">
-        <div class="aud-filtros__campo">
-            <label for="filtroListaGerencia">Gerencia</label>
-            <select id="filtroListaGerencia" autocomplete="off">
-                <option value="">(Todas)</option>
-                @foreach($filtroGerencias as $opcion)
-                    <option value="{{ $opcion }}">{{ $opcion }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="aud-filtros__campo">
-            <label for="filtroListaObra">Obra</label>
-            <select id="filtroListaObra" autocomplete="off">
-                <option value="">(Todas)</option>
-                @foreach($filtroObras as $opcion)
-                    <option value="{{ $opcion }}">{{ $opcion }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="aud-filtros__campo aud-filtros__campo--busqueda">
-            <label for="filtroListaEmpleado">Empleado</label>
-            <input type="search" id="filtroListaEmpleado" autocomplete="off" placeholder="Buscar por nombre…">
-        </div>
-    </div>
 
     {{-- Una fila por empleado YA auditado: la lista crece conforme se generan
          corridas. Dentro de eso, lo pendiente y más viejo sube solo. --}}
@@ -146,7 +146,7 @@
                             <div class="aud-historial-fuente" hidden>
                               <div class="aud-historial__inner">
                                 <div class="aud-historial__panel" id="historial-panel-{{ $g->clave }}">
-                                <table class="aud-historial__tabla">
+                                <table class="table index-table index-table--sin-accion aud-historial__tabla w-full">
                                     <thead>
                                         <tr>
                                             <th scope="col">Folio</th>
@@ -182,29 +182,29 @@
                                             <td>
                                                 @php $cambios = $c->cambios; @endphp
                                                 @if($c->esPrimera)
-                                                    <span class="aud-mini aud-muted">Primera auditoría</span>
+                                                    <span class="erp-chip erp-chip--neutro">Primera auditoría</span>
                                                 @elseif($cambios['nueva'] === 0 && $cambios['baja'] === 0 && $cambios['cambio'] === 0)
-                                                    <span class="aud-marca aud-marca--igual">
+                                                    <span class="erp-chip erp-chip--ok">
                                                         <i class="fas fa-equals" aria-hidden="true"></i> Sin cambios
                                                     </span>
                                                 @else
                                                     <div class="aud-semaforo">
                                                         @if($cambios['nueva'])
-                                                            <span class="aud-marca aud-marca--nueva">
+                                                            <span class="erp-chip erp-chip--info">
                                                                 <i class="fas fa-circle-plus" aria-hidden="true"></i>
-                                                                Nuevas <span class="aud-num">{{ $cambios['nueva'] }}</span>
+                                                                Nuevas {{ $cambios['nueva'] }}
                                                             </span>
                                                         @endif
                                                         @if($cambios['cambio'])
-                                                            <span class="aud-marca aud-marca--cambio">
+                                                            <span class="erp-chip erp-chip--aviso">
                                                                 <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-                                                                Cambiaron <span class="aud-num">{{ $cambios['cambio'] }}</span>
+                                                                Cambiaron {{ $cambios['cambio'] }}
                                                             </span>
                                                         @endif
                                                         @if($cambios['baja'])
-                                                            <span class="aud-marca aud-marca--baja">
+                                                            <span class="erp-chip erp-chip--alerta">
                                                                 <i class="fas fa-circle-minus" aria-hidden="true"></i>
-                                                                Bajas <span class="aud-num">{{ $cambios['baja'] }}</span>
+                                                                Bajas {{ $cambios['baja'] }}
                                                             </span>
                                                         @endif
                                                     </div>
@@ -212,18 +212,18 @@
                                             </td>
 
                                             <td>
-                                                <div class="aud-historial__acciones">
+                                                <div class="index-actions">
                                                     <a href="{{ route('auditorias.show', $c->id) }}"
-                                                       class="aud-btn aud-btn--ghost aud-btn--sm">
-                                                        <i class="fas fa-eye" aria-hidden="true"></i> Ver
+                                                       class="index-action index-action--view" title="Ver">
+                                                        <i class="fas fa-eye" aria-hidden="true"></i>
                                                     </a>
                                                     @if($puedeBorrar)
                                                     <form method="POST" action="{{ route('auditorias.destroy', $c->id) }}"
-                                                          class="form-borrar-auditoria" data-folio="{{ $c->Folio }}">
+                                                          class="index-action-form form-borrar-auditoria" data-folio="{{ $c->Folio }}">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="aud-btn aud-btn--danger aud-btn--sm">
-                                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Eliminar
+                                                        <button type="submit" class="index-action index-action--delete" title="Eliminar">
+                                                            <i class="fas fa-trash-alt" aria-hidden="true"></i>
                                                         </button>
                                                     </form>
                                                     @endif
@@ -260,7 +260,7 @@
 
                         {{-- El icono acompaña al color: el estado no se comunica sólo con color. --}}
                         <td>
-                            <span class="aud-marca aud-marca--{{ $est['clase'] }}">
+                            <span class="erp-chip {{ $est['chip'] }}">
                                 <i class="fas {{ $est['icono'] }}" aria-hidden="true"></i> {{ $est['texto'] }}
                             </span>
                         </td>
@@ -346,20 +346,21 @@
                         </td>
 
                         <td class="aud-col-acciones">
-                            <div class="aud-historial__acciones">
+                            <div class="index-actions">
                                 {{-- Auditar desde la fila: el modal ya sabe a quién, así
                                      no hay que volver a buscarlo en el combo. --}}
                                 @if($puedeGenerar && $g->estado !== 'sinNada')
-                                <button type="button" class="aud-btn aud-btn--primary aud-btn--sm"
+                                <button type="button" class="index-action index-action--success"
                                         data-auditar="{{ $g->EmpleadoID }}"
-                                        data-nombre="{{ $g->NombreEmpleado }}">
-                                    <i class="fas fa-play" aria-hidden="true"></i> Auditar
+                                        data-nombre="{{ $g->NombreEmpleado }}"
+                                        title="Auditar">
+                                    <i class="fas fa-play" aria-hidden="true"></i>
                                 </button>
                                 @endif
                                 @if($g->ultima)
                                 <a href="{{ route('auditorias.show', $g->ultima->id) }}"
-                                   class="aud-btn aud-btn--ghost aud-btn--sm">
-                                    <i class="fas fa-eye" aria-hidden="true"></i> Ver
+                                   class="index-action index-action--view" title="Ver">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
                                 </a>
                                 @endif
                             </div>
@@ -392,8 +393,8 @@
                 </h2>
                 <p class="aud-modal__ayuda" id="modalEquiposSub"></p>
             </div>
-            <button type="button" class="aud-btn aud-btn--ghost aud-btn--sm" data-cerrar-equipos>
-                <i class="fas fa-xmark" aria-hidden="true"></i> Cerrar
+            <button type="button" class="index-page__btn-secondary" data-cerrar-equipos>
+                <i class="fas fa-times" aria-hidden="true"></i> Cerrar
             </button>
         </div>
 
@@ -442,7 +443,10 @@
 
             table = $tabla.DataTable({
                 order: [],
-                pageLength: 15,
+                pageLength: 10,
+                lengthChange: true,
+                lengthMenu: [10, 15, 25, 50],
+                pagingType: 'simple_numbers',
                 autoWidth: false,
                 columnDefs: [
                     { targets: 0, orderable: false, searchable: false },
@@ -451,6 +455,7 @@
                 ],
                 language: {
                     sProcessing: 'Procesando...',
+                    sLengthMenu: 'Mostrar _MENU_',
                     sZeroRecords: 'No se encontraron resultados',
                     sEmptyTable: 'Ningún dato disponible en esta tabla',
                     sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
@@ -465,7 +470,7 @@
                 },
                 // Sin buscador propio de DataTables: los 3 filtros de arriba ya
                 // cubren esa función, uno de más sólo confundiría.
-                dom: "t<'index-page__dt-footer'ip>"
+                dom: "t<'index-page__dt-footer'<'index-page__dt-meta'li>p>"
             });
 
             var escapeRegex = jQuery.fn.dataTable.util.escapeRegex;
@@ -487,6 +492,12 @@
                 esperaEmpleado = setTimeout(function () {
                     table.column(1).search(v).draw();
                 }, 250);
+            });
+
+            jQuery('#limpiarFiltrosAuditorias').on('click', function () {
+                jQuery('#filtroListaGerencia').val('').trigger('change');
+                jQuery('#filtroListaObra').val('').trigger('change');
+                jQuery('#filtroListaEmpleado').val('').trigger('input');
             });
 
             // ── Historial: fila-hija del propio DataTable ────────────────────

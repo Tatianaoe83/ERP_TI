@@ -32,46 +32,31 @@
             </button>
         </div>
     </div>
-    <div class="rounded-xl overflow-hidden w-full max-w-full bg-white dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
-
-        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A] dark:bg-[#1C1F26]">
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                @if($ticketsTabla->count())
-                Mostrando {{ $ticketsTabla->firstItem() }} - {{ $ticketsTabla->lastItem() }}
-                de {{ $ticketsTabla->total() }} tickets
-                @else
-                Sin registros
-                @endif
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Total: {{ $ticketsTabla->total() }}
-            </div>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full border-collapse">
-                <thead class="bg-gray-100 dark:bg-[#242933]">
+    <div class="index-page__card">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table index-table--sin-accion w-full">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase w-10"></th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Descripción</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Empleado</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Categoría</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Prioridad</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Estado</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase min-w-[160px]">Tiempo</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Responsable</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Fecha</th>
+                        <th></th>
+                        <th>ID</th>
+                        <th>Descripción</th>
+                        <th>Empleado</th>
+                        <th>Categoría</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Tiempo</th>
+                        <th>Responsable</th>
+                        <th>Fecha</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
+                <tbody>
                     @forelse($ticketsTabla as $ticket)
 
                     @php
                     $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
                     $tiempoTarjeta = \App\Models\Tickets::formatearTiempoTarjeta($tiempoInfo);
                     $empleadoCorto = $ticket->empleado
-                        ? \App\Models\Tickets::formatearNombreEmpleado($ticket->empleado->NombreEmpleado)
+                        ? $ticket->empleado->NombreEmpleado
                         : '-';
                     $responsableCorto = $ticket->responsableTI
                         ? \App\Models\Tickets::formatearNombreEmpleado($ticket->responsableTI->NombreEmpleado)
@@ -82,8 +67,8 @@
                     @endphp
 
                     <tr wire:key="ticket-tabla-{{ $ticket->TicketID }}"
-                        class="transition cursor-pointer hover:bg-gray-50 dark:hover:bg-[#273244] border-l-[3px] dark:bg-[#1C1F26]"
-                        style="border-left-color: {{ \App\Models\Tickets::colorPrioridad($ticket->Prioridad) }};"
+                        class="cursor-pointer"
+                        style="box-shadow: inset 3px 0 0 {{ \App\Models\Tickets::colorPrioridad($ticket->Prioridad) }};"
                         data-ticket-id="{{ $ticket->TicketID }}"
                         data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                         data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
@@ -98,31 +83,27 @@
                         data-ticket-estatus="{{ $estadoActual }}"
                         @click="abrirModalDesdeElemento($el)">
 
-                        <td class="px-4 py-3">
+                        <td>
                             @if($estadoActual === 'En progreso')
                                 @include('tickets.partials.notificacion-badge', ['notificaciones' => $notificaciones])
-                            @else
-                                <div class="w-5 h-5"></div>
                             @endif
                         </td>
 
-                        <td class="px-4 py-3">
-                            <span class="inline-flex items-center justify-center min-w-[2rem] h-6 px-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[11px] font-bold text-gray-600 dark:text-gray-300">
-                                #{{ $ticket->TicketID }}
-                            </span>
+                        <td>
+                            <strong>#{{ $ticket->TicketID }}</strong>
                         </td>
 
-                        <td class="px-4 py-3 max-w-xs">
-                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ \Illuminate\Support\Str::limit($ticket->Descripcion, 80) }}</p>
+                        <td>
+                            {{ $ticket->Descripcion }}
                         </td>
 
-                        <td class="px-4 py-3 text-gray-900 dark:text-gray-200" title="{{ optional($ticket->empleado)->NombreEmpleado }}">
+                        <td title="{{ optional($ticket->empleado)->NombreEmpleado }}">
                             {{ $empleadoCorto }}
                         </td>
 
-                        <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $categoria }}</td>
+                        <td>{{ $categoria }}</td>
 
-                        <td class="px-4 py-3">
+                        <td>
                             <span class="erp-chip
                                 @if($ticket->Prioridad == 'Baja') erp-chip--ok
                                 @elseif($ticket->Prioridad == 'Media') erp-chip--aviso
@@ -133,7 +114,7 @@
                             </span>
                         </td>
 
-                        <td class="px-4 py-3">
+                        <td>
                             <span class="erp-chip
                                 @if($estadoActual == 'Pendiente') erp-chip--aviso
                                 @elseif($estadoActual == 'En progreso') erp-chip--info
@@ -144,24 +125,24 @@
                             </span>
                         </td>
 
-                        <td class="px-4 py-3 min-w-[160px]">
+                        <td>
                             @if($tiempoTarjeta)
                                 @include('tickets.partials.tiempo-tarjeta', ['tiempo' => $tiempoTarjeta])
                             @else
-                                <span class="text-xs text-gray-400">—</span>
+                                —
                             @endif
                         </td>
 
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $responsableCorto }}</td>
+                        <td>{{ $responsableCorto }}</td>
 
-                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        <td>
                             {{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}
                         </td>
                     </tr>
 
                     @empty
                     <tr>
-                        <td colspan="10" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400 dark:bg-[#1C1F26]">
+                        <td colspan="10">
                             No hay tickets disponibles.
                         </td>
                     </tr>
@@ -170,10 +151,15 @@
             </table>
         </div>
 
-        @if(method_exists($ticketsTabla, 'links'))
-        <div class="px-4 py-3 border-t border-gray-200 dark:border-[#2A2F3A] dark:bg-[#1C1F26]">
-            {{ $ticketsTabla->links() }}
+        @php
+            $totalTickets = $ticketsTabla->total();
+            $infoTickets = $totalTickets > 0
+                ? 'Mostrando ' . $ticketsTabla->firstItem() . ' a ' . $ticketsTabla->lastItem() . ' de ' . $totalTickets
+                : 'Mostrando 0 a 0 de 0';
+        @endphp
+        <div class="index-page__dt-footer">
+            <div class="dataTables_info" role="status">{{ $infoTickets }}</div>
+            {{ $ticketsTabla->links('livewire.paginacion-compacta') }}
         </div>
-        @endif
     </div>
 </div>

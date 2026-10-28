@@ -6,8 +6,8 @@
             {{ min(100, $sla['porcentaje_uso']) }}%
         </span>
     </div>
-    <div class="h-1.5 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden mb-1.5">
-        <div class="h-full rounded-full transition-all {{ $sla['estilo']['bar'] ?? 'bg-current' }}"
+    <div class="kpi-track">
+        <div class="{{ $sla['estilo']['bar'] ?? 'bg-current' }}"
             style="width: {{ min(100, $sla['porcentaje_uso']) }}%"></div>
     </div>
     <div class="flex items-center justify-between gap-2 text-[10px]">

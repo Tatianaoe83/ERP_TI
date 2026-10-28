@@ -68,6 +68,10 @@ class TablaSolicitudes extends Component
     public array  $ticketInstalacionOptions      = [];
 
     public array  $insumosDisponibles  = [];
+    public ?int   $presupuestoInternoAsignacion = null;
+    public string $presupuestoInternoNombre = '';
+    public bool   $insumosTienenPresupuesto = false;
+    public bool   $insumosCargados = false;
     public string $insumoSearchQuery   = '';
     public array  $insumoSearchResults = [];
 
@@ -700,6 +704,15 @@ class TablaSolicitudes extends Component
             }
 
             $this->propuestasAsignacion = $out;
+            $this->precargarMontosXmlGuardados();
+            foreach ($this->propuestasAsignacion as $pIndex => $p) {
+                foreach (array_keys($p['unidades'] ?? []) as $uIndex) {
+                    $this->verificarYCargarInsumosParaUnidad($pIndex, $uIndex);
+                    if ($this->insumosCargados) {
+                        break 2;
+                    }
+                }
+            }
             $this->usuarioSearch        = [];
             $this->usuarioOptions       = [];
 
@@ -710,8 +723,6 @@ class TablaSolicitudes extends Component
                 }
             }
 
-            // Limpiar insumos al abrir para que solo carguen cuando AMBOS estén (XML + empleado) en ESTA sesión
-            $this->insumosDisponibles = [];
             $this->unidadesGuardadas  = [];
 
             $this->modalEsSoloLectura     = false;
@@ -925,19 +936,19 @@ class TablaSolicitudes extends Component
                     $proveedor = $data['proveedor'];
                     if (!$proveedor) continue;
 
-                    // 🔥 Obtener GerenciaID del departamento asignado en SolicitudActivo
-                    $gerenciaID = null;
-                    foreach ($this->propuestasAsignacion as $prop) {
-                        foreach (($prop['unidades'] ?? []) as $u) {
-                            $deptId = $u['departamento_id'] ?? null;
-                            if ($deptId) {
-                                $dept = \App\Models\Departamentos::find($deptId);
-                                if ($dept) {
-                                    $gerenciaID = $dept->GerenciaID ?? null;
+                    $presupuestoInternoId = $this->presupuestoInternoAsignacion;
+                    if (!$presupuestoInternoId) {
+                        foreach ($this->propuestasAsignacion as $prop) {
+                            foreach (($prop['unidades'] ?? []) as $u) {
+                                if (!empty($u['presupuesto_interno_id'])) {
+                                    $presupuestoInternoId = (int) $u['presupuesto_interno_id'];
+                                    break 2;
                                 }
-                                break 2; // Salir de ambos foreach
                             }
                         }
+                    }
+                    if (!$presupuestoInternoId) {
+                        throw new \Exception('El usuario final no tiene presupuesto interno. La factura no se guardó.');
                     }
 
                     // Buscar el XML parseado para este proveedor
@@ -955,11 +966,21 @@ class TablaSolicitudes extends Component
                         ->update(['deleted_at' => now()]);
 
                     // Preparar datos de la factura
-                    $insumoId     = isset($parsed['insumoId']) ? (int)$parsed['insumoId'] : null;
-                    $insumoNombre = null;
-                    if ($insumoId) {
+                    $insumoId     = !empty($parsed['insumoDesvio']) ? null : (isset($parsed['insumoId']) ? (int) $parsed['insumoId'] : null);
+                    $insumoNombre = trim((string) ($parsed['insumoNombre'] ?? ''));
+                    if ($insumoId && $insumoNombre === '') {
                         $insumoEncontrado = collect($this->insumosDisponibles)->firstWhere('id', $insumoId);
-                        $insumoNombre     = $insumoEncontrado['nombre'] ?? null;
+                        $insumoNombre     = (string) ($insumoEncontrado['nombre'] ?? '');
+                    }
+                    if ($insumoId) {
+                        $enCorte = DB::table('cortes')
+                            ->whereNull('deleted_at')
+                            ->where('PresupuestoInternoID', $presupuestoInternoId)
+                            ->where('CortesID', $insumoId)
+                            ->exists();
+                        if (!$enCorte) {
+                            $insumoId = null;
+                        }
                     }
 
                     // Nombre de la factura: descripcion del CFDI, nombre del insumo o emisor como fallback
@@ -1023,7 +1044,8 @@ class TablaSolicitudes extends Component
                     try {
                         $facturaData = [
                             'SolicitudID'  => (int)$this->asignacionSolicitudId,
-                            'GerenciaID'   => $gerenciaID,
+                            'GerenciaID'   => null,
+                            'PresupuestoInternoID' => $presupuestoInternoId,
                             'UUID'         => $uuid,
                             'Nombre'       => $descripcion,
                             'Importe'      => $subtotal,
@@ -1169,14 +1191,31 @@ class TablaSolicitudes extends Component
         }
     }
 
-    public function actualizarInsumoConcepto(int $pIndex, int $uIndex, $insumoId): void
+    public function actualizarInsumoConcepto(int $pIndex, int $uIndex, $insumoId = null, ?string $insumoNombre = null): void
     {
         if (!isset($this->xmlParseado[$pIndex][$uIndex])) return;
 
-        //$this->skipRender();
+        $nombre = trim((string) $insumoNombre);
+        $id = ($insumoId !== null && (int) $insumoId > 0) ? (int) $insumoId : null;
+        $esDesvio = false;
 
-        $insumoId = ($insumoId !== null && $insumoId > 0) ? (int)$insumoId : null;
+        if ($id) {
+            $encontrado = collect($this->insumosDisponibles)->firstWhere('id', $id);
+            $nombre = (string) ($encontrado['nombre'] ?? $nombre);
+        } elseif ($nombre !== '') {
+            $esDesvio = true;
+        } else {
+            $nombre = '';
+        }
+
+        $this->aplicarInsumoParseado($pIndex, $uIndex, $id, $nombre, $esDesvio);
+    }
+
+    private function aplicarInsumoParseado(int $pIndex, int $uIndex, ?int $insumoId, string $nombre, bool $esDesvio): void
+    {
         $this->xmlParseado[$pIndex][$uIndex]['insumoId'] = $insumoId;
+        $this->xmlParseado[$pIndex][$uIndex]['insumoNombre'] = $nombre;
+        $this->xmlParseado[$pIndex][$uIndex]['insumoDesvio'] = $esDesvio;
 
         $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
         if (!$proveedor) return;
@@ -1185,8 +1224,10 @@ class TablaSolicitudes extends Component
             if (($prop['proveedor'] ?? '') !== $proveedor) continue;
             foreach (array_keys($prop['unidades'] ?? []) as $ui) {
                 if ($pi === $pIndex && $ui === $uIndex) continue;
-                if (isset($this->xmlParseado[$pi][$ui]))
-                    $this->xmlParseado[$pi][$ui]['insumoId'] = $insumoId;
+                if (!isset($this->xmlParseado[$pi][$ui])) continue;
+                $this->xmlParseado[$pi][$ui]['insumoId'] = $insumoId;
+                $this->xmlParseado[$pi][$ui]['insumoNombre'] = $nombre;
+                $this->xmlParseado[$pi][$ui]['insumoDesvio'] = $esDesvio;
             }
         }
     }
@@ -1204,6 +1245,7 @@ class TablaSolicitudes extends Component
                 'empleado_nombre'     => (string)$row['NombreEmpleado'],
                 'departamento_id'     => $row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null,
                 'departamento_nombre' => $row['NombreDepartamento'] ?: null,
+                'presupuesto_interno_id' => $row['PresupuestoInternoID'] ? (int)$row['PresupuestoInternoID'] : null,
                 'checklist'           => $this->checklistTemplateByDept($row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null),
             ]
         );
@@ -1282,25 +1324,42 @@ class TablaSolicitudes extends Component
     }
 
     /**
-     * Carga insumos de una gerencia específica.
-     * Se ejecuta cuando el usuario tiene AMBOS: XML subido + usuario final asignado
+     * Insumos del corte del presupuesto interno del usuario final.
+     * Si ese presupuesto no tiene corte, la lista queda vacía y el insumo nuevo cuenta como desviación.
      */
-    private function cargarInsumosDispPorGerencia(?int $gerenciaId): void
+    private function cargarInsumosPorPresupuesto(?int $presupuestoId, ?int $anio): void
     {
-        if (!$gerenciaId) {
-            $this->insumosDisponibles = [];
+        $this->presupuestoInternoAsignacion = $presupuestoId ?: null;
+        $this->presupuestoInternoNombre = '';
+        $this->insumosDisponibles = [];
+        $this->insumosTienenPresupuesto = false;
+        $this->insumosCargados = true;
+
+        if (!$presupuestoId) {
             return;
         }
 
-        $this->insumosDisponibles = DB::table('cortes')
+        $this->presupuestoInternoNombre = (string) (DB::table('presupuestos_internos')
+            ->where('PresupuestoInternoID', $presupuestoId)
             ->whereNull('deleted_at')
-            ->where('GerenciaID', $gerenciaId)
+            ->value('Nombre') ?? '');
+
+        $consulta = DB::table('cortes')
+            ->whereNull('deleted_at')
+            ->where('PresupuestoInternoID', $presupuestoId);
+        if ($anio) {
+            $consulta->where('Anio', $anio);
+        }
+
+        $this->insumosDisponibles = $consulta
             ->select(DB::raw('MAX(CortesID) as id, NombreInsumo as nombre'))
             ->groupBy('NombreInsumo')
             ->orderBy('NombreInsumo')
             ->get()
-            ->map(fn($c) => ['id' => (int)$c->id, 'nombre' => (string)$c->nombre])
+            ->map(fn ($c) => ['id' => (int) $c->id, 'nombre' => (string) $c->nombre])
             ->toArray();
+
+        $this->insumosTienenPresupuesto = $this->insumosDisponibles !== [];
     }
 
     /**
@@ -1319,15 +1378,13 @@ class TablaSolicitudes extends Component
         // Verificar si tiene usuario final asignado
         $tieneEmpleado = !empty($unidad['empleado_id']);
 
-        // Si tiene AMBOS, cargar insumos de su gerencia
         if ($tieneXml && $tieneEmpleado) {
-            $deptId = (int)($unidad['departamento_id'] ?? 0);
-            if ($deptId) {
-                $dept = \App\Models\Departamentos::find($deptId);
-                if ($dept && $dept->GerenciaID) {
-                    $this->cargarInsumosDispPorGerencia((int)$dept->GerenciaID);
-                }
+            $presupuestoId = (int) ($unidad['presupuesto_interno_id'] ?? 0);
+            if (!$presupuestoId && !empty($unidad['empleado_id'])) {
+                $presupuestoId = (int) (Empleados::query()->where('EmpleadoID', (int) $unidad['empleado_id'])->value('PresupuestoInternoID') ?? 0);
             }
+            $anio = (int) ($this->xmlParseado[$pIndex][$uIndex]['anio'] ?? 0);
+            $this->cargarInsumosPorPresupuesto($presupuestoId ?: null, $anio > 0 ? $anio : null);
         }
     }
 
@@ -1402,6 +1459,10 @@ class TablaSolicitudes extends Component
         $this->checklistTemplatesCache     = [];
         $this->confirmarCierreModalAbierto = false;
         $this->insumosDisponibles          = [];
+        $this->presupuestoInternoAsignacion = null;
+        $this->presupuestoInternoNombre = '';
+        $this->insumosTienenPresupuesto = false;
+        $this->insumosCargados = false;
         $this->insumoSearchQuery           = '';
         $this->insumoSearchResults         = [];
         $this->unidadesGuardadas           = []; // Limpiar rastro de guardadas
@@ -1445,7 +1506,7 @@ class TablaSolicitudes extends Component
             ->leftJoin('puestos as p',      'p.PuestoID',       '=', 'e.PuestoID')
             ->leftJoin('departamentos as d', 'd.DepartamentoID', '=', 'p.DepartamentoID')
             ->where('e.EmpleadoID', $empleadoId)
-            ->first(['e.EmpleadoID','e.NombreEmpleado','e.Correo','d.DepartamentoID','d.NombreDepartamento']);
+            ->first(['e.EmpleadoID','e.NombreEmpleado','e.Correo','e.PresupuestoInternoID','d.DepartamentoID','d.NombreDepartamento']);
 
         if (!$row) throw new \Exception('Empleado no encontrado.');
 
@@ -1455,6 +1516,7 @@ class TablaSolicitudes extends Component
             'Correo'             => (string)($row->Correo            ?? ''),
             'DepartamentoID'     => $row->DepartamentoID      ? (int)$row->DepartamentoID      : null,
             'NombreDepartamento' => $row->NombreDepartamento ? (string)$row->NombreDepartamento : null,
+            'PresupuestoInternoID' => $row->PresupuestoInternoID ? (int)$row->PresupuestoInternoID : null,
         ];
     }
 
@@ -1856,6 +1918,29 @@ class TablaSolicitudes extends Component
         return $h > 0 ? "{$h} h " . ($m > 0 ? "{$m} m" : '') : "{$m} m";
     }
 
+    private function precargarMontosXmlGuardados(): void
+    {
+        $vistos = [];
+        foreach ($this->propuestasAsignacion as $pIndex => $p) {
+            $path = (string) ($p['unidades'][0]['factura_xml_path'] ?? '');
+            if ($path === '' || isset($vistos[$path])) {
+                continue;
+            }
+            $vistos[$path] = true;
+            if (!empty($this->xmlParseado[$pIndex][0]['uuid'])) {
+                continue;
+            }
+            $full = Storage::disk('public')->path($path);
+            if (!is_file($full)) {
+                continue;
+            }
+            try {
+                $this->xmlParseado[$pIndex][0] = $this->parsearCfdi($full);
+            } catch (\Throwable $e) {
+            }
+        }
+    }
+
     private function parsearCfdi(string $ruta): array
     {
         $contenido = file_get_contents($ruta);
@@ -1878,6 +1963,7 @@ class TablaSolicitudes extends Component
         $fecha   = (string)($attrs['Fecha']   ?? '');
         $moneda  = (string)($attrs['Moneda']  ?? 'MXN');
         $subtotal = (string)($attrs['SubTotal'] ?? $attrs['subTotal'] ?? '0');
+        $total    = (string)($attrs['Total'] ?? $attrs['total'] ?? $subtotal);
 
         $emisorNode   = $xml->xpath('//cfdi:Comprobante/cfdi:Emisor') ?: $xml->xpath('//cfdi:Emisor');
         $emisorNombre = $emisorNode ? (string)$emisorNode[0]['Nombre'] : '';
@@ -1914,11 +2000,11 @@ class TablaSolicitudes extends Component
             'mes'         => $mes,
             'anio'        => $anio,
             'subtotal'    => $subtotal,
+            'total'       => $total,
             'moneda'      => $moneda,
             'cantidad'    => (int)$cantidadTotal,
             'descripcion' => implode(', ', array_slice($descripcionCompleta, 0, 3)) . (count($descripcionCompleta) > 3 ? '...' : ''),
             'insumoId'    => null,
-            'total'       => $subtotal, // compatibilidad
         ];
     }
 

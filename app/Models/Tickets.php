@@ -626,7 +626,7 @@ class Tickets extends Model
         $ticket->loadMissing(['empleado', 'responsableTI', 'tipoticket']);
 
         $empleadoCorto = $ticket->empleado
-            ? self::formatearNombreEmpleado($ticket->empleado->NombreEmpleado)
+            ? trim((string) $ticket->empleado->NombreEmpleado)
             : '';
 
         $responsableCorto = $ticket->responsableTI

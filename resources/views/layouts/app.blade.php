@@ -731,24 +731,26 @@
             }
         }
 
-        /* Kanban dark: tarjetas oscuras, chips de tiempo sin tocar */
+        /* Kanban: misma superficie marino que el resto del sistema. */
         .dark .kanban-root {
-            background-color: #0F1116 !important;
+            background-color: transparent !important;
         }
 
         html.dark .kanban-root .bg-gray-100\/80,
         html.dark .kanban-root .bg-gray-100 {
-            background-color: #161920 !important;
+            background-color: #0f1d32 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
         }
 
         html.dark .kanban-root .bg-white\/70 {
-            background-color: #1C1F26 !important;
+            background-color: #13233b !important;
+            color: #f8fafc !important;
         }
 
         html.dark .kanban-root .ticket-kanban-card,
         html.dark .kanban-root .group.bg-white {
-            background-color: #1C1F26 !important;
-            border-color: #2A2F3A !important;
+            background-color: #13233b !important;
+            color: #f8fafc !important;
         }
 
         html.dark .kanban-root .ticket-kanban-card > p,
@@ -1047,7 +1049,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023i">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023n">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1061,7 +1063,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023i">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023n">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">

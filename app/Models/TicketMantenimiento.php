@@ -464,11 +464,11 @@ class TicketMantenimiento extends Model
         if (in_array($estado, ['cumplido', 'incumplido'], true)) {
             $textoRestante = $estado === 'cumplido'
                 ? 'Atendido dentro de meta'
-                : 'Atendido fuera de meta (+' . self::formatearDuracionSlaLaboral($diasExcedidos) . ')';
+                : 'Atendido fuera de meta (+' . self::formatearDuracionLaboral($horasExcedidas) . ')';
         } elseif ($estado === 'vencido') {
-            $textoRestante = 'Vencido hace ' . self::formatearDuracionSlaLaboral($diasExcedidos);
+            $textoRestante = 'Vencido hace ' . self::formatearDuracionLaboral($horasExcedidas);
         } else {
-            $textoRestante = 'Restan ' . self::formatearDuracionSlaLaboral($diasRestantes);
+            $textoRestante = 'Restan ' . self::formatearDuracionLaboral($horasRestantes);
         }
 
         $estilos = [
@@ -489,29 +489,46 @@ class TicketMantenimiento extends Model
             'transcurrido_dias' => $sla['dias_laborales_transcurridos'],
             'restante_dias'     => $diasRestantes,
             'porcentaje_uso'    => $sla['porcentaje_uso'],
-            'texto_transcurrido' => self::formatearDuracionSlaLaboral($sla['dias_laborales_transcurridos']) . ' de ' . $sla['max_dias'] . ' días',
+            'texto_transcurrido' => self::formatearDuracionLaboral($sla['horas_transcurridas']) . ' de ' . $sla['max_dias'] . ' días',
             'texto_restante'    => $textoRestante,
             'estilo'            => $style,
             'estado'            => $estado,
         ];
     }
 
-    public static function formatearDuracionSlaLaboral(float $dias): string
+    /**
+     * Horas laborales (L-V, 9:00-18:00, 9 h = 1 día) a días, horas y minutos.
+     */
+    public static function formatearDuracionLaboral(float $horas): string
     {
-        if ($dias >= 1) {
-            $entero = (int) floor($dias);
-            $decimal = round($dias - $entero, 1);
-
-            if ($decimal >= 0.1) {
-                return rtrim(rtrim(number_format($dias, 1, '.', ''), '0'), '.') . ' días';
-            }
-
-            return $entero . ($entero === 1 ? ' día' : ' días');
+        $totalMinutos = (int) round(max(0, $horas) * 60);
+        if ($totalMinutos === 0) {
+            return '0 minutos';
         }
 
-        $horas = max(1, (int) round($dias * self::HORAS_LABORALES_DIA));
+        $minutosPorDia = self::HORAS_LABORALES_DIA * 60;
+        $dias = intdiv($totalMinutos, $minutosPorDia);
+        $resto = $totalMinutos % $minutosPorDia;
+        $horasEnteras = intdiv($resto, 60);
+        $minutos = $resto % 60;
 
-        return $horas . ($horas === 1 ? ' hora' : ' horas');
+        $partes = [];
+        if ($dias > 0) {
+            $partes[] = $dias . ($dias === 1 ? ' día' : ' días');
+        }
+        if ($horasEnteras > 0) {
+            $partes[] = $horasEnteras . ($horasEnteras === 1 ? ' hora' : ' horas');
+        }
+        if ($minutos > 0) {
+            $partes[] = $minutos . ($minutos === 1 ? ' minuto' : ' minutos');
+        }
+
+        return implode(', ', $partes);
+    }
+
+    public static function formatearDuracionSlaLaboral(float $dias): string
+    {
+        return self::formatearDuracionLaboral($dias * self::HORAS_LABORALES_DIA);
     }
 
     public static function colorPrioridad(?string $prioridad): string
@@ -629,6 +646,7 @@ class TicketMantenimiento extends Model
                 'cancelados'      => 0,
                 'pct_cumplimiento' => 0,
                 'tiempo_promedio_dias' => 0,
+                'tiempo_promedio_texto' => '',
             ];
         }
 
@@ -655,7 +673,7 @@ class TicketMantenimiento extends Model
 
             if ($ticket->Estatus === 'Atendido') {
                 $p['atendidos']++;
-                $sumaDiasAtendidos[$ticket->Prioridad][] = $sla['dias_laborales_transcurridos'];
+                $sumaDiasAtendidos[$ticket->Prioridad][] = $sla['horas_transcurridas'];
 
                 if ($estado === 'cumplido') {
                     $p['cumplidos']++;
@@ -689,10 +707,9 @@ class TicketMantenimiento extends Model
                 : 0;
 
             if (!empty($sumaDiasAtendidos[$prioridad])) {
-                $data['tiempo_promedio_dias'] = round(
-                    array_sum($sumaDiasAtendidos[$prioridad]) / count($sumaDiasAtendidos[$prioridad]),
-                    1
-                );
+                $promedioHoras = array_sum($sumaDiasAtendidos[$prioridad]) / count($sumaDiasAtendidos[$prioridad]);
+                $data['tiempo_promedio_dias'] = round($promedioHoras / self::HORAS_LABORALES_DIA, 1);
+                $data['tiempo_promedio_texto'] = self::formatearDuracionLaboral($promedioHoras);
             }
         }
         unset($data);

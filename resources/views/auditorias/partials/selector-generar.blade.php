@@ -220,7 +220,7 @@
 
                 <div class="aud-modal__pie">
                     <span class="aud-muted" id="resumenAlcance" aria-live="polite"></span>
-                    <button type="submit" class="aud-btn aud-btn--primary" id="btnConfirmarGenerar">
+                    <button type="submit" class="index-page__btn-primary" id="btnConfirmarGenerar">
                         <i class="fas fa-play" aria-hidden="true"></i> Generar auditoría
                     </button>
                 </div>

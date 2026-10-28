@@ -50,7 +50,7 @@
             @if($esMantenimientos)
             <div class="flex items-center gap-2">
                 <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-300 font-medium hidden sm:inline">Vista:</span>
-                <div class="flex items-center gap-1 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-1">
+                <div class="vista-switch">
                     <button type="button" data-vista-btn="kanban"
                         class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2 text-[#9CA3AF] hover:text-[#E5E7EB]">
                         <i class="fas fa-columns text-xs"></i><span class="hidden sm:inline">Kanban</span>

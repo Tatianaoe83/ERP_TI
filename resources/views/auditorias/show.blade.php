@@ -14,7 +14,7 @@
     :card="false"
 >
     <x-slot name="headerActions">
-        <a href="{{ route('auditorias.index') }}" class="aud-btn aud-btn--ghost">
+        <a href="{{ route('auditorias.index') }}" class="index-page__btn-secondary">
             <i class="fas fa-list" aria-hidden="true"></i> Volver al listado
         </a>
     </x-slot>
