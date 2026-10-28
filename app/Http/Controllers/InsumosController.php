@@ -236,6 +236,17 @@ class InsumosController extends AppBaseController
 
       // Guardar los datos originales para buscar en inventario
         $datosOriginales = $insumos->toArray();
+        $input = $request->all();
+
+        // El form recalcula la inflación sobre el costo guardado (que ya la trae);
+        // si no tocaron costo mensual, anual ni inflación, se conserva el precio guardado
+        $costosSinCambio = (float) $request->input('CostoMensual_fields') == (float) $insumos->CostoMensual
+            && (float) $request->input('CostoAnual_fields') == (float) $insumos->CostoAnual
+            && (float) $request->input('Importe') == (float) $insumos->Importe;
+        if ($costosSinCambio) {
+            $input['CostoMensual'] = $insumos->CostoMensual;
+            $input['CostoAnual'] = $insumos->CostoAnual;
+        }
 
         // Verificar si hay cambios en los campos que se sincronizan con inventario
         $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'Importe', 'Observaciones', 'FechaRenovacion'];
@@ -243,14 +254,14 @@ class InsumosController extends AppBaseController
         $camposModificados = [];
 
         foreach ($camposSincronizacion as $campo) {
-            if ($datosOriginales[$campo] != $request->input($campo)) {
+            if ($datosOriginales[$campo] != ($input[$campo] ?? null)) {
                 $hayCambios = true;
                 $camposModificados[] = $campo;
             }
         }
         
         // Actualizar el insumo
-        $insumos = $this->insumosRepository->update($request->all(), $id);
+        $insumos = $this->insumosRepository->update($input, $id);
 
         // Obtener los datos actualizados
         $insumosActualizado = $this->insumosRepository->find($id);

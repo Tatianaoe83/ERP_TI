@@ -11,17 +11,17 @@ class SeederBorrarGerenciasSinInventario extends Seeder
     {
         $gerencias = Gerencia::query()
             ->whereNotExists(function ($q) {
-                $q->from('inventarioequipo')
-                    ->whereColumn('inventarioequipo.GerenciaEquipoID', 'gerencia.GerenciaID');
-            })
-            ->whereNotExists(function ($q) {
-                $this->inventarioPorEmpleado($q, 'inventarioequipo');
-            })
-            ->whereNotExists(function ($q) {
-                $this->inventarioPorEmpleado($q, 'inventarioinsumo', true);
-            })
-            ->whereNotExists(function ($q) {
-                $this->inventarioPorEmpleado($q, 'inventariolineas', true);
+                $q->from('departamentos')
+                    ->join('puestos', function ($join) {
+                        $join->on('puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+                            ->whereNull('puestos.deleted_at');
+                    })
+                    ->join('empleados', function ($join) {
+                        $join->on('empleados.PuestoID', '=', 'puestos.PuestoID')
+                            ->whereNull('empleados.deleted_at');
+                    })
+                    ->whereColumn('departamentos.GerenciaID', 'gerencia.GerenciaID')
+                    ->whereNull('departamentos.deleted_at');
             })
             ->orderBy('NombreGerencia')
             ->get();
@@ -31,19 +31,6 @@ class SeederBorrarGerenciasSinInventario extends Seeder
             $this->command->line("Borrada gerencia {$gerencia->GerenciaID} {$gerencia->NombreGerencia}");
         }
 
-        $this->command->info("Gerencias sin inventario borradas: {$gerencias->count()}");
-    }
-
-    private function inventarioPorEmpleado($q, string $tabla, bool $respetaBorrado = false): void
-    {
-        $q->from($tabla)
-            ->join('empleados', 'empleados.EmpleadoID', '=', "{$tabla}.EmpleadoID")
-            ->join('puestos', 'puestos.PuestoID', '=', 'empleados.PuestoID')
-            ->join('departamentos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
-            ->whereColumn('departamentos.GerenciaID', 'gerencia.GerenciaID');
-
-        if ($respetaBorrado) {
-            $q->whereNull("{$tabla}.deleted_at");
-        }
+        $this->command->info("Gerencias sin gente borradas: {$gerencias->count()}");
     }
 }

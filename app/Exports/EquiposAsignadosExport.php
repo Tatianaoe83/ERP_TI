@@ -91,6 +91,23 @@ class EquiposAsignadosExport implements FromView, WithEvents, ShouldAutoSize
                     $sheet->getColumnDimension($column)->setAutoSize(true);
                 }
 
+                // Caracteristicas: ancho de la línea más larga, tope 60; lo que pase del tope se parte en renglones
+                foreach (range('A', $lastColumn) as $column) {
+                    if ($sheet->getCell($column . '1')->getValue() !== 'Caracteristicas') {
+                        continue;
+                    }
+                    $max = 0;
+                    for ($row = 2; $row <= $lastRow; $row++) {
+                        foreach (explode("\n", (string) $sheet->getCell($column . $row)->getValue()) as $linea) {
+                            $max = max($max, mb_strlen(trim($linea)));
+                        }
+                    }
+                    $sheet->getColumnDimension($column)->setAutoSize(false)->setWidth(min(max($max, 15), 60) + 2);
+                    $sheet->getStyle($column . '2:' . $column . $lastRow)->getAlignment()->setWrapText(true);
+                }
+
+                $sheet->setAutoFilter('A1:' . $lastColumn . $lastRow);
+
                 // Establecer altura de fila para el encabezado
                 $sheet->getRowDimension(1)->setRowHeight(25);
             }

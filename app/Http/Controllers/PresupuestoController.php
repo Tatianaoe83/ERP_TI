@@ -42,9 +42,10 @@ class PresupuestoController extends Controller
             $genusuarios = Gerencia::join("gerencias_usuarios", "gerencias_usuarios.GerenciaID", "=", "gerencia.GerenciaID")
                 ->select('gerencia.*')
                 ->where('gerencias_usuarios.users_id', $id)
+                ->orderBy('gerencia.NombreGerencia')
                 ->get();
         } else {
-            $genusuarios = Gerencia::all();
+            $genusuarios = Gerencia::orderBy('NombreGerencia')->get();
         }
 
         $presupuestosInternos = PresupuestoInterno::visiblesPara(auth()->id());

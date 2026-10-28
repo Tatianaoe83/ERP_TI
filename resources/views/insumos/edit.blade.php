@@ -68,6 +68,13 @@ function initializeInsumoEdit() {
         var nombreInsumo = $('#NombreInsumo').val();
         var costoMensual = $('#CostoMensual').val();
         var costoAnual = $('#CostoAnual').val();
+        // Misma regla que update(): sin cambios en costos ni inflación se guarda el precio actual
+        if (parseFloat($('#CostoMensual_fields').val() || 0) == {{ (float) $insumos->CostoMensual }}
+            && parseFloat($('#CostoAnual_fields').val() || 0) == {{ (float) $insumos->CostoAnual }}
+            && parseFloat($('#Importe_fields').val() || 0) == {{ (float) $insumos->Importe }}) {
+            costoMensual = {{ (float) $insumos->CostoMensual }};
+            costoAnual = {{ (float) $insumos->CostoAnual }};
+        }
         var fechaRenovacion = $('#FechaRenovacion').val();
         var observaciones = $('#Observaciones').val();
         

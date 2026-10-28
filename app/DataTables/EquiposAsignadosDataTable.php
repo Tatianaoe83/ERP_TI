@@ -55,6 +55,7 @@ class EquiposAsignadosDataTable extends DataTable
                 'inventarioequipo.Caracteristicas',
                 'inventarioequipo.NumSerie',
                 'inventarioequipo.FechaAsignacion',
+                'inventarioequipo.FechaDeCompra',
                 'inventarioequipo.CategoriaEquipo',
             ]);
 
@@ -173,6 +174,12 @@ class EquiposAsignadosDataTable extends DataTable
                 'title' => 'Fecha Asignación',
                 'data' => 'FechaAsignacion',
                 'name' => 'inventarioequipo.FechaAsignacion',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'FechaDeCompra' => [
+                'title' => 'Fecha Compra',
+                'data' => 'FechaDeCompra',
+                'name' => 'inventarioequipo.FechaDeCompra',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
         ];
