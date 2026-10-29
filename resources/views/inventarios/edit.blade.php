@@ -412,7 +412,7 @@
                     <div class="invalid-feedback">Este campo es requerido</div>
                   </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 js-linea-real">
                   <div class="dark:text-white mb-3">
                     <label for="editCostoFianzaLinea">Costo fianza</label>
                     <input type="number" min="0" step="1" class="form-control" id="editCostoFianzaLinea" name="CostoFianza">

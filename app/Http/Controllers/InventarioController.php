@@ -761,6 +761,8 @@ class InventarioController extends AppBaseController
                 $data['CostoFianza'] = $catalogo->CostoFianza;
                 $data['MontoRenovacionFianza'] = $catalogo->MontoRenovacionFianza;
                 $data['FechaRenovacion'] = $catalogo->FechaRenovacion;
+            } elseif ($modo === PresupuestoAsignacion::EXTRA && empty($inventariotelf->LineaID)) {
+                $data = $this->sinFianzaEnExtra($data);
             }
 
             $inventariotelf->update($this->datosParaInventarioLineas($data));
@@ -908,7 +910,6 @@ class InventarioController extends AppBaseController
         $data['NumTelefonico'] = null;
         $data['CuentaPadre'] = null;
         $data['CuentaHija'] = null;
-        $data['FechaFianza'] = null;
         $data['FechaAsignacion'] = null;
         $data['Presupuestado'] = PresupuestoAsignacion::EXTRA;
 
@@ -924,9 +925,7 @@ class InventarioController extends AppBaseController
         $data['Presupuestado'] = PresupuestoAsignacion::EXTRA;
         $data = $this->aplicarMesesDePago($data, false);
         $data = $this->vaciarCamposEstimacion($data);
-        if (! isset($data['CostoFianza']) || $data['CostoFianza'] === null || $data['CostoFianza'] === '') {
-            $data['CostoFianza'] = 0;
-        }
+        $data = $this->sinFianzaEnExtra($data);
 
         $inventariotelf = InventarioLineas::create($this->datosParaInventarioLineas($data));
         $inventariotelf->load('lineastelefonicas.obras');
@@ -1857,6 +1856,16 @@ class InventarioController extends AppBaseController
         unset($data['_token'], $data['_method']);
 
         return array_intersect_key($data, $columnas);
+    }
+
+    /** La línea extra es por comprar: no tiene fianza ni renovación hasta pasarla a stock. */
+    private function sinFianzaEnExtra(array $data): array
+    {
+        foreach (['CostoFianza', 'FechaFianza', 'MontoRenovacionFianza', 'FechaRenovacion'] as $campo) {
+            $data[$campo] = null;
+        }
+
+        return $data;
     }
 
     private function datosLineaDesdePlan(array $data, Request $request): array
