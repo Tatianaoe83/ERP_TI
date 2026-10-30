@@ -12,6 +12,7 @@ use App\Models\SolicitudTokens;
 use App\Models\Tickets;
 use App\Models\TicketMantenimiento;
 use App\Services\SolicitudAprobacionEmailService;
+use App\Services\SolicitudFlujoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,11 +31,11 @@ class SoporteTIController extends Controller
     {
         $query = $request->get('query');
 
-        $resultados = DB::table('empleados')
+        $resultados = Empleados::query()
+            ->fisicosActivos()
             ->select('EmpleadoID', 'NombreEmpleado')
             ->where('NombreEmpleado', 'like', '%' . $query . '%')
-            ->where('Estado', '1')
-            ->groupBy('EmpleadoID', 'NombreEmpleado')
+            ->orderBy('NombreEmpleado')
             ->limit(5)
             ->get();
 
@@ -50,9 +51,14 @@ class SoporteTIController extends Controller
             return response()->json(['error' => 'Correo requerido'], 400);
         }
 
-        $empleado = Empleados::where('Correo', $correo)->where('Estado', '1')->first();
+        $empleado = Empleados::query()->fisicosActivos()->where('Correo', $correo)->first();
 
         if (!$empleado) {
+            $otroTipo = Empleados::where('Correo', $correo)->where('Estado', 1)->where('tipo_persona', '!=', 'FISICA')->exists();
+            if ($otroTipo) {
+                return response()->json(['error' => 'Solo se puede dar de alta a una persona física activa.'], 422);
+            }
+
             return response()->json(['error' => 'No se encontró correo, contacta a soporte'], 404);
         }
 
@@ -73,15 +79,45 @@ class SoporteTIController extends Controller
         }
 
         if ($type === 'Solicitud') {
+            $flujo = app(SolicitudFlujoService::class);
+            $jefe = $flujo->jefeInmediato($empleado);
+            $destino = $flujo->destinoTrasSupervisor($empleado);
+
             $response['GerenciaID'] = $empleado->puestos->departamentos->gerencia->GerenciaID ?? null;
             $response['NombreGerencia'] = $empleado->puestos->departamentos->gerencia->NombreGerencia ?? null;
             $response['PuestoID'] = $empleado->puestos->PuestoID ?? null;
             $response['NombrePuesto'] = $empleado->puestos->NombrePuesto ?? null;
             $response['ObraID'] = $empleado->obras->ObraID ?? null;
             $response['NombreObra'] = $empleado->obras->NombreObra ?? null;
+            $response['JefeDirectoID'] = $jefe->EmpleadoID ?? null;
+            $response['NombreJefe'] = $jefe->NombreEmpleado ?? null;
+            $response['DestinoID'] = $destino['empleado']->EmpleadoID ?? null;
+            $response['DestinoNombre'] = $destino['empleado']->NombreEmpleado ?? null;
+            $response['DestinoRol'] = $destino['rol'];
+            $response['DestinoDetalle'] = $destino['detalle'];
         }
 
         return response()->json($response);
+    }
+
+    public function destinoDeJefe(Request $request): JsonResponse
+    {
+        $persona = Empleados::query()->fisicosActivos()->find((int) $request->input('empleado_id'));
+        if (!$persona) {
+            return response()->json(['error' => 'El jefe debe ser una persona física activa.'], 422);
+        }
+
+        $destino = app(SolicitudFlujoService::class)->destinoVisible($persona);
+
+        $destinoId = (int) ($destino['empleado']->EmpleadoID ?? 0);
+
+        return response()->json([
+            'DestinoID' => $destinoId ?: null,
+            'DestinoNombre' => $destino['empleado']->NombreEmpleado ?? null,
+            'DestinoRol' => $destino['rol'],
+            'DestinoDetalle' => $destino['detalle'],
+            'Solo' => $destinoId > 0 && $destinoId === (int) $persona->EmpleadoID,
+        ]);
     }
 
     public function getEmpleadoInfo(Request $request): JsonResponse
@@ -169,8 +205,8 @@ public function crearTickets(Request $request)
              $correo = $request->input('Correo');
              if (empty($correo)) return redirect()->back()->with('error', 'El correo electrónico es requerido');
              
-             $empleado = Empleados::where('Correo', $correo)->where('Estado', '1')->first();
-             if (!$empleado) return redirect()->back()->with('error', 'No se encontró el empleado');
+             $empleado = Empleados::query()->fisicosActivos()->where('Correo', $correo)->first();
+             if (!$empleado) return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
              
              $descripcion = $request->input('Descripcion');
              if (empty($descripcion)) return redirect()->back()->with('error', 'La descripción es requerida');
@@ -217,9 +253,9 @@ public function crearTickets(Request $request)
                 'Descripcion'       => 'required|string',
             ]);
 
-            $empleado = Empleados::where('Correo', $data['Correo'])->where('Estado', '1')->first();
+            $empleado = Empleados::query()->fisicosActivos()->where('Correo', $data['Correo'])->first();
             if (!$empleado) {
-                return redirect()->back()->with('error', 'No se encontró el empleado con ese correo');
+                return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
             }
 
             $files = $request->file('imagen');
@@ -267,30 +303,34 @@ public function crearTickets(Request $request)
                 'SupervisorID' => 'nullable', 
             ]);
 
-            $empleadoSolicitante = Empleados::where('Correo', $data['Correo'])->first();
+            $empleadoSolicitante = Empleados::query()->fisicosActivos()->where('Correo', $data['Correo'])->first();
             if (!$empleadoSolicitante) {
-                return redirect()->back()->with('error', 'Empleado solicitante no encontrado');
+                return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
             }
 
-            // 1. Detectar Supervisor
+            $flujo = app(SolicitudFlujoService::class);
+
+            // El jefe inmediato viene propuesto; si la persona lo cambia, se usa el que eligió.
+            // Si lo deja vacío, el visto bueno de supervisor se aprueba solo.
             $supervisor = null;
             if (!empty($data['SupervisorID']) && is_numeric($data['SupervisorID']) && $data['SupervisorID'] > 0) {
-                $supervisor = Empleados::find($data['SupervisorID']);
+                $supervisor = Empleados::query()->fisicosActivos()->find($data['SupervisorID']);
+                if (!$supervisor) {
+                    return redirect()->back()->with('error', 'El jefe inmediato debe ser una persona física activa.');
+                }
             }
 
-            // 2. Definir Gerencia
-            $gerencia = null;
-            if ($supervisor) {
-                $gerencia = $supervisor->puestos?->departamentos?->gerencia;
-            } else {
-                $gerencia = $empleadoSolicitante->puestos?->departamentos?->gerencia;
-            }
+            $gerencia = $empleadoSolicitante->puestos?->departamentos?->gerencia;
+            // Si eligieron otro jefe, el siguiente visto bueno es el de esa persona.
+            $destino = $supervisor
+                ? $flujo->destinoVisible($supervisor)
+                : $flujo->destinoTrasSupervisor($empleadoSolicitante);
+            $gerente = $destino['empleado'];
+            $gerencia = $gerencia ?: $destino['gerencia'];
 
-            if (!$gerencia || !$gerencia->NombreGerente) {
-                return redirect()->back()->with('error', 'No se pudo determinar la Gerencia o el Gerente');
+            if (!$gerencia || !$gerente) {
+                return redirect()->back()->with('error', $destino['detalle'] ?: 'No se pudo determinar a quién se envía después del visto bueno del supervisor.');
             }
-
-            $gerente = Empleados::where('NombreEmpleado', $gerencia->NombreGerente)->first();
             
             // Configurar Admin
             $admin = Empleados::where('NombreEmpleado', 'BAAS SANCHEZ JOSE ALBERTO')->first();

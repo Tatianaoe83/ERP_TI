@@ -500,6 +500,7 @@ Route::post(
 Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
 Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
 Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);
+Route::get('/destinoDeJefe', [SoporteTIController::class, 'destinoDeJefe']);
 Route::post('/crearTickets', [SoporteTIController::class, 'crearTickets'])->name('soporte.ticket')->withoutMiddleware(['auth']);
 Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
 

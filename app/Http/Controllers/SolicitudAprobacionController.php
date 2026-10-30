@@ -11,6 +11,7 @@ use App\Models\Proyecto;
 use App\Models\Gerencia;
 use App\Models\Obras;
 use App\Services\SolicitudAprobacionEmailService;
+use App\Services\SolicitudFlujoService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -98,7 +99,8 @@ class SolicitudAprobacionController extends Controller
         $canDecide = ! $prevNotApproved && $step->status === 'pending';
 
         $proyectoNombre = $this->obtenerNombreProyecto($solicitud->Proyecto);
-        
+        $destinoVoBo = $this->destinoVisibleEnSupervisor($solicitud, $step);
+
         return view('solicitudes.revision-publica', [
             'solicitud' => $solicitud,
             'step'      => $step,
@@ -107,7 +109,41 @@ class SolicitudAprobacionController extends Controller
             'waitingFor' => $prevNotApproved ? $this->waitingLabel($solicitud, $step) : null,
             'proyectoNombre' => $proyectoNombre,
             'ganadores' => $ganadores,
+            'destinoVoBo' => $destinoVoBo,
         ]);
+    }
+
+    /**
+     * En el visto bueno del supervisor se muestra a quién sigue: gerente o director.
+     */
+    private function destinoVisibleEnSupervisor($solicitud, $step): ?array
+    {
+        if (($step->stage ?? '') !== 'supervisor' || !$solicitud?->empleadoid) {
+            return null;
+        }
+
+        $pasoGerencia = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+            ->where('stage', 'gerencia')
+            ->with('approverEmpleado.puestos')
+            ->first();
+
+        $persona = $pasoGerencia?->approverEmpleado;
+        if (!$persona) {
+            return null;
+        }
+
+        $resuelto = app(SolicitudFlujoService::class)->destinoTrasSupervisor($solicitud->empleadoid);
+        $puesto = (string) ($persona->puestos->NombrePuesto ?? '');
+        $mismo = $resuelto['empleado'] && (int) $resuelto['empleado']->EmpleadoID === (int) $persona->EmpleadoID;
+        $rol = $mismo
+            ? ($resuelto['rol'] ?: 'Gerente')
+            : (stripos($puesto, 'DIRECTOR') !== false ? 'Director' : 'Gerente');
+
+        return [
+            'nombre' => $persona->NombreEmpleado,
+            'rol' => $rol,
+            'detalle' => $mismo ? ($resuelto['detalle'] ?? '') : '',
+        ];
     }
 
     private function waitingLabel($solicitud, $currentStep): string

@@ -578,10 +578,13 @@
                                 <input type="hidden" name="PuestoID" id="PuestoID">
                             </div>
                             <div class="relative w-full">
-                                <label for="SupervisorNombre" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Supervisor/Jefe Inmediato</label>
-                                <input type="text" id="SupervisorNombre" placeholder="Nombre del supervisor" autocomplete="off" class="autoSupervisor w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <label for="SupervisorNombre" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Jefe inmediato</label>
+                                <input type="text" id="SupervisorNombre" placeholder="Se propone el jefe registrado. Puedes cambiarlo." autocomplete="off" class="autoSupervisor w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
                                 <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
                                 <div id="suggestionsSupervisor" class="suggestionsSupervisor absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
+                            </div>
+                            <div id="destinoSolicitudAviso" class="md:col-span-2 hidden rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-slate-800">
+                                <p id="destinoSolicitudTexto"></p>
                             </div>
                             <div>
                                 <label for="Motivo" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Motivo de la solicitud</label>
@@ -911,8 +914,23 @@
             deshabilitarCamposSolicitud();
             aislarPanelActivo(null);
 
-            // Detección de correo (Solicitud)
+            // Detección de correo (Solicitud): busca al terminar de escribir, sin esperar Tab.
+            var esperaCorreoSol = null;
+            $inputCorreoSol.on('input', function() {
+                var correo = $(this).val().trim();
+                clearTimeout(esperaCorreoSol);
+                if (!esCorreoValido(correo)) {
+                    return;
+                }
+                esperaCorreoSol = setTimeout(function() {
+                    var actual = $inputCorreoSol.val().trim();
+                    if (esCorreoValido(actual)) {
+                        buscarEmpleadoSolicitud(actual);
+                    }
+                }, 350);
+            });
             $inputCorreoSol.on('change blur', function() {
+                clearTimeout(esperaCorreoSol);
                 var correo = $(this).val().trim();
                 if (correo && esCorreoValido(correo)) {
                     buscarEmpleadoSolicitud(correo);
@@ -1176,6 +1194,31 @@ function renderTelefono() {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
         }
 
+        window.pintarAvisoSolicitud = function (data) {
+            var $aviso = $('#destinoSolicitudAviso');
+            var $texto = $('#destinoSolicitudTexto');
+            if (!$aviso.length) {
+                return;
+            }
+            if (data && data.DestinoNombre) {
+                var rol = String(data.DestinoRol || 'gerente').toLowerCase();
+                var frase = data.Solo
+                    ? 'Se envía solo al ' + rol + ': ' + data.DestinoNombre + '.'
+                    : 'Después del visto bueno del jefe inmediato se envía al ' + rol + ': ' + data.DestinoNombre + '.';
+                if (data.DestinoDetalle) {
+                    frase += ' ' + data.DestinoDetalle;
+                }
+                $texto.text(frase);
+                $aviso.removeClass('hidden border-amber-300 bg-amber-50').addClass('border-blue-200 bg-blue-50');
+            } else if (data && data.DestinoDetalle) {
+                $texto.text(data.DestinoDetalle);
+                $aviso.removeClass('hidden border-blue-200 bg-blue-50').addClass('border-amber-300 bg-amber-50');
+            } else {
+                $aviso.addClass('hidden');
+                $texto.text('');
+            }
+        };
+
         // Función para enmascarar número telefónico (999****999)
         var valorRealTelefono = ''; // Variable para almacenar el valor real
         function enmascararNumero(numero) {
@@ -1252,16 +1295,23 @@ function renderTelefono() {
                             .prop('required', false)
                             .prop('disabled', false); // Debe estar habilitado para que se envíe el valor "N/A"
                     } else {
-                        // CASO NORMAL: Mostramos el campo
+                        // CASO NORMAL: el jefe inmediato registrado, y se puede cambiar.
                         $supervisorContainer.removeClass('hidden');
 
-                        // Limpiamos, habilitamos y hacemos obligatorio
                         $supervisorInput
-                            .val('')
-                            .prop('required', true)
+                            .val(data.NombreJefe || '')
+                            .prop('required', false)
                             .prop('disabled', false)
                             .removeClass('bg-gray-100');
+                        $('#SupervisorID').val(data.JefeDirectoID || '');
                     }
+
+                    window.__avisoBaseSolicitud = {
+                        DestinoNombre: data.DestinoNombre || '',
+                        DestinoRol: data.DestinoRol || '',
+                        DestinoDetalle: data.DestinoDetalle || ''
+                    };
+                    window.pintarAvisoSolicitud(window.__avisoBaseSolicitud);
 
                     // 4. Habilitar el resto de los campos (Nota: Quité #SupervisorNombre de aquí porque ya se manejó arriba)
                     $('#Motivo, #DescripcionMotivo, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
@@ -1339,6 +1389,12 @@ function renderTelefono() {
                     $('#numeroTelefono').val(enmascararNumero(data.NumTelefono)).removeClass('border-red-500').addClass('border-green-500');
                     $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
                     $('#btnEnviar').prop('disabled', false).removeClass('cursor-not-allowed');
+                },
+                error: function(xhr) {
+                    window.correoTicketValido = false;
+                    deshabilitarCamposTicket();
+                    $('#autoEmpleadosTicket').val('').addClass('border-red-500');
+                    $('#correo-error').removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el empleado');
                 }
             });
         }
@@ -1372,11 +1428,11 @@ function renderTelefono() {
                     $('#btnEnviarMantenimiento').prop('disabled', false).removeClass('cursor-not-allowed');
                     $('#dropzoneMantenimiento').removeClass('opacity-50 cursor-not-allowed').addClass('hover:border-orange-400 hover:bg-orange-50');
                 },
-                error: function() {
+                error: function(xhr) {
                     window.correoMantenimientoValido = false;
                     $('#nombreSolicitante, #areaDepartamento').val('');
                     $('#correoMantenimiento').removeClass('border-green-500').addClass('border-red-500');
-                    $('#correo-mantenimiento-error').removeClass('hidden').text('No se encontró correo, contacta a soporte');
+                    $('#correo-mantenimiento-error').removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró correo, contacta a soporte');
                     $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-100');
                     $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed');
                     $('#dropzoneMantenimiento').addClass('opacity-50 cursor-not-allowed').removeClass('hover:border-orange-400 hover:bg-orange-50');
@@ -1384,7 +1440,22 @@ function renderTelefono() {
             });
         }
 
+        var esperaCorreoMant = null;
+        $('#correoMantenimiento').on('input', function() {
+            var correo = $(this).val().trim();
+            clearTimeout(esperaCorreoMant);
+            if (!esCorreoValido(correo)) {
+                return;
+            }
+            esperaCorreoMant = setTimeout(function() {
+                var actual = $('#correoMantenimiento').val().trim();
+                if (esCorreoValido(actual)) {
+                    buscarEmpleadoMantenimiento(actual);
+                }
+            }, 350);
+        });
         $('#correoMantenimiento').on('change blur', function() {
+            clearTimeout(esperaCorreoMant);
             var correo = $(this).val().trim();
             if (!correo) {
                 deshabilitarCamposMantenimiento();
@@ -2173,6 +2244,12 @@ function renderTelefono() {
 
             $input.on("input", function() {
                 const query = $(this).val().trim();
+                $("#SupervisorID").val("");
+                if (query === '' && window.__avisoBaseSolicitud) {
+                    window.pintarAvisoSolicitud(window.__avisoBaseSolicitud);
+                } else if (window.pintarAvisoSolicitud) {
+                    window.pintarAvisoSolicitud({ DestinoDetalle: 'Elige el jefe de la lista para ver a quién se envía después.' });
+                }
 
                 if (query.length < 2) {
                     $suggestions.empty().addClass("hidden");
@@ -2201,8 +2278,11 @@ function renderTelefono() {
                             const id = $(this).data("id");
                             $input.val(nombre);
                             $("#SupervisorID").val(id);
-
                             $suggestions.empty().addClass("hidden");
+
+                            $.get('/destinoDeJefe', { empleado_id: id }, function (resp) {
+                                window.pintarAvisoSolicitud(resp);
+                            });
                         });
                     }
                 });
@@ -2256,9 +2336,8 @@ function renderTelefono() {
             // Deshabilitar campos inicialmente
             deshabilitarCampos();
 
-            // Validar correo en Tickets (solo cuando pierde el foco o cambia)
-            $('#correoEmpleado').on('change blur', function() {
-                const correo = $(this).val().trim();
+            // Valida el correo al terminar de escribir. Tab no hace falta.
+            function procesarCorreoTicket(correo, alSalir) {
                 const $errorDiv = $('#correo-error');
                 const $empleadoInput = $('#autoEmpleadosTicket');
                 const $numeroInput = $('#numeroTelefono');
@@ -2277,6 +2356,9 @@ function renderTelefono() {
                 // Validar formato de correo básico
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(correo)) {
+                    if (!alSalir) {
+                        return;
+                    }
                     deshabilitarCampos();
                     $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
                     $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
@@ -2307,12 +2389,32 @@ function renderTelefono() {
                         // Habilitar campos
                         habilitarCamposEspecificos();
                     },
-                    error: function() {
+                    error: function(xhr) {
                         deshabilitarCampos();
-                        $errorDiv.removeClass('hidden').text('No se encontró el empleado');
+                        $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el empleado');
                         $empleadoInput.val('').removeClass('border-blue-500').addClass('border-red-500');
                     }
                 });
+            }
+
+            var esperaCorreoTicket = null;
+            $('#correoEmpleado').on('input', function() {
+                var correo = $(this).val().trim();
+                clearTimeout(esperaCorreoTicket);
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                    if (correo === '') {
+                        procesarCorreoTicket('', false);
+                    }
+                    return;
+                }
+                esperaCorreoTicket = setTimeout(function() {
+                    var actual = $('#correoEmpleado').val().trim();
+                    procesarCorreoTicket(actual, false);
+                }, 350);
+            });
+            $('#correoEmpleado').on('change blur', function() {
+                clearTimeout(esperaCorreoTicket);
+                procesarCorreoTicket($(this).val().trim(), true);
             });
 
             // Enter en correo (Ticket)
@@ -2433,7 +2535,7 @@ function renderTelefono() {
 
                         // Limpieza de error visual...
                         $empleadoInput.val('').addClass('border-red-500');
-                        $errorDiv.removeClass('hidden').text('No se encontró el empleado.');
+                        $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el empleado.');
                     }
                 });
             }
@@ -2937,6 +3039,17 @@ function renderTelefono() {
                         $gerenciaIDInput.val(data.GerenciaID || '');
                         $obraIDInput.val(data.ObraID || '');
                         $puestoIDInput.val(data.PuestoID || '');
+                        $('#SupervisorNombre').val(data.NombreJefe || '');
+                        $('#SupervisorID').val(data.JefeDirectoID || '');
+                        const $avisoDestino = $('#destinoSolicitudAviso');
+                        const $textoDestino = $('#destinoSolicitudTexto');
+                        if (data.DestinoNombre) {
+                            $textoDestino.text('Después del visto bueno del jefe inmediato se envía a ' + data.DestinoRol.toLowerCase() + ': ' + data.DestinoNombre + '. ' + (data.DestinoDetalle || ''));
+                            $avisoDestino.removeClass('hidden border-amber-300 bg-amber-50').addClass('border-blue-200 bg-blue-50');
+                        } else {
+                            $textoDestino.text(data.DestinoDetalle || 'No se encontró el gerente ni el director a quien se enviará.');
+                            $avisoDestino.removeClass('hidden border-blue-200 bg-blue-50').addClass('border-amber-300 bg-amber-50');
+                        }
                         $errorDiv.addClass('hidden').text('');
 
                         // Luego habilitar todos los campos
@@ -2958,7 +3071,7 @@ function renderTelefono() {
                     error: function(xhr) {
                         deshabilitarCamposSolicitud();
                         deshabilitarCampoUbicacion();
-                        if (xhr.status === 404) {
+                        if (xhr.status === 404 || xhr.status === 422) {
                             $empleadoInput.val('')
                                 .removeClass('border-blue-500 border-green-500')
                                 .addClass('border-red-500');
@@ -2981,6 +3094,8 @@ function renderTelefono() {
                             $obraIDInput.val('');
                             $puestoIDInput.val('');
                             $('#SupervisorID').val('');
+                            $('#destinoSolicitudAviso').addClass('hidden');
+                            $('#destinoSolicitudTexto').text('');
                             $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró correo, contacta a soporte');
                         } else {
                             $empleadoInput.val('')
@@ -3005,6 +3120,8 @@ function renderTelefono() {
                             $obraIDInput.val('');
                             $puestoIDInput.val('');
                             $('#SupervisorID').val('');
+                            $('#destinoSolicitudAviso').addClass('hidden');
+                            $('#destinoSolicitudTexto').text('');
                             $errorDiv.removeClass('hidden').text('Error al buscar empleado. Intenta de nuevo.');
                         }
                     }

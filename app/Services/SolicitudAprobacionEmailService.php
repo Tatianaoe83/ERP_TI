@@ -107,7 +107,8 @@ class SolicitudAprobacionEmailService
                 'eyebrow'    => 'Vo.Bo. de supervisor',
                 'titulo'     => 'Necesitamos tu firma para una compra de producto',
                 'preheader'  => "{$solicitante} pide autorización de compra. Solicitud {$folio}.",
-                'intro'      => '<strong>' . e($solicitante) . '</strong> solicitó una compra de producto y necesita tu firma para continuar. Revisa el detalle y da tu Vo.Bo. o recházala.',
+                'intro'      => '<strong>' . e($solicitante) . '</strong> solicitó una compra de producto y necesita tu firma para continuar. Revisa el detalle y da tu Vo.Bo. o recházala.'
+                    . $this->fraseDestinoTrasSupervisor($solicitud),
                 'boton'      => 'Revisar y firmar',
             ];
         }
@@ -627,6 +628,21 @@ class SolicitudAprobacionEmailService
     /**
      * Datos cortos de la solicitud (tarjeta de detalle).
      */
+    private function fraseDestinoTrasSupervisor(Solicitud $solicitud): string
+    {
+        $solicitud->loadMissing('empleadoid');
+        if (!$solicitud->empleadoid) {
+            return '';
+        }
+
+        $destino = app(SolicitudFlujoService::class)->destinoTrasSupervisor($solicitud->empleadoid);
+        if (!$destino['empleado']) {
+            return '';
+        }
+
+        return ' Al firmar, se envía a <strong>' . e($destino['empleado']->NombreEmpleado) . '</strong> (' . e($destino['rol']) . ').';
+    }
+
     private function filasSolicitud(Solicitud $solicitud): array
     {
         $presupuesto = (float) ($solicitud->Presupuesto ?? 0);

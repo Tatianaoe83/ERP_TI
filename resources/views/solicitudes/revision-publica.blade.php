@@ -175,6 +175,18 @@
                         </div>
                     </div>
 
+                    @if(!empty($destinoVoBo['nombre']))
+                    <div class="mb-8 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-5 py-4">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 mb-1">Después de este visto bueno se envía a</p>
+                        <p class="text-lg font-semibold text-slate-900 dark:text-white">
+                            {{ $destinoVoBo['rol'] }}: {{ $destinoVoBo['nombre'] }}
+                        </p>
+                        @if(!empty($destinoVoBo['detalle']))
+                        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ $destinoVoBo['detalle'] }}</p>
+                        @endif
+                    </div>
+                    @endif
+
                     <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-6 lg:p-8 border border-blue-100 dark:border-blue-900/30">
                         <div class="mb-8">
                             <div class="flex items-center gap-2 mb-2">
