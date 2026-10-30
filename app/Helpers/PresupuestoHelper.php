@@ -24,14 +24,6 @@ class PresupuestoHelper
         });
     }
 
-    // Fianza de cada línea, sólo en el mes de su FechaFianza (sin fecha no cae en ningún mes).
-    private static function fianzaEnMes($lineas, int $numeroMes): float
-    {
-        return (float) $lineas
-            ->filter(fn ($l) => ! empty($l->FechaFianza) && (int) date('n', strtotime((string) $l->FechaFianza)) === $numeroMes)
-            ->sum(fn ($l) => (float) ($l->CostoFianza ?? 0));
-    }
-
     private static function precioEquipoEnMes($equipo, string $mes, array $meses, callable $mesDeFecha): float
     {
         $precio = (float) ($equipo->Precio ?? 0);
@@ -649,16 +641,49 @@ class PresupuestoHelper
                 }
             });
 
-        // --- ORDEN 5: Líneas (renta en los meses marcados + fianza en el mes de su FechaFianza) ---
+        // --- ORDEN 4: Fianzas por compañía/tipo de línea ---
+        $todasLineas
+            ->filter(fn ($l) =>
+                PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_voz')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_datos')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_gps')
+            )
+            ->groupBy(fn ($l) => strtoupper(trim($l->Compania ?? '')) . '|' . strtoupper(trim($l->TipoLinea ?? '')))
+            ->each(function ($grupo, $key) use ($meses, $gerenciaId, &$resultado) {
+                [$compania, $tipoLinea] = explode('|', $key, 2);
+                $nombre = $compania . ' FIANZA - ' . $tipoLinea;
+
+                $costosPorMes = [];
+                foreach ($meses as $numMes => $mes) {
+                    $mesNum = $numMes + 1;
+                    $costosPorMes[$mes] = $grupo
+                        ->filter(fn ($l) => $l->FechaFianza && $l->FechaFianza->month === $mesNum)
+                        ->sum('CostoFianza');
+                }
+
+                // HAVING del SP: descarta la compañía/tipo si su total anual de fianzas es 0
+                if (array_sum($costosPorMes) <= 0) return;
+
+                foreach ($meses as $mes) {
+                    $resultado->push((object)[
+                        'NombreInsumo' => $nombre,
+                        'Mes'          => $mes,
+                        'Costo'        => (int) round($costosPorMes[$mes]),
+                        'Orden'        => 4,
+                        'GerenciaID'   => $gerenciaId,
+                    ]);
+                }
+            });
+
+        // --- ORDEN 5: Líneas (renta sólo en los meses marcados) ---
         $todasLineas
             ->groupBy(fn ($l) => strtoupper(trim($l->Compania ?? '')) . '|' . strtoupper(trim($l->TipoLinea ?? '')))
             ->each(function ($grupo, $key) use ($meses, $gerenciaId, &$resultado) {
                 [$compania, $tipoLinea] = explode('|', $key, 2);
                 $nombre = $compania . ' ' . $tipoLinea;
                 $costosPorMes = [];
-                foreach ($meses as $numMes => $mes) {
-                    $costosPorMes[$mes] = self::sumaEnMes($grupo, $mes, fn ($l) => (float) ($l->CostoRentaMensual ?? 0))
-                        + self::fianzaEnMes($grupo, $numMes + 1);
+                foreach ($meses as $mes) {
+                    $costosPorMes[$mes] = self::sumaEnMes($grupo, $mes, fn ($l) => (float) ($l->CostoRentaMensual ?? 0));
                 }
                 if (array_sum($costosPorMes) <= 0) return;
                 foreach ($meses as $mes) {
@@ -849,6 +874,7 @@ class PresupuestoHelper
                 );
             });
 
+        // --- ORDEN 4: fianzas de líneas, cada una en el mes de su FechaFianza ---
         $mesDeFecha = function ($fecha): ?int {
             if (empty($fecha)) {
                 return null;
@@ -859,15 +885,35 @@ class PresupuestoHelper
                 : date('n', strtotime((string) $fecha)));
         };
 
-        // --- ORDEN 5: líneas. Renta en los meses marcados + fianza en el mes de su FechaFianza ---
+        $todasLineas
+            ->filter(fn ($l) =>
+                PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_voz')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_datos')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_gps')
+            )
+            ->groupBy(fn ($l) => $norm($l->Compania . ' FIANZA - ' . $l->TipoLinea))
+            ->sortKeys()
+            ->each(function ($grupo) use ($agregar, $meses, $mesDeFecha) {
+                $primera = $grupo->first();
+                $nombre  = $primera->Compania . ' FIANZA - ' . $primera->TipoLinea;
+
+                $agregar($nombre, 4, function ($mes) use ($grupo, $meses, $mesDeFecha) {
+                    $numeroMes = array_search($mes, $meses, true) + 1;
+
+                    return $grupo
+                        ->filter(fn ($l) => $mesDeFecha($l->FechaFianza) === $numeroMes)
+                        ->sum(fn ($l) => (float) ($l->CostoFianza ?? 0));
+                });
+            });
+
+        // --- ORDEN 5: renta de líneas, sólo en los meses marcados ---
         $todasLineas
             ->groupBy(fn ($l) => $norm($l->Compania . ' ' . $l->TipoLinea))
             ->sortKeys()
-            ->each(function ($grupo) use ($agregar, $meses) {
+            ->each(function ($grupo) use ($agregar) {
                 $primera = $grupo->first();
                 $agregar($primera->Compania . ' ' . $primera->TipoLinea, 5, fn ($mes) =>
                     self::sumaEnMes($grupo, $mes, fn ($l) => (float) ($l->CostoRentaMensual ?? 0))
-                    + self::fianzaEnMes($grupo, array_search($mes, $meses, true) + 1)
                 );
             });
 
@@ -888,7 +934,9 @@ class PresupuestoHelper
             return $mes === 'Junio' ? $costo + $totalRenovacionFianzas : $costo;
         }, $totalInversiones);
 
-        usort($filas, fn ($a, $b) => $a->Orden <=> $b->Orden);
+        // A-Z sin distinguir acentos; datosReporte agrega la fila Total al final.
+        $claveOrden = fn ($fila) => strtr($norm($fila->NombreInsumo), ['Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U']);
+        usort($filas, fn ($a, $b) => $claveOrden($a) <=> $claveOrden($b));
 
         return $filas;
     }
