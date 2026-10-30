@@ -11,6 +11,11 @@ use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Tickets;
 use App\Models\TicketMantenimiento;
+use App\Models\CargoMovimiento;
+use App\Models\SolicitudMovimiento;
+use App\Models\SolicitudMovimientoArchivo;
+use App\Models\SolicitudMovimientoLinea;
+use App\Services\MovimientoErpService;
 use App\Services\SolicitudAprobacionEmailService;
 use App\Services\SolicitudFlujoService;
 use Illuminate\Http\JsonResponse;
@@ -76,6 +81,19 @@ class SoporteTIController extends Controller
             $empleado->load(['puestos.departamentos.gerencia', 'obras']);
 
             $response['NombreDepartamento'] = $empleado->puestos->departamentos->NombreDepartamento ?? null;
+        }
+
+        if ($type === 'Movimiento') {
+            $empleado->load(['puestos', 'obras']);
+            $puesto = (string) ($empleado->puestos->NombrePuesto ?? '');
+            if (!app(MovimientoErpService::class)->puedeSolicitar($puesto)) {
+                return response()->json([
+                    'error' => 'Esta solicitud solo la puede levantar un auxiliar de compras, un residente de compras o un residente administrativo.',
+                ], 422);
+            }
+            $response['NombrePuesto'] = $puesto;
+            $response['ObraID'] = $empleado->ObraID;
+            $response['NombreObra'] = $empleado->obras->NombreObra ?? null;
         }
 
         if ($type === 'Solicitud') {
@@ -192,7 +210,7 @@ public function crearTickets(Request $request)
     {
         $type = $request->input('type');
 
-        if (!in_array($type, ['Ticket', 'Solicitud', 'Mantenimiento'])) {
+        if (!in_array($type, ['Ticket', 'Solicitud', 'Mantenimiento', 'Movimiento'])) {
             \Log::warning('Tipo no válido: ' . $type);
             return redirect()->back()->with(['error' => 'Tipo no válido'], 400);
         }
@@ -496,6 +514,96 @@ public function crearTickets(Request $request)
             }
         }
 
+        if ($type === 'Movimiento') {
+            return $this->guardarMovimientoErp($request);
+        }
+
         return redirect()->back()->with(['error' => 'Error inesperado'], 500);
+    }
+
+    private function guardarMovimientoErp(Request $request)
+    {
+        $data = $request->validate([
+            'Correo' => 'required|email',
+            'ObraID' => 'required|integer',
+            'Folio' => 'nullable|string|max:40',
+            'Justificacion' => 'required|string|max:5000',
+            'lineas' => 'required|array|min:1|max:23',
+            'lineas.*.CargoID' => 'required|integer',
+            'lineas.*.CodigoInsumo' => 'required|string|max:40',
+            'lineas.*.Descripcion' => 'required|string|max:180',
+            'lineas.*.Partida' => 'required|string|max:120',
+            'lineas.*.Cantidad' => 'required|numeric',
+            'lineas.*.Precio' => 'required|numeric',
+            'lineas.*.Justificacion' => 'required|string|max:500',
+        ]);
+
+        $solicitante = Empleados::query()->fisicosActivos()->with('puestos')->where('Correo', $data['Correo'])->first();
+        if (!$solicitante) {
+            return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
+        }
+
+        $servicio = app(MovimientoErpService::class);
+        if (!$servicio->puedeSolicitar($solicitante->puestos->NombrePuesto ?? '')) {
+            return redirect()->back()->with('error', 'Esta solicitud solo la puede levantar un auxiliar de compras, un residente de compras o un residente administrativo.');
+        }
+
+        $folio = trim((string) ($data['Folio'] ?? ''));
+        if ($folio !== '' && SolicitudMovimiento::query()->where('Folio', $folio)->exists()) {
+            return redirect()->back()->with('error', 'Ese folio ya está usado en otra solicitud.')->withInput();
+        }
+
+        $cargos = CargoMovimiento::query()->whereIn('CargoID', collect($data['lineas'])->pluck('CargoID'))->get()->keyBy('CargoID');
+        if ($cargos->count() !== collect($data['lineas'])->pluck('CargoID')->unique()->count()) {
+            return redirect()->back()->with('error', 'Hay un cargo que no es válido.');
+        }
+
+        $primerCargo = $cargos->get((int) $data['lineas'][0]['CargoID']);
+        $roles = $cargos->map(fn ($cargo) => $cargo->etiquetaAutoriza())->unique()->implode(', ');
+        $autorizadores = collect();
+        foreach ($cargos as $cargo) {
+            $autorizadores = $autorizadores->merge($servicio->autorizadores($cargo, (int) $data['ObraID']));
+        }
+        $autorizadores = $autorizadores->unique('EmpleadoID')->values();
+
+        $solicitud = DB::transaction(function () use ($data, $solicitante, $primerCargo, $roles, $autorizadores, $folio, $cargos) {
+            $solicitud = SolicitudMovimiento::create([
+                'EmpleadoID' => $solicitante->EmpleadoID,
+                'ObraID' => $data['ObraID'],
+                'CargoID' => $primerCargo->CargoID,
+                'ResidenteControlID' => null,
+                'AutorizadorID' => $autorizadores->first()->EmpleadoID ?? null,
+                'AutorizadorRol' => $roles,
+                'Justificacion' => $data['Justificacion'],
+                'Folio' => $folio !== '' ? $folio : null,
+                'Estatus' => 'Por autorizar',
+            ]);
+
+            foreach (array_values($data['lineas']) as $indice => $linea) {
+                $cantidad = (float) $linea['Cantidad'];
+                $precio = (float) $linea['Precio'];
+                SolicitudMovimientoLinea::create([
+                    'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
+                    'Orden' => $indice + 1,
+                    'CargoID' => $cargos->get((int) $linea['CargoID'])->CargoID,
+                    'CodigoInsumo' => $linea['CodigoInsumo'],
+                    'Descripcion' => $linea['Descripcion'],
+                    'Partida' => $linea['Partida'],
+                    'Cantidad' => $cantidad,
+                    'Precio' => $precio,
+                    'Importe' => round($cantidad * $precio, 2),
+                    'Justificacion' => $linea['Justificacion'],
+                ]);
+            }
+
+            return $solicitud;
+        });
+
+        $servicio->avisar($solicitud);
+
+        return redirect()->back()->with([
+            'success' => 'Solicitud de movimiento registrada. Se avisó al autorizador, al auxiliar de control y al residente del proyecto.',
+            'tipo' => 'Movimiento',
+        ]);
     }
 }

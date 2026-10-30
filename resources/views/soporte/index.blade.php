@@ -289,6 +289,11 @@
             border-color: #fdba74 !important;
         }
 
+        #type + .select2-container.select-area-control .select2-selection--single {
+            background: #f0fdf4 !important;
+            border-color: #86efac !important;
+        }
+
         #type + .select2-container.select-area-ti.select2-container--focus .select2-selection--single {
             border-color: #3b82f6 !important;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
@@ -297,6 +302,11 @@
         #type + .select2-container.select-area-compras.select2-container--focus .select2-selection--single {
             border-color: #f97316 !important;
             box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12) !important;
+        }
+
+        #type + .select2-container.select-area-control.select2-container--focus .select2-selection--single {
+            border-color: #16a34a !important;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14) !important;
         }
 
         /* Dropdown limpio */
@@ -314,7 +324,8 @@
 
         /* Encabezados de grupo discretos */
         .select2-results__group.group-area-ti,
-        .select2-results__group.group-area-compras {
+        .select2-results__group.group-area-compras,
+        .select2-results__group.group-area-control {
             background: #fff !important;
             color: #9ca3af !important;
             border-bottom: 1px solid #f3f4f6 !important;
@@ -333,9 +344,14 @@
             color: #fb923c !important;
         }
 
+        .select2-results__group.group-area-control {
+            color: #22c55e !important;
+        }
+
         /* Opciones: fondo blanco + acento fino */
         .select2-results__option.option-area-ti,
-        .select2-results__option.option-area-compras {
+        .select2-results__option.option-area-compras,
+        .select2-results__option.option-area-control {
             background: #fff !important;
             color: #374151 !important;
             border-left: 2px solid transparent;
@@ -347,6 +363,10 @@
 
         .select2-results__option.option-area-compras {
             border-left-color: #fdba74;
+        }
+
+        .select2-results__option.option-area-control {
+            border-left-color: #86efac;
         }
 
         .select2-results__option.option-area-ti.select2-results__option--highlighted,
@@ -361,6 +381,13 @@
             background: #fff7ed !important;
             color: #c2410c !important;
             border-left-color: #f97316;
+        }
+
+        .select2-results__option.option-area-control.select2-results__option--highlighted,
+        .select2-results__option.option-area-control[aria-selected=true] {
+            background: #f0fdf4 !important;
+            color: #15803d !important;
+            border-left-color: #16a34a;
         }
 
         .tipo-badge {
@@ -388,6 +415,12 @@
             color: #ea580c;
         }
 
+        .tipo-badge-control {
+            background: transparent;
+            border-color: #86efac;
+            color: #16a34a;
+        }
+
         .select2-results__option--highlighted .tipo-badge-ti,
         .select2-results__option[aria-selected=true] .tipo-badge-ti {
             border-color: #93c5fd;
@@ -399,6 +432,13 @@
         .select2-results__option[aria-selected=true] .tipo-badge-compras {
             border-color: #fdba74;
             color: #ea580c;
+            background: #fff;
+        }
+
+        .select2-results__option--highlighted .tipo-badge-control,
+        .select2-results__option[aria-selected=true] .tipo-badge-control {
+            border-color: #4ade80;
+            color: #15803d;
             background: #fff;
         }
 
@@ -429,6 +469,16 @@
             color: #ea580c !important;
         }
 
+        #info-section.info-area-control {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        #info-section.info-area-control .text-blue-500,
+        #info-section.info-area-control i {
+            color: #16a34a !important;
+        }
+
         /* Fondo / atmósfera por departamento */
         #tsparticles {
             transition: opacity 0.35s ease;
@@ -444,6 +494,10 @@
 
         body.theme-compras #header-subtitle {
             color: #fdba74;
+        }
+
+        body.theme-control #header-subtitle {
+            color: #86efac;
         }
     </style>
 </head>
@@ -479,6 +533,7 @@
                             <option value="Ticket">Ticket para soporte</option>
                             <option value="Solicitud">Compras de recursos tecnológicos</option>
                             <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option>
+                            <option value="Movimiento" data-area="control">Solicitud de movimientos en ERP</option>
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">
@@ -620,6 +675,78 @@
                         </div>
                     </div>
 
+                    <div id="movimiento-form" class="hidden bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100 space-y-3">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="bg-green-700 rounded-xl w-10 h-10 flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Solicitud de movimientos en el ERP</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-black">
+                            <div class="md:col-span-2">
+                                <label for="correoMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Correo del solicitante *</label>
+                                <input type="email" id="correoMovimiento" placeholder="tucorreo@ejemplo.com" name="Correo" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm md:text-base" disabled>
+                                <p id="nombreMovimiento" class="text-xs text-gray-600 mt-1">Auxiliar de compras, residente de compras o residente administrativo.</p>
+                                <div id="correo-movimiento-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            </div>
+                            <div>
+                                <label for="obraMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Proyecto *</label>
+                                <select id="obraMovimiento" name="ObraID" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" disabled></select>
+                            </div>
+                            <div>
+                                <label for="folioMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Folio ERP</label>
+                                <input type="text" id="folioMovimiento" name="Folio" maxlength="40" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" placeholder="Ejemplo: 83" disabled>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="justificacionMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
+                                <textarea id="justificacionMovimiento" name="Justificacion" rows="3" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" placeholder="Me apoyas con tu visto bueno para esta solicitud de movimiento" disabled></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <label class="block text-xs md:text-sm font-medium text-gray-700">Partidas del movimiento *</label>
+                                    <button type="button" id="agregarLineaMovimiento" class="text-sm text-green-800 underline">Agregar partida</button>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-xs text-left">
+                                        <thead>
+                                            <tr class="text-gray-600">
+                                                <th class="p-1">Con cargo a</th>
+                                                <th class="p-1">Código</th>
+                                                <th class="p-1">Descripción</th>
+                                                <th class="p-1">Partida</th>
+                                                <th class="p-1">Cantidad</th>
+                                                <th class="p-1">Precio</th>
+                                                <th class="p-1">Importe</th>
+                                                <th class="p-1">Justificación</th>
+                                                <th class="p-1"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lineasMovimiento"></tbody>
+                                    </table>
+                                </div>
+                                <p id="cargoMovimientoAutoriza" class="text-sm text-green-800 mt-2"></p>
+                            </div>
+                            <template id="lineaMovimientoTpl">
+                                <tr class="linea-movimiento">
+                                    <td class="p-1"><select class="cargo-linea w-36 px-2 py-1 border border-gray-200 rounded"></select></td>
+                                    <td class="p-1"><input type="text" class="codigo-linea w-24 px-2 py-1 border border-gray-200 rounded" maxlength="40"></td>
+                                    <td class="p-1"><input type="text" class="desc-linea w-36 px-2 py-1 border border-gray-200 rounded" maxlength="180"></td>
+                                    <td class="p-1"><input type="text" class="partida-linea w-28 px-2 py-1 border border-gray-200 rounded" maxlength="120"></td>
+                                    <td class="p-1"><input type="number" step="0.01" class="cantidad-linea w-20 px-2 py-1 border border-gray-200 rounded"></td>
+                                    <td class="p-1"><input type="number" step="0.01" class="precio-linea w-20 px-2 py-1 border border-gray-200 rounded"></td>
+                                    <td class="p-1"><input type="text" class="importe-linea w-24 px-2 py-1 border border-gray-200 rounded bg-gray-50" readonly></td>
+                                    <td class="p-1"><input type="text" class="just-linea w-40 px-2 py-1 border border-gray-200 rounded" maxlength="500"></td>
+                                    <td class="p-1"><button type="button" class="quitar-linea text-red-600">Quitar</button></td>
+                                </tr>
+                            </template>
+                            <div class="md:col-span-2">
+                                <button type="submit" id="btnEnviarMovimiento" class="w-full md:w-auto px-8 py-3 bg-gray-400 text-white rounded-xl font-medium cursor-not-allowed" disabled>
+                                    <i class="fas fa-paper-plane mr-2"></i>Enviar solicitud
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Formulario Mantenimiento -->
                     <div id="mantenimiento-form" class="hidden bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100 space-y-3">
                         <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
@@ -738,6 +865,7 @@
                 // Compras: Mantenimiento corporativo
                 if (seleccion === 'Ticket' || seleccion === 'Solicitud') return 'ti';
                 if (seleccion === 'Mantenimiento') return 'compras';
+                if (seleccion === 'Movimiento') return 'control';
                 return null;
             }
 
@@ -745,10 +873,11 @@
                 if (!data.id) return data.text;
 
                 var area = $(data.element).data('area') || areaDeTipo(data.id);
-                var badgeClass = area === 'compras' ? 'tipo-badge-compras' : 'tipo-badge-ti';
-                var badgeText = area === 'compras' ? 'Compras' : 'TI';
+                var badgeClass = area === 'compras' ? 'tipo-badge-compras' : (area === 'control' ? 'tipo-badge-control' : 'tipo-badge-ti');
+                var badgeText = area === 'compras' ? 'Compras' : (area === 'control' ? 'Control' : 'TI');
                 var icon = data.id === 'Ticket' ? 'fa-ticket-alt'
-                    : (data.id === 'Solicitud' ? 'fa-laptop' : 'fa-tools');
+                    : (data.id === 'Solicitud' ? 'fa-laptop'
+                    : (data.id === 'Movimiento' ? 'fa-exchange-alt' : 'fa-tools'));
 
                 return $(
                     '<span class="flex items-center gap-2 w-full min-w-0">' +
@@ -774,6 +903,9 @@
                 } else if (area === 'compras') {
                     $title.text('Mantenimiento Corporativo');
                     $subtitle.text('Área de Compras');
+                } else if (area === 'control') {
+                    $title.text('Movimientos en el ERP');
+                    $subtitle.text('Control · autorización del cargo y aplicación en Neodata');
                 } else {
                     $title.text('Centro de Solicitudes');
                     $subtitle.text('TI y Compras · seguimiento de tickets y solicitudes');
@@ -789,9 +921,9 @@
                 var $info = $('#info-section');
                 var area = areaDeTipo(seleccion);
 
-                $container.removeClass('select-area-ti select-area-compras');
-                $info.removeClass('info-area-ti info-area-compras');
-                document.body.classList.remove('theme-general', 'theme-ti', 'theme-compras');
+                $container.removeClass('select-area-ti select-area-compras select-area-control');
+                $info.removeClass('info-area-ti info-area-compras info-area-control');
+                document.body.classList.remove('theme-general', 'theme-ti', 'theme-compras', 'theme-control');
 
                 if (area === 'ti') {
                     $container.addClass('select-area-ti');
@@ -801,6 +933,10 @@
                     $container.addClass('select-area-compras');
                     $info.addClass('info-area-compras');
                     document.body.classList.add('theme-compras');
+                } else if (area === 'control') {
+                    $container.addClass('select-area-control');
+                    $info.addClass('info-area-control');
+                    document.body.classList.add('theme-control');
                 } else {
                     document.body.classList.add('theme-general');
                 }
@@ -815,8 +951,10 @@
                 $('.select2-results__option[role="option"]').each(function() {
                     var $li = $(this);
                     var text = ($li.text() || '').toLowerCase();
-                    $li.removeClass('option-area-ti option-area-compras');
-                    if (text.indexOf('mantenimiento') !== -1) {
+                    $li.removeClass('option-area-ti option-area-compras option-area-control');
+                    if (text.indexOf('movimientos') !== -1) {
+                        $li.addClass('option-area-control');
+                    } else if (text.indexOf('mantenimiento') !== -1) {
                         $li.addClass('option-area-compras');
                     } else if (text.indexOf('ticket') !== -1 || text.indexOf('recursos tecnológicos') !== -1) {
                         $li.addClass('option-area-ti');
@@ -863,6 +1001,8 @@
                     $text.html('<strong class="uppercase">TI — Solicita recursos tecnológicos que requieran un proceso de compra.</strong>');
                 } else if (seleccion === 'Mantenimiento') {
                     $text.html('<strong class="uppercase">Compras — Reporta solicitudes de mantenimiento corporativo: plomería, electricidad, limpieza, instalaciones y más.</strong>');
+                } else if (seleccion === 'Movimiento') {
+                    $text.html('<strong class="uppercase">Control — Solicita un movimiento de cargo en el ERP. Lo autoriza el jefe de costos, el gerente de presupuestos, el gerente de compras o el director de proyectos, según el cargo.</strong>');
                 } else {
                     $text.text('');
                 }
@@ -877,6 +1017,7 @@
                 $('#ticket-form').addClass('hidden');
                 $('#solicitud-form').addClass('hidden');
                 $('#mantenimiento-form').addClass('hidden');
+                $('#movimiento-form').addClass('hidden');
                 actualizarInfoTipo(seleccion);
                 aislarPanelActivo(seleccion);
 
@@ -891,6 +1032,12 @@
                     $formContainer.addClass('flex-1');
                     $scrollContent.addClass('h-full');
                     setTimeout(function() { revivirSelect2(); }, 50);
+                } else if (seleccion === 'Movimiento') {
+                    $('#movimiento-form').removeClass('hidden');
+                    prepararMovimiento();
+                    $mainContainer.addClass('h-full max-h-[95vh]');
+                    $formContainer.addClass('flex-1');
+                    $scrollContent.addClass('h-full');
                 } else if (seleccion === 'Mantenimiento') {
                     $('#mantenimiento-form').removeClass('hidden');
                     habilitarCamposMantenimiento();
@@ -1167,7 +1314,8 @@ function renderTelefono() {
             var paneles = {
                 Ticket: '#ticket-form',
                 Solicitud: '#solicitud-form',
-                Mantenimiento: '#mantenimiento-form'
+                Mantenimiento: '#mantenimiento-form',
+                Movimiento: '#movimiento-form'
             };
 
             $.each(paneles, function(nombre, selector) {
@@ -1180,12 +1328,14 @@ function renderTelefono() {
 
             if (tipo === 'Ticket') $('#correoEmpleado').prop('disabled', false);
             if (tipo === 'Solicitud') $('#correoEmpleadoSolicitud').prop('disabled', false);
+            if (tipo === 'Movimiento') $('#correoMovimiento').prop('disabled', false);
         }
 
         function panelDelTipo(tipo) {
             if (tipo === 'Ticket') return '#ticket-form';
             if (tipo === 'Solicitud') return '#solicitud-form';
             if (tipo === 'Mantenimiento') return '#mantenimiento-form';
+            if (tipo === 'Movimiento') return '#movimiento-form';
 
             return null;
         }
@@ -1472,6 +1622,135 @@ function renderTelefono() {
             buscarEmpleadoMantenimiento(correo);
         });
     </script>
+    <script>
+        window.correoMovimientoValido = false;
+        window.__catalogoMovimiento = null;
+
+        function opcionesCargoMovimiento() {
+            var html = '<option value="">Cargo</option>';
+            ((window.__catalogoMovimiento && window.__catalogoMovimiento.cargos) || []).forEach(function (cargo) {
+                html += '<option value="' + cargo.id + '">' + cargo.clave + '</option>';
+            });
+            return html;
+        }
+
+        function numerarLineasMovimiento() {
+            $('#lineasMovimiento .linea-movimiento').each(function (indice) {
+                $(this).find('.cargo-linea').attr('name', 'lineas[' + indice + '][CargoID]');
+                $(this).find('.codigo-linea').attr('name', 'lineas[' + indice + '][CodigoInsumo]');
+                $(this).find('.desc-linea').attr('name', 'lineas[' + indice + '][Descripcion]');
+                $(this).find('.partida-linea').attr('name', 'lineas[' + indice + '][Partida]');
+                $(this).find('.cantidad-linea').attr('name', 'lineas[' + indice + '][Cantidad]');
+                $(this).find('.precio-linea').attr('name', 'lineas[' + indice + '][Precio]');
+                $(this).find('.just-linea').attr('name', 'lineas[' + indice + '][Justificacion]');
+            });
+        }
+
+        function agregarLineaMovimiento() {
+            var fila = document.getElementById('lineaMovimientoTpl').content.cloneNode(true);
+            $('#lineasMovimiento').append(fila);
+            var $fila = $('#lineasMovimiento .linea-movimiento').last();
+            $fila.find('.cargo-linea').html(opcionesCargoMovimiento());
+            numerarLineasMovimiento();
+            consultarAutorizadoresMovimiento();
+        }
+
+        function consultarAutorizadoresMovimiento() {
+            var obra = $('#obraMovimiento').val();
+            var cargos = [];
+            $('#lineasMovimiento .cargo-linea').each(function () {
+                if ($(this).val()) cargos.push($(this).val());
+            });
+            if (!obra || !cargos.length) {
+                $('#cargoMovimientoAutoriza').text('');
+                return;
+            }
+            $.get('/movimientos-erp/autorizadores', { obra_id: obra, cargos: cargos }, function (data) {
+                var texto = (data.autorizadores || []).map(function (persona) {
+                    return persona.nombre + (persona.puesto ? ' (' + persona.puesto + ')' : '');
+                }).join(', ');
+                $('#cargoMovimientoAutoriza').text(texto ? 'Visto bueno: ' + texto + '.' : 'No se encontró quién autoriza estos cargos en el proyecto.');
+            });
+        }
+
+        function prepararMovimiento() {
+            $('#correoMovimiento, #obraMovimiento, #folioMovimiento, #justificacionMovimiento').prop('disabled', false);
+            $('#lineasMovimiento').find('input, select, button').prop('disabled', false);
+            if (window.__catalogoMovimiento) {
+                if (!$('#lineasMovimiento .linea-movimiento').length) {
+                    agregarLineaMovimiento();
+                }
+                return;
+            }
+            $.get('/movimientos-erp/catalogo', function (data) {
+                window.__catalogoMovimiento = data;
+                var $obra = $('#obraMovimiento').empty().append('<option value="">Selecciona el proyecto</option>');
+                (data.obras || []).forEach(function (obra) {
+                    $obra.append($('<option>', { value: obra.ObraID, text: obra.NombreObra }));
+                });
+                if (!$('#lineasMovimiento .linea-movimiento').length) {
+                    agregarLineaMovimiento();
+                } else {
+                    $('#lineasMovimiento .cargo-linea').html(opcionesCargoMovimiento());
+                }
+            });
+        }
+
+        $('#agregarLineaMovimiento').on('click', agregarLineaMovimiento);
+        $('#lineasMovimiento').on('click', '.quitar-linea', function () {
+            if ($('#lineasMovimiento .linea-movimiento').length === 1) {
+                return;
+            }
+            $(this).closest('tr').remove();
+            numerarLineasMovimiento();
+            consultarAutorizadoresMovimiento();
+        });
+        $('#lineasMovimiento').on('input', '.cantidad-linea, .precio-linea', function () {
+            var $fila = $(this).closest('tr');
+            var cantidad = parseFloat($fila.find('.cantidad-linea').val());
+            var precio = parseFloat($fila.find('.precio-linea').val());
+            if (isNaN(cantidad) || isNaN(precio)) {
+                $fila.find('.importe-linea').val('');
+                return;
+            }
+            $fila.find('.importe-linea').val((cantidad * precio).toFixed(2));
+        });
+        $('#lineasMovimiento').on('change', '.cargo-linea', consultarAutorizadoresMovimiento);
+        $('#obraMovimiento').on('change', consultarAutorizadoresMovimiento);
+
+        var esperaCorreoMov = null;
+        $('#correoMovimiento').on('input', function () {
+            var correo = $(this).val().trim();
+            clearTimeout(esperaCorreoMov);
+            if (!esCorreoValido(correo)) {
+                return;
+            }
+            esperaCorreoMov = setTimeout(function () {
+                buscarEmpleadoMovimiento($('#correoMovimiento').val().trim());
+            }, 350);
+        });
+
+        function buscarEmpleadoMovimiento(correo) {
+            $.ajax({
+                url: '/buscarEmpleadoPorCorreo',
+                method: 'GET',
+                data: { correo: correo, type: 'Movimiento' },
+                success: function (data) {
+                    window.correoMovimientoValido = true;
+                    var puesto = data.NombrePuesto ? ' · ' + data.NombrePuesto : '';
+                    $('#nombreMovimiento').text((data.NombreEmpleado || '') + puesto);
+                    $('#correo-movimiento-error').addClass('hidden');
+                    $('#btnEnviarMovimiento').prop('disabled', false).removeClass('cursor-not-allowed bg-gray-400').addClass('bg-green-700');
+                },
+                error: function (xhr) {
+                    window.correoMovimientoValido = false;
+                    $('#nombreMovimiento').text('Auxiliar de compras, residente de compras o residente administrativo.');
+                    $('#correo-movimiento-error').removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el correo');
+                    $('#btnEnviarMovimiento').prop('disabled', true).removeClass('bg-green-700').addClass('cursor-not-allowed bg-gray-400');
+                }
+            });
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @if (session('success'))
     @php
@@ -1479,11 +1758,13 @@ function renderTelefono() {
     $titulo = match($tipo) {
         'Solicitud' => '¡Solicitud Enviada Exitosamente! 🎉',
         'Mantenimiento' => '¡Solicitud de Mantenimiento Enviada! 🎉',
+        'Movimiento' => '¡Solicitud de movimiento registrada!',
         default => '¡Ticket Enviado Exitosamente! 🎉',
     };
     $mensaje = match($tipo) {
         'Solicitud' => 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.',
         'Mantenimiento' => 'Hemos recibido tu solicitud de mantenimiento y el equipo de compras la atenderá pronto.',
+        'Movimiento' => 'Se avisó al autorizador del cargo, al auxiliar de control y al residente del proyecto.',
         default => 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.',
     };
     @endphp
@@ -1585,6 +1866,11 @@ function renderTelefono() {
                     bg: '#431407',
                     particle: '#fb923c',
                     link: '#f97316'
+                },
+                control: {
+                    bg: '#052e16',
+                    particle: '#4ade80',
+                    link: '#22c55e'
                 }
             };
             var tema = temas[area] || temas.general;
@@ -3200,8 +3486,9 @@ function renderTelefono() {
             const textoTicket        = '<i class="fas fa-paper-plane mr-2"></i>Enviar Ticket';
             const textoSolicitud     = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
             const textoMantenimiento = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
+            const textoMovimiento = '<i class="fas fa-paper-plane mr-2"></i>Enviar solicitud';
 
-            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud, #btnEnviarMantenimiento', function (e) {
+            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud, #btnEnviarMantenimiento, #btnEnviarMovimiento', function (e) {
                 if (_enviando || formEstaLocked()) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
@@ -3221,6 +3508,7 @@ function renderTelefono() {
                 const esSolicitud    = $('#solicitud-form').is(':visible');
                 const esTicket       = $('#ticket-form').is(':visible');
                 const esMantenimiento = $('#mantenimiento-form').is(':visible');
+                const esMovimiento = $('#movimiento-form').is(':visible');
                 const emailRegex     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
                 if (esTicket) {
@@ -3257,6 +3545,34 @@ function renderTelefono() {
 
                     if (!$('#descripcionMantenimiento').val().trim())
                         errores.push('La descripción es requerida.');
+                }
+
+                if (esMovimiento) {
+                    if (!$('#correoMovimiento').val().trim() || !window.correoMovimientoValido) {
+                        errores.push('El solicitante debe ser una persona física activa.');
+                    }
+                    if (!$('#obraMovimiento').val()) errores.push('Selecciona el proyecto.');
+                    if (!$('#justificacionMovimiento').val().trim()) errores.push('Escribe el mensaje de la solicitud.');
+                    var partidas = 0;
+                    $('#lineasMovimiento .linea-movimiento').each(function () {
+                        var vacia = !$(this).find('.cargo-linea').val()
+                            && !$(this).find('.codigo-linea').val().trim()
+                            && !$(this).find('.desc-linea').val().trim()
+                            && !$(this).find('.partida-linea').val().trim()
+                            && !$(this).find('.cantidad-linea').val()
+                            && !$(this).find('.precio-linea').val()
+                            && !$(this).find('.just-linea').val().trim();
+                        if (vacia) {
+                            $(this).remove();
+                            return;
+                        }
+                        partidas += 1;
+                        if (!$(this).find('.cargo-linea').val() || !$(this).find('.codigo-linea').val().trim() || !$(this).find('.desc-linea').val().trim() || !$(this).find('.partida-linea').val().trim() || $(this).find('.cantidad-linea').val() === '' || $(this).find('.precio-linea').val() === '' || !$(this).find('.just-linea').val().trim()) {
+                            errores.push('Cada partida necesita cargo, código, descripción, partida, cantidad, precio y justificación.');
+                        }
+                    });
+                    numerarLineasMovimiento();
+                    if (!partidas) errores.push('Agrega al menos una partida del movimiento.');
                 }
 
                 if (esSolicitud) {
@@ -3310,6 +3626,8 @@ function renderTelefono() {
                     bloquearBoton($('#btnEnviarSolicitud'), textoSolicitud);
                 } else if (esMantenimiento) {
                     bloquearBoton($('#btnEnviarMantenimiento'), textoMantenimiento);
+                } else if (esMovimiento) {
+                    bloquearBoton($('#btnEnviarMovimiento'), textoMovimiento);
                 }
 
             });

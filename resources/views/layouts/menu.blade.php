@@ -83,6 +83,13 @@ if (request()->is('divisiones*') || request()->is('unidadesDeNegocios*') || requ
             <span class="font-medium sidebar-text">Soporte</span>
         </a>
     </li>
+    <li>
+        <a href="/movimientos-erp" title="Movimientos ERP"
+            class="sidebar-link flex items-center gap-2.5 no-underline px-2.5 py-2 rounded-lg text-sm {{ request()->is('movimientos-erp*') ? 'is-active' : '' }}">
+            <i class="fas fa-exchange-alt sidebar-ico"></i>
+            <span class="font-medium sidebar-text">Movimientos ERP</span>
+        </a>
+    </li>
     @endif
 
     @if($user && $user->can('ver-compras'))

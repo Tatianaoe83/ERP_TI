@@ -16,6 +16,7 @@ use App\Http\Controllers\AuditoriasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\SolicitudAprobacionController;
 use App\Http\Controllers\SolicitudesController;
+use App\Http\Controllers\MovimientoErpController;
 use App\Http\Controllers\SoporteTIController;
 use App\Http\Controllers\TicketsController;
 use App\Http\Controllers\TicketsMantenimientoController;
@@ -150,6 +151,13 @@ Route::group(['middleware' => ['auth']], function () {
 
     // Tickets
     Route::get('/tickets', [TicketsController::class, 'index'])->name('tickets.index');
+    Route::get('/movimientos-erp', [MovimientoErpController::class, 'index'])->name('movimientos-erp.index');
+    Route::get('/movimientos-erp/{id}', [MovimientoErpController::class, 'show'])->whereNumber('id')->name('movimientos-erp.show');
+    Route::get('/movimientos-erp/{id}/formato', [MovimientoErpController::class, 'formato'])->whereNumber('id')->name('movimientos-erp.formato');
+    Route::post('/movimientos-erp/{id}/comentar', [MovimientoErpController::class, 'comentar'])->whereNumber('id')->name('movimientos-erp.comentar');
+    Route::post('/movimientos-erp/{id}/autorizar', [MovimientoErpController::class, 'autorizar'])->whereNumber('id')->name('movimientos-erp.autorizar');
+    Route::post('/movimientos-erp/{id}/rechazar', [MovimientoErpController::class, 'rechazar'])->whereNumber('id')->name('movimientos-erp.rechazar');
+    Route::post('/movimientos-erp/{id}/aplicar', [MovimientoErpController::class, 'aplicar'])->whereNumber('id')->name('movimientos-erp.aplicar');
     Route::get('/tickets/productividad-ajax', [TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');
     Route::get('/tickets/detalle-grafica', [TicketsController::class, 'getTicketsDetalleGrafica'])->name('tickets.detalle-grafica');
     Route::get('/tickets/chat-messages', [TicketsController::class, 'getChatMessages']);
@@ -503,6 +511,8 @@ Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmple
 Route::get('/destinoDeJefe', [SoporteTIController::class, 'destinoDeJefe']);
 Route::post('/crearTickets', [SoporteTIController::class, 'crearTickets'])->name('soporte.ticket')->withoutMiddleware(['auth']);
 Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
+Route::get('/movimientos-erp/catalogo', [MovimientoErpController::class, 'catalogo']);
+Route::get('/movimientos-erp/autorizadores', [MovimientoErpController::class, 'autorizadores']);
 
 // Aprobación de solicitudes (sin auth, acceso por token)
 Route::get('/revision-solicitud/{token}', [SolicitudAprobacionController::class, 'show'])->name('solicitudes.public.show');
