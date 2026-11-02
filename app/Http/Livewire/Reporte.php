@@ -118,6 +118,11 @@ class Reporte extends Component
 
     public function updatedFiltros($value, $key)
     {
+        // cambiar columna invalida el valor anterior (era de otra columna)
+        if (Str::endsWith($key, '.columna')) {
+            $this->filtros[explode('.', $key)[0]]['valor'] = '';
+        }
+
         if (Str::endsWith($key, '.operador')) {
             $index = explode('.', $key)[0];
 
@@ -241,6 +246,7 @@ class Reporte extends Component
     public function eliminarFiltro($index)
     {
         unset($this->filtros[$index]);
+        $this->filtros = array_values($this->filtros);
     }
 
     public function agregarRelacion()
@@ -279,7 +285,7 @@ class Reporte extends Component
     private function saveSql($sql, $columnasPrefijo)
     {
         DB::table('query_forms')->insert([
-            'title'         => $this->titulo,
+            'title'         => mb_strtoupper($this->titulo),
             'query_details' => json_encode([
                 'tabla_principal' => $this->modelo,
                 'tabla_relacion'  => $this->relacionesSeleccionadas,

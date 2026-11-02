@@ -442,6 +442,24 @@ class ReporteHelper
             'Septiembre' => 9,  'Octubre'    => 10, 'Noviembre' => 11, 'Diciembre' => 12,
         ];
 
+        // "igual a"/"contiene" sobre la misma columna se unen con OR (LAPTOP o PC);
+        // con AND nunca habría filas. El resto de operadores sigue con AND.
+        $gruposOr = [];
+        foreach ($filtros as $filtro) {
+            if (!empty($filtro['columna']) && isset($filtro['valor']) && !is_array($filtro['valor'])
+                && in_array($filtro['operador'] ?? '=', ['=', 'like'], true)) {
+                $gruposOr[$filtro['columna']][] = $filtro;
+            }
+        }
+        foreach ($gruposOr as $columna => $grupo) {
+            $query->where(function ($q) use ($columna, $grupo) {
+                foreach ($grupo as $f) {
+                    $op = $f['operador'] ?? '=';
+                    $q->orWhere($columna, $op, $op === 'like' ? "%{$f['valor']}%" : $f['valor']);
+                }
+            });
+        }
+
         foreach ($filtros as $filtro) {
             if (empty($filtro['columna']) || !isset($filtro['valor'])) {
                 continue;
@@ -450,6 +468,10 @@ class ReporteHelper
             $columna  = $filtro['columna'];
             $operador = $filtro['operador'] ?? '=';
             $valor    = $filtro['valor'];
+
+            if (isset($gruposOr[$columna]) && in_array($operador, ['=', 'like'], true) && !is_array($valor)) {
+                continue; // ya aplicado arriba
+            }
 
             if ($operador === 'between') {
                 if (!is_array($valor)) {

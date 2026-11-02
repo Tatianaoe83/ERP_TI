@@ -1088,7 +1088,8 @@
 
 <script type="text/javascript">
     $(function() {
-        $('input, textarea').keyup(function() {
+        // .text-uppercase = mayúsculas solo por CSS; tocar value desincroniza Livewire
+        $('input, textarea').not('.text-uppercase').keyup(function() {
 
             this.value = this.value.toUpperCase();
         });

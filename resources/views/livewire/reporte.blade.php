@@ -44,7 +44,7 @@
                     <p class="small text-muted mb-0">Define un nombre descriptivo para identificar tu reporte.</p>
                 </div>
             </div>
-            <input wire:model="titulo" type="text" required class="form-control" placeholder="Ej: Inventario de Equipos por Departamento - Enero 2024">
+            <input wire:model.defer="titulo" type="text" required class="form-control text-uppercase" placeholder="Ej: Inventario de Equipos por Departamento - Enero 2024">
         </div>
     </div>
 
@@ -153,7 +153,7 @@
                         </div>
                     <div class="row g-2">
                         @foreach($columnas as $columna)
-                        <div class="col-6 col-sm-4 col-md-6">
+                        <div class="col-6 col-sm-4 col-md-6" wire:key="chk-{{ $columna }}">
                             <div class="form-check">
                                 <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $columna }}" class="form-check-input">
                                 <label class="form-check-label small">
@@ -168,8 +168,8 @@
             @endif
 
             {{-- Tablas relacionadas --}}
-            @foreach($columnasPorRelacion as $relacion => $columnas)
-            <div class="col-12 col-lg-6">
+            @foreach($columnasPorRelacion as $relacion => $columnasRel)
+            <div class="col-12 col-lg-6" wire:key="rel-{{ $relacion }}">
                     <div class="border rounded p-3 h-100">
                         <div class="d-flex align-items-center gap-2 mb-3">
                             <i class="fas fa-link text-muted"></i>
@@ -179,8 +179,8 @@
                             </h6>
                         </div>
                     <div class="row g-2">
-                        @foreach($columnas as $col)
-                        <div class="col-6 col-sm-4 col-md-6">
+                        @foreach($columnasRel as $col)
+                        <div class="col-6 col-sm-4 col-md-6" wire:key="chk-{{ $col }}">
                             <div class="form-check">
                                 <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $col }}" class="form-check-input">
                                 <label class="form-check-label small">
@@ -250,9 +250,9 @@
                     @if($filtro['operador'] === 'between')
                     <label class="form-label small mb-1">Entre</label>
                     <div class="d-flex align-items-center gap-1">
-                        <input type="text" wire:model="filtros.{{ $index }}.valor.inicio" class="form-control" placeholder="desde">
+                        <input type="text" wire:model="filtros.{{ $index }}.valor.inicio" class="form-control text-uppercase" placeholder="desde">
                         <span class="fw-semibold small">y</span>
-                        <input type="text" wire:model="filtros.{{ $index }}.valor.fin" class="form-control" placeholder="hasta">
+                        <input type="text" wire:model="filtros.{{ $index }}.valor.fin" class="form-control text-uppercase" placeholder="hasta">
                         <span
                             class="d-inline-block"
                             tabindex="0"
@@ -284,10 +284,10 @@
                         :tabla="$tabla"
                         :columna="$campo"
                         :indice="$index"
-                        wire:model="filtros.{{ $index }}.valor"
-                        wire:key="autocompletado-{{ $index }}" />
+                        :valor="$filtro['valor']"
+                        wire:key="autocompletado-{{ $filtro['id'] }}-{{ $col }}" />
                     @else
-                    <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control" placeholder="Ingresa el valor a filtrar">
+                    <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control text-uppercase" placeholder="Ingresa el valor a filtrar">
                     @endif
                     @endif
                 </div>
@@ -378,8 +378,9 @@
                 </div>
             </div>
             <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-                <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
-                    <i class="fas fa-eye"></i>
+                <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2" wire:click="mostrarPreview" wire:loading.attr="disabled" wire:target="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
+                    <i class="fas fa-eye" wire:loading.remove wire:target="mostrarPreview"></i>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" wire:loading wire:target="mostrarPreview"></span>
                     Vista Previa
         </button>
                 <button wire:click="generarReporte" type="button" class="btn btn-dark d-flex align-items-center gap-2 px-4">
@@ -404,6 +405,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body p-2 p-sm-3">
+                    <div wire:loading.flex wire:target="mostrarPreview" class="flex-column align-items-center justify-content-center py-5 gap-2">
+                        <div class="spinner-border text-secondary" role="status"></div>
+                        <span class="small text-muted">Cargando vista previa...</span>
+                    </div>
+                    <div wire:loading.remove wire:target="mostrarPreview">
                     @if(!empty($resultado) && count($resultado) > 0)
                     <div class="table-responsive">
                         <table id="tabla-preview" class="table table-bordered table-striped table-hover table-sm mb-0">
@@ -428,6 +434,7 @@
                     @else
                     <p class="text-muted text-center">No hay datos para mostrar.</p>
                     @endif
+                    </div>
                 </div>
             </div>
         </div>

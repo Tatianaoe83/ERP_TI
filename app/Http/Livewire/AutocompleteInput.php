@@ -21,6 +21,9 @@ class AutocompleteInput extends Component
 
     public function updatedValor($valor)
     {
+        // wire:model en el tag del hijo no existe en Livewire 2: sincroniza al padre a mano
+        $this->emitUp('valorAutocompletado', $valor, $this->indice);
+
         if (!$this->tabla || !$this->columna || !Schema::hasTable($this->tabla) || !Schema::hasColumn($this->tabla, $this->columna)) {
             $this->sugerencias = [];
             return;
