@@ -42,6 +42,16 @@
         </div>
     </div>
 
+    {{-- El form envuelve TODAS las tarjetas: si abre dentro de una tarjeta, el navegador lo cierra
+         con ella y los filtros agregados por JS quedan fuera del submit --}}
+    <form action="{{ route('reportes.update', $reportes->id) }}" method="POST">
+        @csrf
+        @method('PUT')
+
+        <input type="hidden" name="title" value="{{ $reportes->title }}">
+        <input type="hidden" name="tabla_principal" value="{{ $tablaPrincipal }}">
+        <input type="hidden" name="tabla_relacion" value='@json($tablaRelacion)'>
+
     {{-- Configuración de datos --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
@@ -54,14 +64,6 @@
                     <p class="small text-muted mb-0">Tabla principal y relaciones seleccionadas (no editables).</p>
                 </div>
             </div>
-
-        <form action="{{ route('reportes.update', $reportes->id) }}" method="POST">
-            @csrf
-            @method('PUT')
-
-            <input type="hidden" name="title" value="{{ $reportes->title }}">
-            <input type="hidden" name="tabla_principal" value="{{ $tablaPrincipal }}">
-            <input type="hidden" name="tabla_relacion" value='@json($tablaRelacion)'>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
@@ -194,7 +196,7 @@
 
                     <div class="col-6 col-sm-3 col-md-2">
                         <label class="form-label small mb-1">Operador</label>
-                        <select name="filtros[{{ $i }}][operador]" class="form-select" onchange="mostrarFiltrosRange({{ $i }})">
+                        <select name="filtros[{{ $i }}][operador]" class="form-select">
                             <option value="=" {{ $filtro['operador'] == '=' ? 'selected' : '' }}>igual a</option>
                             <option value="like" {{ $filtro['operador'] == 'like' ? 'selected' : '' }}>contiene</option>
                             <option value=">" {{ $filtro['operador'] == '>' ? 'selected' : '' }}>mayor que</option>
@@ -204,7 +206,7 @@
                         </select>
                     </div>
 
-                    <div class="col-6 col-sm-3 col-md-5" id="valor_filtro_{{ $i }}">
+                    <div class="col-6 col-sm-3 col-md-5 position-relative" id="valor_filtro_{{ $i }}">
                         @if(is_array($filtro['valor']))
                         <label class="form-label small mb-1">Entre</label>
                         <div class="d-flex align-items-center gap-1">
@@ -224,7 +226,7 @@
                         @if(in_array($filtro['operador'], ['=','like']) && $tabla && $columna)
                         <input type="text" class="form-control autocomplete"
                             placeholder="Ingresa el valor a filtrar" value="{{$filtro['valor'] ?? ''}}"
-                            data-name="filtros[{{$i}}][valor]" data-tabla="{{$tabla}}"
+                            name="filtros[{{$i}}][valor]" autocomplete="off" data-tabla="{{$tabla}}"
                             data-columna="{{$columna}}">
                         @else
                         <input type="text" name="filtros[{{ $i }}][valor]" class="form-control"
@@ -241,6 +243,33 @@
                 </div>
                 @endforeach
             </div>
+
+            {{-- Molde de fila nueva: mismo markup que las filas del servidor. __I__ = índice --}}
+            <template id="filtro-template">
+                <div class="row g-2 mb-3 align-items-end filtro-item">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <label class="form-label small mb-1">Columna</label>
+                        <select name="filtros[__I__][columna]" class="form-select"></select>
+                    </div>
+                    <div class="col-6 col-sm-3 col-md-2">
+                        <label class="form-label small mb-1">Operador</label>
+                        <select name="filtros[__I__][operador]" class="form-select">
+                            <option value="=">igual a</option>
+                            <option value="like">contiene</option>
+                            <option value=">">mayor que</option>
+                            <option value="<">menor que</option>
+                            <option value="between">entre</option>
+                            <option value="!=">sin</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-3 col-md-5 position-relative" id="valor_filtro___I__"></div>
+                    <div class="col-12 col-sm-12 col-md-1 text-center text-md-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm eliminar-filtro">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </template>
 
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-outline-secondary btn-sm" id="agregar-filtro">
@@ -399,6 +428,15 @@
             return;
         }
 
+        const btn = document.getElementById('btnPreview');
+        btn.disabled = true;
+        document.getElementById('previewContent').innerHTML = `
+            <div class="d-flex flex-column align-items-center justify-content-center py-5 gap-2">
+                <div class="spinner-border text-secondary" role="status"></div>
+                <span class="small text-muted">Cargando vista previa...</span>
+            </div>`;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPreview')).show();
+
         try {
             const response = await fetch("{{ route('reportes.preview') }}", {
                 method: "POST",
@@ -426,13 +464,11 @@
                 modalBody.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
             }
 
-            setTimeout(() => {
-                const modal = new bootstrap.Modal(document.getElementById('modalPreview'));
-                modal.show();
-            }, 0);
         } catch (error) {
             console.error('Error en preview:', error);
             document.getElementById('previewContent').innerHTML = '<div class="alert alert-danger">Error al cargar la vista previa.</div>';
+        } finally {
+            btn.disabled = false;
         }
     });
 </script>
@@ -474,94 +510,51 @@
         const columnas = obtenerColumnasSeleccionadas();
         document.querySelectorAll('.filtro-item select[name*="[columna]"]').forEach(select => {
             const valorActual = select.value;
-            select.innerHTML = `<option value="">-- Selecciona --</option>` +
-                columnas.map(col => `<option value="${col}" ${col === valorActual ? 'selected' : ''}>${col}</option>`).join('');
+            select.innerHTML = `<option value="">Selecciona Columna</option>` +
+                columnas.map(col => `<option value="${col}" ${col === valorActual ? 'selected' : ''}>${col.split('.').pop()}</option>`).join('');
         });
     }
 
     document.getElementById('agregar-filtro').addEventListener('click', function() {
-        const columnas = obtenerColumnasSeleccionadas();
-
-        const wrapper = document.getElementById('filtros-wrapper');
-        const selectColumnas = columnas.map(col => `<option value="${col}">${col}</option>`).join('');
-
-        const fila = document.createElement('div');
-        fila.className = 'row align-items-end mb-3 filtro-item';
-        fila.innerHTML = `
-        <div class="col-md-4">
-            <select name="filtros[${contadorFiltros}][columna]" class="form-select form-select-sm">
-                <option value="">-- Selecciona --</option>
-                ${selectColumnas}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <select name="filtros[${contadorFiltros}][operador]" class="form-select form-select-sm" onchange="mostrarFiltrosRange(${contadorFiltros})">
-                <option value="=">igual</option>
-                <option value="like">si contiene</option>
-                <option value=">">mayor que</option>
-                <option value="<">menor que</option>
-                <option value="between">entre</option>
-            </select>
-        </div>
-        <div class="col-md-4" id="valor_filtro_${contadorFiltros}">
-            <input type="text" name="filtros[${contadorFiltros}][valor]" class="form-control form-control-sm" placeholder="Valor">
-        </div>
-        <div class="col-md-1">
-            <button type="button" class="btn btn-sm btn-danger eliminar-filtro">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `;
-
-        wrapper.appendChild(fila);
+        const html = document.getElementById('filtro-template').innerHTML.replaceAll('__I__', contadorFiltros);
+        document.getElementById('filtros-wrapper').insertAdjacentHTML('beforeend', html);
+        actualizarSelectsFiltros();
+        mostrarFiltrosRange(contadorFiltros);
         contadorFiltros++;
-
-        document.querySelectorAll('.eliminar-filtro').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.target.closest('.filtro-item').remove();
-            });
-        });
     });
 
-    function mostrarFiltrosRange(filtroId) {
-        const operadorSelect = document.querySelector(`[name="filtros[${filtroId}][operador]"]`);
-        const operador = operadorSelect?.value;
+    // Mismo markup que las filas renderizadas por el servidor
+    function mostrarFiltrosRange(filtroId, limpiar = false) {
+        const operador = document.querySelector(`[name="filtros[${filtroId}][operador]"]`)?.value;
         const valorDiv = document.getElementById(`valor_filtro_${filtroId}`);
+        const previo = limpiar ? '' : (valorDiv.querySelector(`input[name="filtros[${filtroId}][valor]"]`)?.value ?? '');
 
         if (operador === 'between') {
             valorDiv.innerHTML = `
-            <div class="row">
-                <div class="col-6 col-md-5">
-                    <input type="text" name="filtros[${filtroId}][valor][inicio]" class="form-control form-control-sm" placeholder="Desde">
-                </div>
-                <div class="col-6 col-md-2 text-center d-flex justify-content-center align-items-center">
-                    <span class="text-muted">a</span>
-                </div>
-                <div class="col-6 col-md-5">
-                    <input type="text" name="filtros[${filtroId}][valor][fin]" class="form-control form-control-sm" placeholder="Hasta">
-                </div>
-            </div>
-        `;
-        } else if (operador === '=' || operador === 'like') {
-            const selectCol = document.querySelector(`[name="filtros[${filtroId}][columna]"]`);
-            const [tabla, columna] = selectCol?.value.split('.') ?? ['', ''];
+                <label class="form-label small mb-1">Entre</label>
+                <div class="d-flex align-items-center gap-1">
+                    <input type="text" name="filtros[${filtroId}][valor][inicio]" class="form-control" placeholder="desde">
+                    <span class="fw-semibold small">y</span>
+                    <input type="text" name="filtros[${filtroId}][valor][fin]" class="form-control" placeholder="hasta">
+                </div>`;
+            return;
+        }
 
-            valorDiv.innerHTML = `
-        <input type="text"
-               class="form-control form-control-sm autocomplete"
-               placeholder="Valor"
-               data-name="filtros[${filtroId}][valor]"
-               data-tabla="${tabla}"
-               data-columna="${columna}">
-    `;
+        const col = document.querySelector(`[name="filtros[${filtroId}][columna]"]`)?.value ?? '';
+        const [tabla, columna] = col.split('.');
+        const conAuto = (operador === '=' || operador === 'like') && tabla && columna;
 
-            setTimeout(() => {
-                const nuevoInput = valorDiv.querySelector('.autocomplete');
-                if (nuevoInput) inicializarAutocompletado(nuevoInput);
-            }, 5);
-        } else {
-            valorDiv.innerHTML = `<input type="text" name="filtros[${filtroId}][valor]" class="form-control form-control-sm" placeholder="Valor">`;
+        valorDiv.innerHTML = `
+            <label class="form-label small mb-1">Valor</label>
+            <input type="text" name="filtros[${filtroId}][valor]" class="form-control${conAuto ? ' autocomplete' : ''}"
+                   placeholder="Ingresa el valor a filtrar" autocomplete="off">`;
+
+        const input = valorDiv.querySelector('input');
+        input.value = previo;
+        if (conAuto) {
+            input.dataset.tabla = tabla;
+            input.dataset.columna = columna;
+            inicializarAutocompletado(input);
         }
     }
 
@@ -583,16 +576,11 @@
 
     function inicializarAutocompletado(input) {
         const ul = document.createElement('ul');
-        ul.className = 'list-group position-absolute w-90 z-50 bg-white';
-        ul.style.maxHeight = '200px';
-        ul.style.overflowY = 'auto';
+        ul.className = 'list-group position-absolute shadow';
+        ul.style.cssText = 'max-height:200px;overflow-y:auto;z-index:1050;left:4px;right:4px;';
         input.parentNode.appendChild(ul);
 
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = input.dataset.name;
-        hiddenInput.value = input.value;
-        input.parentNode.appendChild(hiddenInput);
+        input.addEventListener('blur', () => setTimeout(() => ul.innerHTML = '', 150));
 
         input.addEventListener('input', function() {
             const query = this.value;
@@ -611,7 +599,6 @@
         ul.addEventListener('click', function(e) {
             if (e.target.classList.contains('sugerencia')) {
                 input.value = e.target.textContent;
-                hiddenInput.value = e.target.textContent;
                 ul.innerHTML = '';
             }
         });
@@ -628,7 +615,7 @@
         if (e.target.matches('select[name^="filtros"][name$="[columna]"]')) {
             const match = e.target.name.match(/\[([0-9]+)\]\[columna\]/);
             if (match) {
-                mostrarFiltrosRange(match[1]);
+                mostrarFiltrosRange(match[1], true); // el valor era de otra columna
             }
         }
     });
