@@ -934,9 +934,7 @@ class PresupuestoHelper
             return $mes === 'Junio' ? $costo + $totalRenovacionFianzas : $costo;
         }, $totalInversiones);
 
-        // A-Z sin distinguir acentos; datosReporte agrega la fila Total al final.
-        $claveOrden = fn ($fila) => strtr($norm($fila->NombreInsumo), ['Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U']);
-        usort($filas, fn ($a, $b) => $claveOrden($a) <=> $claveOrden($b));
+        usort($filas, fn ($a, $b) => $a->Orden <=> $b->Orden);
 
         return $filas;
     }
