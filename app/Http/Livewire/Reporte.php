@@ -111,6 +111,34 @@ class Reporte extends Component
         $this->aplicarOrdenPorDefecto();
     }
 
+    // Quita la relación y limpia las columnas que le pertenecen.
+    public function quitarRelacion($relacion)
+    {
+        $columnasRelacion = $this->columnasPorRelacion[$relacion] ?? [];
+        $this->columnasSeleccionadas = array_values(
+            array_diff($this->columnasSeleccionadas, $columnasRelacion)
+        );
+        $this->relacionesSeleccionadas = array_values(
+            array_filter($this->relacionesSeleccionadas, fn($r) => $r !== $relacion)
+        );
+        unset($this->columnasPorRelacion[$relacion]);
+
+        $this->aplicarOrdenPorDefecto();
+    }
+
+    // Reutiliza la limpieza individual para deseleccionar todas las relaciones.
+    public function quitarTodasLasRelaciones()
+    {
+        $relaciones = array_unique(array_merge(
+            $this->relacionesSeleccionadas,
+            array_keys($this->columnasPorRelacion)
+        ));
+
+        foreach ($relaciones as $relacion) {
+            $this->quitarRelacion($relacion);
+        }
+    }
+
     public function updatedColumnasSeleccionadas()
     {
         $this->aplicarOrdenPorDefecto();

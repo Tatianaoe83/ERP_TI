@@ -105,10 +105,74 @@
                     @foreach($relaciones as $relacion => $etiqueta)
                     <option value="{{ $relacion }}">
                         {{ $etiqueta }}
-                                @if(in_array($relacion, $relacionesSeleccionadas)) ✓ Agregada @endif
+                                @if(in_array($relacion, $relacionesSeleccionadas)) @endif
                     </option>
-                    @endforeach
+                    @endforeach   
                 </select>
+                {{-- Tablas agregadas --}}
+                @if(!empty($relacionesSeleccionadas))
+                    <div class="mt-3">
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="fw-semibold text-muted">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Tablas agregadas
+                            </small>
+
+                            {{-- Limpia todas las relaciones seleccionadas y sus columnas asociadas. --}}
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-link text-danger text-decoration-none p-0"
+                                wire:click="quitarTodasLasRelaciones">
+                                <i class="fas fa-times-circle me-1"></i>
+                                Deseleccionar todo
+                            </button>
+                        </div>
+
+                    
+            <div class="flex flex-wrap gap-2">
+
+                @foreach($relacionesSeleccionadas as $relacion)
+
+                    {{-- Cada chip representa una relación y anima su salida durante la acción Livewire. --}}
+                    <span
+                        wire:key="relacion-{{ $relacion }}"
+                        wire:loading.class="opacity-0 scale-95 -translate-x-2"
+                        wire:target="quitarRelacion('{{ $relacion }}'), quitarTodasLasRelaciones"
+                        class="inline-flex items-center gap-2
+                            rounded-full border border-green-200
+                            bg-green-100 px-3 py-2
+                            text-sm font-medium text-green-800
+                            transform transition-all duration-300 ease-in-out"
+                    >
+
+                        <i class="fas fa-check text-xs"></i>
+
+                        {{ $relaciones[$relacion] ?? $relacion }}
+
+                        {{-- Quita esta relación y sus columnas sin afectar las demás. --}}
+                        <button
+                            type="button"
+                            class="inline-flex h-5 w-5 items-center justify-center
+                                rounded-full text-green-800
+                                transition-all duration-200
+                                hover:bg-green-200 hover:text-green-950
+                                hover:scale-110"
+                            aria-label="Eliminar {{ $relaciones[$relacion] ?? $relacion }}"
+                            wire:click="quitarRelacion('{{ $relacion }}')"
+                        >
+                            &times;
+                        </button>
+
+                    </span>
+
+                @endforeach
+
+            </div>
+
+
+                    </div>
+                @endif
                         @if(!empty($relacionesSeleccionadas))
                         <div class="mt-2">
                             <small class="text-muted">

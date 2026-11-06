@@ -24,16 +24,22 @@ class AutocompleteInput extends Component
         // wire:model en el tag del hijo no existe en Livewire 2: sincroniza al padre a mano
         $this->emitUp('valorAutocompletado', $valor, $this->indice);
 
+        // Evita consultar la base de datos hasta que haya al menos 3 caracteres útiles.
+        if (mb_strlen(trim((string) $valor)) < 3) {
+            $this->sugerencias = [];
+            return;
+        }
+
         if (!$this->tabla || !$this->columna || !Schema::hasTable($this->tabla) || !Schema::hasColumn($this->tabla, $this->columna)) {
             $this->sugerencias = [];
             return;
         }
 
+        // distinct() devuelve sugerencias únicas sin necesitar agruparlas con groupBy().
         $this->sugerencias = DB::table($this->tabla)
             ->select($this->columna)
             ->distinct()
             ->where($this->columna, 'like', "%{$valor}%")
-            ->groupBy($this->columna)
             ->limit(5)
             ->pluck($this->columna)
             ->toArray();

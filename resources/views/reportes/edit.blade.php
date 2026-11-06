@@ -493,7 +493,8 @@
 
         const opcionesOrden = columnas.map(col => {
             const selected = col === valorOrdenActual ? 'selected' : '';
-            return `<option value="${col}" ${selected}>${col}</option>`;
+            // Conserva tabla.columna como valor y muestra solo el nombre de la columna.
+            return `<option value="${col}" ${selected}>${col.split('.').pop()}</option>`;
         });
 
         selectOrden.innerHTML = '<option value="">-- Sin orden --</option>' + opcionesOrden.join('');
