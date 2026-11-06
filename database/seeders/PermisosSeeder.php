@@ -64,6 +64,7 @@ class PermisosSeeder extends Seeder
         'exportar-reportes-especificos',
         'generar-cortes',
         'tickets.ajustar-metricas',
+        'tickets.pausar',
         'tickets.gestionar-tareas',
         'tickets.notificaciones',
         'tickets.ver-creador-tarea',

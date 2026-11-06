@@ -128,46 +128,63 @@ class HybridEmailService
      */
     private function construirContenidoConInstrucciones($ticket, $empleado, $mensaje, $threadId)
     {
-        return "
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-                .content { margin: 20px 0; }
-                .response { padding: 20px; margin: 20px 0; }
-                .important { padding: 15px; margin: 15px 0; }
-            </style>
-        </head>
-        <body>
-            <div class='content'>
-                <p>Hola <strong>{$empleado->NombreEmpleado}</strong>,</p>
-                
-                <p>Hemos recibido tu solicitud y te proporcionamos la siguiente respuesta:</p>
-                
-                <div class='response'>
-                    <h3>Respuesta del Soporte:</h3>
-                    " . $mensaje . "
-                </div>
-                
-                
-                <div class='important'>
-                    <h3>Importante:</h3>
-                    <ul>
-                        <li><strong>NO cambies el asunto del correo</strong></li>
-                        <li><strong>NO agregues texto al asunto</strong></li>
-                        <li><strong>Responde solo al cuerpo del mensaje</strong></li>
-                        <li>Tu respuesta será procesada automáticamente</li>
-                    </ul>
-                </div>
-            
-            </div>
-            
-            <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #000; font-size: 12px;'>
-                <p><strong>Sistema de Tickets ERP TI - Proser</strong></p>
-                <p>Este es un correo automático. Para responder, simplemente responde a este correo manteniendo el asunto original.</p>
-            </div>
-        </body>
-        </html>";
+        $nombre = e($empleado->NombreEmpleado ?? '');
+        $folio = e($ticket->TicketID);
+
+        return '<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Ticket #' . $folio . '</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f7fb;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f7fb" style="background-color:#f4f7fb;margin:0;padding:0;">
+<tr>
+<td align="center" style="padding:28px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+<tr>
+<td bgcolor="#101D49" style="background-color:#101D49;padding:22px 28px;">
+<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#93c5fd;">ERP TI · Soporte</p>
+<p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.2;font-weight:700;color:#ffffff;">Ticket #' . $folio . '</p>
+</td>
+</tr>
+<tr>
+<td style="padding:28px;font-family:Arial,Helvetica,sans-serif;color:#0a1628;font-size:15px;line-height:1.6;">
+<p style="margin:0 0 8px;">Hola <strong>' . $nombre . '</strong>,</p>
+<p style="margin:0 0 18px;color:#334155;">Recibimos tu solicitud. Esta es la respuesta del equipo de soporte:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f7fb" style="background-color:#f4f7fb;border-left:4px solid #0052cc;border-radius:8px;">
+<tr>
+<td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;color:#0a1628;font-size:15px;line-height:1.6;">
+<p style="margin:0 0 8px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#0052cc;font-weight:700;">Respuesta del soporte</p>
+' . $mensaje . '
+</td>
+</tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fff7ed" style="margin-top:18px;background-color:#fff7ed;border:1px solid #fed7aa;border-radius:8px;">
+<tr>
+<td style="padding:14px 16px;font-family:Arial,Helvetica,sans-serif;color:#9a3412;font-size:13px;line-height:1.55;">
+<p style="margin:0 0 6px;font-weight:700;color:#9a3412;">Para que tu respuesta llegue al ticket</p>
+<p style="margin:0;color:#9a3412;">Responde este correo sin cambiar el asunto y escribe solo en el cuerpo del mensaje. El sistema la registra sola.</p>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td bgcolor="#f8fafc" style="padding:16px 28px;background-color:#f8fafc;border-top:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#64748b;">
+<strong style="color:#0a1628;">Sistema de Tickets ERP TI · Proser</strong><br>
+Correo automático. Conserva el asunto original al responder.
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>';
     }
 
     /**

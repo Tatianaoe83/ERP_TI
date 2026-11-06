@@ -45,7 +45,7 @@
     }
 
     .swal2-container {
-        z-index: 20000 !important;
+        z-index: 300000 !important;
     }
 
     /* =========================================
@@ -574,7 +574,7 @@
                                 <select
                                     x-model="ticketPrioridad"
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400
@@ -592,7 +592,7 @@
                                     x-model="ticketEstatus" 
                                     @change="verificarCambioEstatus($event.target.value)" 
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -600,10 +600,29 @@
                    dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
                                     <option value="Pendiente" :disabled="selected.estatus && selected.estatus !== 'Pendiente'">Pendiente</option>
                                     <option value="En progreso" :disabled="selected.estatus === 'Cerrado'">En progreso</option>
+                                    @can('tickets.pausar')
                                     <option value="Pausado" :disabled="selected.estatus && selected.estatus !== 'En progreso' && selected.estatus !== 'Pausado'">Pausado</option>
+                                    @else
+                                    <option value="Pausado" x-show="selected.estatus === 'Pausado'" disabled>Pausado</option>
+                                    @endcan
                                     <option value="Cerrado" :disabled="selected.estatus === 'Pendiente'">Cerrado</option>
                                 </select>
                                 <p x-show="ticketEstatus === 'Pausado'" class="mt-1 text-xs text-orange-600 dark:text-orange-300">El tiempo en pausa no cuenta para métricas ni producción.</p>
+                                <div x-show="pidiendoResolucion" x-cloak class="mt-2 rounded-md border border-gray-600 p-3" style="background:#111827;">
+                                    <p class="text-sm text-gray-100 mb-2">Describe la resolución del problema</p>
+                                    <textarea
+                                        data-resolucion-cierre
+                                        data-sin-mayusculas
+                                        x-model="resolucionBorrador"
+                                        rows="4"
+                                        class="sin-mayusculas w-full rounded-md text-sm border border-gray-600 p-2"
+                                        style="background:#0f1116; color:#f8fafc;"
+                                        placeholder="Escribe aquí cómo se solucionó..."></textarea>
+                                    <div class="mt-2 flex gap-2">
+                                        <button type="button" @click="confirmarCierre()" class="px-3 py-2 rounded-md text-sm text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">Cerrar ticket</button>
+                                        <button type="button" @click="cancelarCierre()" class="px-3 py-2 rounded-md text-sm border border-gray-500 cursor-pointer" style="color:#f8fafc; background:transparent;">Cancelar</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -613,7 +632,7 @@
                                 <select
                                     x-model="ticketClasificacion"
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -640,7 +659,7 @@
                                 <select
                                     x-model="ticketResponsableTI"
                                     :disabled="selected.estatus === 'Cerrado' || ((selected.estatus === 'En progreso' || selected.estatus === 'Pausado') && ticketEstatus !== 'Cerrado')"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -768,7 +787,7 @@
                                 </div>
                             </div>
 
-                            <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                            <div x-show="!pidiendoResolucion && (selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado')"
                                  x-transition:enter="transition ease-out duration-300"
                                  x-transition:enter-start="opacity-0 -translate-y-2"
                                  x-transition:enter-end="opacity-100 translate-y-0"
@@ -901,7 +920,7 @@
                             <div class="p-3 transition-opacity duration-200"
                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
 
-                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                <div x-show="!pidiendoResolucion && (selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado')"
                                     class="mb-2 p-2 rounded-lg border transition-colors
                 bg-yellow-50 border-yellow-200 text-yellow-800
                 dark:bg-yellow-900/20 dark:border-yellow-700/50 dark:text-yellow-200">
@@ -1441,6 +1460,9 @@
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
+            pidiendoResolucion: false,
+            resolucionBorrador: '',
+            estatusPrevioCierre: '',
             ticketClasificacion: '',
             ticketResponsableTI: '',
             ticketTipoID: '',
@@ -2962,6 +2984,8 @@
                 this.limpiarCascada();
                 this.ticketPrioridad = '';
                 this.ticketEstatus = '';
+                this.pidiendoResolucion = false;
+                this.resolucionBorrador = '';
                 this.ticketClasificacion = '';
                 this.ticketResponsableTI = '';
                 this.mensajes = [];
@@ -3009,6 +3033,10 @@
                 });
             },
 
+            refrescarSelectsFormulario() {
+                if (window.iniciarSelects && this.$el) window.iniciarSelects(this.$el);
+            },
+
             async cargarDatosTicket(ticketId) {
                 try {
                     const response = await fetch(`/tickets/${ticketId}`, {
@@ -3048,7 +3076,11 @@
                                 this.selected.estado_empleado = data.ticket.estado_empleado || '';
                             }
                             
-                            this.$nextTick(() => { this.actualizarEstadoEditor(); });
+                            this.$nextTick(() => {
+                                this.actualizarEstadoEditor();
+                                this.refrescarSelectsFormulario();
+                            });
+                            setTimeout(() => this.refrescarSelectsFormulario(), 160);
 
                             // Reasienta los <select> ya que x-for renderizó y libera la cascada.
                             this.restaurarCascada();
@@ -3503,37 +3535,39 @@
             },
 
                             verificarCambioEstatus(nuevoEstatus) {
-                if (nuevoEstatus === 'Cerrado') {
-                    Swal.fire({
-                        title: 'Cerrar Ticket',
-                        text: 'Por favor, describe la resolución del problema:',
-                        input: 'textarea',
-                        inputPlaceholder: 'Escribe aquí cómo se solucionó...',
-                        showCancelButton: true,
-                        confirmButtonText: 'Cerrar Ticket',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#10b981',
-                        cancelButtonColor: '#ef4444',
-                        inputValidator: (value) => {
-                            if (!value) return 'Debes escribir una resolución';
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // 1. Guardar en temporal para enviar al backend
-                            this.selected.resolucion_temporal = result.value;
-                            
-                            // 2. CORRECCIÓN IMPORTANTE: Actualizar la vista inmediatamente
-                            this.selected.resolucion = result.value; 
-                            
-                            this.ticketEstatus = 'Cerrado';
-                            // Forzamos actualización de Alpine para que detecte el cambio de estatus
-                            this.selected.estatus = 'Cerrado'; 
-                        } else {
-                            // Si cancela, regresamos el select al estado anterior
-                            this.ticketEstatus = this.selected.estatus; 
-                        }
-                    });
+                if (nuevoEstatus !== 'Cerrado') {
+                    this.pidiendoResolucion = false;
+                    return;
                 }
+                if (this.selected.estatus === 'Cerrado') return;
+                this.estatusPrevioCierre = this.selected.estatus || 'En progreso';
+                this.resolucionBorrador = '';
+                this.pidiendoResolucion = true;
+                this.$nextTick(() => {
+                    const campo = this.$el.querySelector('[data-resolucion-cierre]');
+                    if (campo) campo.focus();
+                });
+            },
+
+            cancelarCierre() {
+                this.pidiendoResolucion = false;
+                this.resolucionBorrador = '';
+                this.ticketEstatus = this.estatusPrevioCierre || this.selected.estatus || 'En progreso';
+            },
+
+            confirmarCierre() {
+                if (this.guardandoTicket) return;
+                const texto = (this.resolucionBorrador || '').trim();
+                if (!texto) {
+                    this.mostrarNotificacion('Debes escribir una resolución', 'warning');
+                    return;
+                }
+                this.selected.resolucion_temporal = texto;
+                this.selected.resolucion = texto;
+                this.ticketEstatus = 'Cerrado';
+                this.pidiendoResolucion = false;
+                this.$nextTick(() => this.actualizarEstadoEditor());
+                this.guardarCambiosTicket();
             },
 
             manejarArchivosSeleccionados(event) {
@@ -3906,70 +3940,11 @@
             },
 
             mostrarNotificacion(mensaje, tipo) {
-                // Remover notificaciones anteriores si existen
-                const notificacionesAnteriores = document.querySelectorAll('.ticket-notification');
-                notificacionesAnteriores.forEach(n => n.remove());
-                
-                let bgColor = 'bg-red-500';
-                if (tipo === 'success') bgColor = 'bg-green-500';
-                else if (tipo === 'info') bgColor = 'bg-blue-500';
-                
-                const notification = document.createElement('div');
-                notification.className = `ticket-notification p-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px] max-w-md ${bgColor} text-white`;
-                
-                // Establecer estilos inline para asegurar que aparezca por encima del modal (z-50)
-                // Usar un z-index muy alto y position fixed
-                notification.style.position = 'fixed';
-                notification.style.top = '1rem';
-                notification.style.right = '1rem';
-                notification.style.zIndex = '999999'; // Mucho más alto que el modal (z-50)
-                notification.style.pointerEvents = 'auto';
-                
-                // Estilos iniciales para animación
-                notification.style.transform = 'translateX(400px)';
-                notification.style.opacity = '0';
-                notification.style.transition = 'all 0.3s ease-in-out';
-                
-                // Icono según el tipo
-                let icono = '';
-                if (tipo === 'success') {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                } else if (tipo === 'info') {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                } else {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-                }
-                
-                notification.innerHTML = `
-                    ${icono}
-                    <span class="flex-1 font-medium">${mensaje}</span>
-                `;
-                
-                // Agregar directamente al body para evitar problemas de contexto de apilamiento
-                // Asegurarse de que esté fuera de cualquier contenedor del modal
-                document.body.appendChild(notification);
-                
-                // Forzar el z-index después de agregar al DOM para asegurar que se aplique
-                requestAnimationFrame(() => {
-                    notification.style.zIndex = '999999';
-                });
-                
-                // Animación de entrada
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(0)';
-                    notification.style.opacity = '1';
-                }, 10);
-                
-                // Remover después de 4 segundos con animación
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(400px)';
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 300);
-                }, 4000);
+                if (!window.AppAlert) return;
+                if (tipo === 'success') window.AppAlert.ok(mensaje);
+                else if (tipo === 'info') window.AppAlert.aviso(mensaje);
+                else if (tipo === 'warning') window.AppAlert.cuidado(mensaje);
+                else window.AppAlert.fallo(mensaje);
             },
 
             formatearFecha(fecha) {

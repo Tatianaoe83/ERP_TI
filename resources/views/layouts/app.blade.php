@@ -1230,7 +1230,7 @@
 <script type="text/javascript">
     $(function() {
         $('input, textarea').keyup(function() {
-
+            if (this.hasAttribute('data-sin-mayusculas')) return;
             this.value = this.value.toUpperCase();
         });
     });
@@ -1278,6 +1278,12 @@
             var $scope = root ? jQuery(root) : jQuery(document);
             $scope.find('select').addBack('select').each(function () {
                 var $el = jQuery(this);
+                if ($el.hasClass('sin-select2')) {
+                    if ($el.hasClass('select2-hidden-accessible')) {
+                        try { $el.select2('destroy'); } catch (e) {}
+                    }
+                    return;
+                }
                 if ($el.closest('template').length || $el.children('template').length || $el.closest('.dataTables_length').length) return;
                 var size = parseInt($el.attr('size') || '0', 10);
                 if (size > 1) return;

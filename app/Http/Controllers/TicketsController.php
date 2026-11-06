@@ -738,6 +738,13 @@ class TicketsController extends Controller
                 'Cerrado'     => [],
             ];
 
+            if ($nuevoEstatus === 'Pausado' && $estatusAnterior !== 'Pausado' && !auth()->user()->can('tickets.pausar')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para pausar tickets',
+                ], 403);
+            }
+
             if ($nuevoEstatus !== $estatusAnterior) {
                 if (!in_array($nuevoEstatus, $transicionesValidas[$estatusAnterior] ?? [])) {
                     return response()->json([

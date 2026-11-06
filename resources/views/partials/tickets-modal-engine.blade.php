@@ -55,6 +55,9 @@
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
+            pidiendoResolucion: false,
+            resolucionBorrador: '',
+            estatusPrevioCierre: '',
             ticketClasificacion: '',
             ticketResponsableTI: '',
             ticketTipoID: '',
@@ -1585,6 +1588,8 @@
                 this.limpiarCascada();
                 this.ticketPrioridad = '';
                 this.ticketEstatus = '';
+                this.pidiendoResolucion = false;
+                this.resolucionBorrador = '';
                 this.ticketClasificacion = '';
                 this.ticketResponsableTI = '';
                 this.mensajes = [];
@@ -1632,6 +1637,10 @@
                 });
             },
 
+            refrescarSelectsFormulario() {
+                if (window.iniciarSelects && this.$el) window.iniciarSelects(this.$el);
+            },
+
             async cargarDatosTicket(ticketId) {
                 try {
                     const response = await fetch(`/tickets/${ticketId}`, {
@@ -1671,7 +1680,11 @@
                                 this.selected.estado_empleado = data.ticket.estado_empleado || '';
                             }
                             
-                            this.$nextTick(() => { this.actualizarEstadoEditor(); });
+                            this.$nextTick(() => {
+                                this.actualizarEstadoEditor();
+                                this.refrescarSelectsFormulario();
+                            });
+                            setTimeout(() => this.refrescarSelectsFormulario(), 160);
 
                             // Reasienta los <select> ya que x-for renderizó y libera la cascada.
                             this.restaurarCascada();
@@ -2131,37 +2144,39 @@
             },
 
                             verificarCambioEstatus(nuevoEstatus) {
-                if (nuevoEstatus === 'Cerrado') {
-                    Swal.fire({
-                        title: 'Cerrar Ticket',
-                        text: 'Por favor, describe la resolución del problema:',
-                        input: 'textarea',
-                        inputPlaceholder: 'Escribe aquí cómo se solucionó...',
-                        showCancelButton: true,
-                        confirmButtonText: 'Cerrar Ticket',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#10b981',
-                        cancelButtonColor: '#ef4444',
-                        inputValidator: (value) => {
-                            if (!value) return 'Debes escribir una resolución';
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // 1. Guardar en temporal para enviar al backend
-                            this.selected.resolucion_temporal = result.value;
-                            
-                            // 2. CORRECCIÓN IMPORTANTE: Actualizar la vista inmediatamente
-                            this.selected.resolucion = result.value; 
-                            
-                            this.ticketEstatus = 'Cerrado';
-                            // Forzamos actualización de Alpine para que detecte el cambio de estatus
-                            this.selected.estatus = 'Cerrado'; 
-                        } else {
-                            // Si cancela, regresamos el select al estado anterior
-                            this.ticketEstatus = this.selected.estatus; 
-                        }
-                    });
+                if (nuevoEstatus !== 'Cerrado') {
+                    this.pidiendoResolucion = false;
+                    return;
                 }
+                if (this.selected.estatus === 'Cerrado') return;
+                this.estatusPrevioCierre = this.selected.estatus || 'En progreso';
+                this.resolucionBorrador = '';
+                this.pidiendoResolucion = true;
+                this.$nextTick(() => {
+                    const campo = this.$el.querySelector('[data-resolucion-cierre]');
+                    if (campo) campo.focus();
+                });
+            },
+
+            cancelarCierre() {
+                this.pidiendoResolucion = false;
+                this.resolucionBorrador = '';
+                this.ticketEstatus = this.estatusPrevioCierre || this.selected.estatus || 'En progreso';
+            },
+
+            confirmarCierre() {
+                if (this.guardandoTicket) return;
+                const texto = (this.resolucionBorrador || '').trim();
+                if (!texto) {
+                    this.mostrarNotificacion('Debes escribir una resolución', 'warning');
+                    return;
+                }
+                this.selected.resolucion_temporal = texto;
+                this.selected.resolucion = texto;
+                this.ticketEstatus = 'Cerrado';
+                this.pidiendoResolucion = false;
+                this.$nextTick(() => this.actualizarEstadoEditor());
+                this.guardarCambiosTicket();
             },
 
             manejarArchivosSeleccionados(event) {
@@ -2534,70 +2549,11 @@
             },
 
             mostrarNotificacion(mensaje, tipo) {
-                // Remover notificaciones anteriores si existen
-                const notificacionesAnteriores = document.querySelectorAll('.ticket-notification');
-                notificacionesAnteriores.forEach(n => n.remove());
-                
-                let bgColor = 'bg-red-500';
-                if (tipo === 'success') bgColor = 'bg-green-500';
-                else if (tipo === 'info') bgColor = 'bg-blue-500';
-                
-                const notification = document.createElement('div');
-                notification.className = `ticket-notification p-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px] max-w-md ${bgColor} text-white`;
-                
-                // Establecer estilos inline para asegurar que aparezca por encima del modal (z-50)
-                // Usar un z-index muy alto y position fixed
-                notification.style.position = 'fixed';
-                notification.style.top = '1rem';
-                notification.style.right = '1rem';
-                notification.style.zIndex = '999999'; // Mucho más alto que el modal (z-50)
-                notification.style.pointerEvents = 'auto';
-                
-                // Estilos iniciales para animación
-                notification.style.transform = 'translateX(400px)';
-                notification.style.opacity = '0';
-                notification.style.transition = 'all 0.3s ease-in-out';
-                
-                // Icono según el tipo
-                let icono = '';
-                if (tipo === 'success') {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                } else if (tipo === 'info') {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                } else {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-                }
-                
-                notification.innerHTML = `
-                    ${icono}
-                    <span class="flex-1 font-medium">${mensaje}</span>
-                `;
-                
-                // Agregar directamente al body para evitar problemas de contexto de apilamiento
-                // Asegurarse de que esté fuera de cualquier contenedor del modal
-                document.body.appendChild(notification);
-                
-                // Forzar el z-index después de agregar al DOM para asegurar que se aplique
-                requestAnimationFrame(() => {
-                    notification.style.zIndex = '999999';
-                });
-                
-                // Animación de entrada
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(0)';
-                    notification.style.opacity = '1';
-                }, 10);
-                
-                // Remover después de 4 segundos con animación
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(400px)';
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 300);
-                }, 4000);
+                if (!window.AppAlert) return;
+                if (tipo === 'success') window.AppAlert.ok(mensaje);
+                else if (tipo === 'info') window.AppAlert.aviso(mensaje);
+                else if (tipo === 'warning') window.AppAlert.cuidado(mensaje);
+                else window.AppAlert.fallo(mensaje);
             },
 
             formatearFecha(fecha) {

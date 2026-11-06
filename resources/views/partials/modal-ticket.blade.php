@@ -208,7 +208,7 @@
                                 <select
                                     x-model="ticketPrioridad"
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400
@@ -226,7 +226,7 @@
                                     x-model="ticketEstatus" 
                                     @change="verificarCambioEstatus($event.target.value)" 
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -234,10 +234,29 @@
                    dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
                                     <option value="Pendiente" :disabled="selected.estatus && selected.estatus !== 'Pendiente'">Pendiente</option>
                                     <option value="En progreso" :disabled="selected.estatus === 'Cerrado'">En progreso</option>
+                                    @can('tickets.pausar')
                                     <option value="Pausado" :disabled="selected.estatus && selected.estatus !== 'En progreso' && selected.estatus !== 'Pausado'">Pausado</option>
+                                    @else
+                                    <option value="Pausado" x-show="selected.estatus === 'Pausado'" disabled>Pausado</option>
+                                    @endcan
                                     <option value="Cerrado" :disabled="selected.estatus === 'Pendiente'">Cerrado</option>
                                 </select>
                                 <p x-show="ticketEstatus === 'Pausado'" class="mt-1 text-xs text-orange-600 dark:text-orange-300">El tiempo en pausa no cuenta para métricas ni producción.</p>
+                                <div x-show="pidiendoResolucion" x-cloak class="mt-2 rounded-md border border-gray-600 p-3" style="background:#111827;">
+                                    <p class="text-sm text-gray-100 mb-2">Describe la resolución del problema</p>
+                                    <textarea
+                                        data-resolucion-cierre
+                                        data-sin-mayusculas
+                                        x-model="resolucionBorrador"
+                                        rows="4"
+                                        class="sin-mayusculas w-full rounded-md text-sm border border-gray-600 p-2"
+                                        style="background:#0f1116; color:#f8fafc;"
+                                        placeholder="Escribe aquí cómo se solucionó..."></textarea>
+                                    <div class="mt-2 flex gap-2">
+                                        <button type="button" @click="confirmarCierre()" class="px-3 py-2 rounded-md text-sm text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">Cerrar ticket</button>
+                                        <button type="button" @click="cancelarCierre()" class="px-3 py-2 rounded-md text-sm border border-gray-500 cursor-pointer" style="color:#f8fafc; background:transparent;">Cancelar</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -247,7 +266,7 @@
                                 <select
                                     x-model="ticketClasificacion"
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -274,7 +293,7 @@
                                 <select
                                     x-model="ticketResponsableTI"
                                     :disabled="selected.estatus === 'Cerrado' || ((selected.estatus === 'En progreso' || selected.estatus === 'Pausado') && ticketEstatus !== 'Cerrado')"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -402,7 +421,7 @@
                                 </div>
                             </div>
 
-                            <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                            <div x-show="!pidiendoResolucion && (selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado')"
                                  x-transition:enter="transition ease-out duration-300"
                                  x-transition:enter-start="opacity-0 -translate-y-2"
                                  x-transition:enter-end="opacity-100 translate-y-0"
@@ -535,7 +554,7 @@
                             <div class="p-3 transition-opacity duration-200"
                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
 
-                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                <div x-show="!pidiendoResolucion && (selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado')"
                                     class="mb-2 p-2 rounded-lg border transition-colors
                 bg-yellow-50 border-yellow-200 text-yellow-800
                 dark:bg-yellow-900/20 dark:border-yellow-700/50 dark:text-yellow-200">
