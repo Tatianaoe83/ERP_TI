@@ -56,7 +56,8 @@
             @endif">{{ $ticket->Prioridad }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; font-weight: bold;
             @if($ticket->Estatus == 'Cerrado') color: #059669; 
-            @elseif($ticket->Estatus == 'En progreso') color: #2563EB; 
+            @elseif($ticket->Estatus == 'En progreso') color: #2563EB;
+            @elseif($ticket->Estatus == 'Pausado') color: #C2410C;
             @else color: #D97706; 
             @endif">{{ $ticket->Estatus }}</td>
         <td style="padding: 8px; border: 1px solid #E5E7EB;">

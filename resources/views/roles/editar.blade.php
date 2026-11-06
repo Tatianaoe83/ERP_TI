@@ -21,18 +21,7 @@
             {!! Form::text('name', null, array('class' => 'form-control')) !!}
         </div>
         <div class="col-xs-12 col-sm-12 col-md-12">
-            <label for="">Permisos para este Rol</label>
-            <div class="crud-select-all" id="selectAll">Seleccionar todos</div>
-            <div class="crud-perms">
-                @foreach($permission as $value)
-                <div class="form-group flex items-center space-x-2">
-                    <label>
-                        {{ Form::checkbox('permission[]', $value->id, in_array($value->id, $rolePermissions) ? true : false, array('class' => 'name cursor-pointer')) }}
-                        <span>{{ $value->name }}</span>
-                    </label>
-                </div>
-                @endforeach
-            </div>
+            @include('roles.permisos', ['rolePermissions' => $rolePermissions])
         </div>
     </div>
     <div class="crud-page__actions">
@@ -41,18 +30,3 @@
     {!! Form::close() !!}
 </x-crud-page>
 @endsection
-
-@push('third_party_scripts')
-<script>
-    document.getElementById('selectAll').addEventListener('click', function() {
-        const checkboxes = document.querySelectorAll('input[name="permission[]"]');
-        const isChecked = checkboxes[0].checked;
-
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = !isChecked;
-        });
-
-        this.textContent = isChecked ? 'Seleccionar todos' : 'Deseleccionar todos';
-    });
-</script>
-@endpush

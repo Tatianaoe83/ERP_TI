@@ -1,5 +1,5 @@
 <div wire:poll.5s.visible="actualizarDatos">
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start h-full">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start h-full">
 
         @foreach (\App\Models\Tickets::COLUMNAS_VISTA as $key => $titulo)
 
@@ -15,7 +15,7 @@
                 </span>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-2.5 space-y-2.5 custom-scrollbar">
+            <div class="flex-1 overflow-y-auto p-2.5 space-y-2.5 custom-scrollbar" data-categoria-contenedor="{{ $key }}">
 
                 @forelse ($ticketsStatus[$key] as $ticket)
 

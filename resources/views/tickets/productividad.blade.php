@@ -572,6 +572,7 @@
                                 <th>Total</th>
                                 <th>Cerrados</th>
                                 <th>En progreso</th>
+                                <th>Pausados</th>
                                 <th>Pendientes</th>
                                 <th>Problemas</th>
                                 <th>Servicios</th>
@@ -585,6 +586,7 @@
                                     <td>{{ $responsable['total'] }}</td>
                                     <td><span class="erp-chip erp-chip--ok">{{ $responsable['cerrados'] }}</span></td>
                                     <td><span class="erp-chip erp-chip--aviso">{{ $responsable['en_progreso'] }}</span></td>
+                                    <td><span class="erp-chip erp-chip--acento">{{ $responsable['pausados'] ?? 0 }}</span></td>
                                     <td><span class="erp-chip erp-chip--alerta">{{ $responsable['pendientes'] }}</span></td>
                                     <td><span class="erp-chip erp-chip--acento">{{ $responsable['problemas'] ?? 0 }}</span></td>
                                     <td><span class="erp-chip erp-chip--info">{{ $responsable['servicios'] ?? 0 }}</span></td>
@@ -1768,7 +1770,7 @@
         var borde = esOscuro ? '#0F172A' : '#ffffff';
         return {
             donaBorde: borde,
-            estado: ['#FF5630', '#4C9AFF', '#36B37E'],
+            estado: ['#FF5630', '#4C9AFF', '#FFAB00', '#36B37E'],
             clasificacion: ['#FF5630', '#0052CC'],
             clasBorde: [borde, borde],
             prioridad: ['#FF5630', '#FFAB00', '#36B37E'],
@@ -3190,6 +3192,7 @@
                     datasets: [
                         { label: 'Cerrados', data: lista.map(function (f) { return f.cerrados || 0; }), backgroundColor: '#36B37E', borderRadius: 6, maxBarThickness: 16 },
                         { label: 'En progreso', data: lista.map(function (f) { return f.en_progreso || 0; }), backgroundColor: '#4C9AFF', borderRadius: 6, maxBarThickness: 16 },
+                        { label: 'Pausados', data: lista.map(function (f) { return f.pausados || 0; }), backgroundColor: '#FFAB00', borderRadius: 6, maxBarThickness: 16 },
                         { label: 'Pendientes', data: lista.map(function (f) { return f.pendientes || 0; }), backgroundColor: '#FF5630', borderRadius: 6, maxBarThickness: 16 }
                     ]
                 },

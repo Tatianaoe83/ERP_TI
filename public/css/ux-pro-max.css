@@ -907,11 +907,11 @@ html.dark textarea::placeholder {
 html.dark .modal-content,
 html.dark .swal2-popup,
 html.dark .sweet-alert {
-    background: rgba(15, 23, 42, 0.94) !important;
+    background: #1c1f26 !important;
     color: #f8fafc !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid #2a2f3a !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 html.dark .table,
@@ -1062,10 +1062,12 @@ html.dark .fixed.inset-0 > .relative.w-full,
 .dark .modal-content,
 .dark .tareas-modal,
 .dark .metricas-modal__dialog {
-    background: rgba(15, 23, 42, 0.94) !important;
+    background: #1c1f26 !important;
     color: #f8fafc !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border: 1px solid #2a2f3a !important;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 .modal-header,
@@ -1088,9 +1090,9 @@ html.dark .fixed.inset-0 > .relative.w-full > .shrink-0:first-child,
 .dark .modal-header,
 .dark .tareas-modal__head,
 .dark .metricas-modal__header {
-    background: rgba(15, 29, 50, 0.98) !important;
+    background: #161920 !important;
     color: #f8fafc !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid #2a2f3a !important;
 }
 
 .modal-title,
@@ -1117,11 +1119,13 @@ html.dark .metricas-modal__body,
 html.dark .metricas-modal__footer,
 html.dark .modal-body,
 html.dark .modal-footer,
+html.dark .tareas-modal__body,
+html.dark .tareas-modal__foot,
 .dark .metricas-modal__body,
 .dark .metricas-modal__footer {
-    background: transparent !important;
+    background: #1c1f26 !important;
     color: #f8fafc !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: #2a2f3a !important;
 }
 
 html.dark .modal-header .close,
@@ -1308,13 +1312,7 @@ html.dark .dash-kpi,
 html.dark .dash-panel,
 html.dark .dash-chart,
 html.dark .dash-quick,
-html.dark .act-panel,
-html.dark .modal-content,
-html.dark .metricas-modal__dialog,
-html.dark .tareas-modal,
-html.dark .erp-modal-panel,
-html.dark .fixed.inset-0 > .relative.flex,
-html.dark .fixed.inset-0 > .relative.w-full {
+html.dark .act-panel {
     background: rgba(255, 255, 255, 0.08) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 20px !important;
@@ -1332,8 +1330,8 @@ html.dark .modal-header,
 html.dark .metricas-modal__header,
 html.dark .tareas-modal__head,
 html.dark .erp-modal-panel__bar {
-    background: transparent !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: #161920 !important;
+    border-bottom: 1px solid #2a2f3a !important;
 }
 
 html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus,
@@ -1459,6 +1457,157 @@ html.dark .bg-gray-100,
 html.dark .bg-slate-50,
 html.dark .bg-slate-100 {
     background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Modales: la caja es sólida. El velo y el blur se quedan en el fondo, no en el panel. */
+html.dark .modal-content,
+html.dark .metricas-modal__dialog,
+html.dark .tareas-modal,
+html.dark .erp-modal-panel,
+html.dark .erp-modal-card,
+html.dark .swal2-popup,
+html.dark .sweet-alert,
+html.dark .mant-modal > .flex,
+html.dark .fixed.inset-0 > .relative,
+html.dark .fixed.inset-0 > .flex > .relative {
+    background: #1c1f26 !important;
+    background-color: #1c1f26 !important;
+    color: #f3f4f6 !important;
+    border-color: #2a2f3a !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html.dark .modal-content .bg-white,
+html.dark .modal-content .bg-gray-50,
+html.dark .modal-content .bg-gray-100,
+html.dark .modal-content .bg-slate-50,
+html.dark .modal-content .bg-slate-100,
+html.dark .metricas-modal .bg-white,
+html.dark .metricas-modal .bg-gray-50,
+html.dark .metricas-modal .bg-gray-100,
+html.dark .metricas-modal .bg-slate-50,
+html.dark .metricas-modal .bg-slate-100,
+html.dark .tareas-modal .bg-white,
+html.dark .tareas-modal .bg-gray-50,
+html.dark .tareas-modal .bg-gray-100,
+html.dark .tareas-modal .bg-slate-50,
+html.dark .erp-modal-panel .bg-white,
+html.dark .erp-modal-panel .bg-gray-50,
+html.dark .erp-modal-panel .bg-slate-50,
+html.dark .mant-modal .bg-white,
+html.dark .mant-modal .bg-gray-50,
+html.dark .mant-modal .bg-gray-100,
+html.dark .mant-modal .bg-slate-50,
+html.dark .swal2-popup .bg-white,
+html.dark .fixed.inset-0 .bg-white,
+html.dark .fixed.inset-0 .bg-gray-50,
+html.dark .fixed.inset-0 .bg-gray-100,
+html.dark .fixed.inset-0 .bg-slate-50,
+html.dark .fixed.inset-0 .bg-slate-100 {
+    background-color: #1c1f26 !important;
+}
+
+html.dark .modal-header,
+html.dark .metricas-modal__header,
+html.dark .tareas-modal__head,
+html.dark .erp-modal-panel__bar,
+html.dark .fixed.inset-0 > .relative > .flex-shrink-0,
+html.dark .fixed.inset-0 > .relative > .shrink-0,
+html.dark .mant-modal > .flex > .flex-shrink-0 {
+    background: #161920 !important;
+    background-color: #161920 !important;
+    color: #f8fafc !important;
+    border-bottom-color: #2a2f3a !important;
+}
+
+html.dark .modal-body,
+html.dark .modal-footer,
+html.dark .metricas-modal__body,
+html.dark .metricas-modal__footer,
+html.dark .tareas-modal__body,
+html.dark .tareas-modal__foot,
+html.dark .erp-modal-panel__lienzo {
+    background: #1c1f26 !important;
+    background-color: #1c1f26 !important;
+    color: #e5e7eb !important;
+}
+
+html.dark .fixed.inset-0 .dark\:bg-slate-900,
+html.dark .mant-modal .dark\:bg-slate-900,
+html.dark .modal-content .dark\:bg-slate-900,
+html.dark .fixed.inset-0 .dark\:bg-\[\#1A1D24\],
+html.dark .mant-modal .dark\:bg-\[\#1A1D24\] {
+    background-color: #1a1d24 !important;
+}
+
+html.dark .fixed.inset-0 .dark\:bg-slate-800,
+html.dark .mant-modal .dark\:bg-slate-800,
+html.dark .fixed.inset-0 .dark\:bg-gray-800,
+html.dark .mant-modal .dark\:bg-gray-800 {
+    background-color: #1f2937 !important;
+}
+
+html.dark .fixed.inset-0 .dark\:bg-\[\#0F1116\],
+html.dark .mant-modal .dark\:bg-\[\#0F1116\] {
+    background-color: #0f1116 !important;
+}
+
+/* Campos del modal: el select nativo (cascada) y Select2 comparten la misma caja. */
+html.dark .fixed.inset-0 select.bg-gray-50,
+html.dark .mant-modal select.bg-gray-50,
+html.dark .metricas-modal select,
+html.dark .modal-content select,
+html.dark .tareas-modal select,
+html.dark .erp-modal-panel select,
+html.dark .fixed.inset-0 input.bg-gray-50:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+html.dark .fixed.inset-0 textarea.bg-gray-50,
+html.dark .mant-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+html.dark .mant-modal textarea,
+html.dark .metricas-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+html.dark .metricas-modal textarea,
+html.dark .metricas-modal .form-control,
+html.dark .modal-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+html.dark .modal-content textarea,
+html.dark .modal-content .form-control,
+html.dark .tareas-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+html.dark .tareas-modal textarea,
+html.dark .tareas-modal .form-control,
+html.dark .select2-container--default .select2-selection--single,
+html.dark .select2-container--default .select2-selection--multiple {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border: 1px solid #374151 !important;
+    border-radius: 8px !important;
+    min-height: 2.5rem;
+    color-scheme: dark;
+}
+
+html.dark .fixed.inset-0 select.bg-gray-50,
+html.dark .mant-modal select.bg-gray-50,
+html.dark .metricas-modal select,
+html.dark .modal-content select,
+html.dark .tareas-modal select,
+html.dark .erp-modal-panel select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239ca3af' stroke-width='1.8'%3E%3Cpath d='M5 7.5 10 12.5 15 7.5'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.7rem center !important;
+    background-size: 1rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 2.2rem !important;
+}
+
+html.dark .fixed.inset-0 select.bg-gray-50:disabled,
+html.dark .mant-modal select.bg-gray-50:disabled,
+html.dark .metricas-modal select:disabled,
+html.dark .modal-content select:disabled,
+html.dark .tareas-modal select:disabled {
+    background-color: #1f2937 !important;
+    color: #9ca3af !important;
+    opacity: 1 !important;
 }
 
 /* Pasteles de Tailwind: en oscuro el fondo se queda claro y el texto dark: se aclara, y se pierde el contraste. */

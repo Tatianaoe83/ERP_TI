@@ -395,7 +395,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                 if (
                     $ticket->FechaInicioProgreso
                     && $ticket->tiempo_respuesta !== null
-                    && in_array($ticket->Estatus, ['En progreso', 'Cerrado'], true)
+                    && in_array($ticket->Estatus, ['En progreso', 'Pausado', 'Cerrado'], true)
                 ) {
                     $horasRespuesta[] = (float) $ticket->tiempo_respuesta;
                 }
@@ -406,7 +406,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
                 if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                     try {
-                        $diffRes = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
+                        $diffRes = max(0, \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso) - (float) ($ticket->HorasPausadas ?? 0));
                         $tablaCategoria[$categoria]['segundos_resolucion'][] = $diffRes;
                         $segundosTotales[] = $diffRes;
 
@@ -434,7 +434,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
                 if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                     try {
-                        $diffRes = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
+                        $diffRes = max(0, \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso) - (float) ($ticket->HorasPausadas ?? 0));
                         $segundosTotalesAnt[] = $diffRes;
 
                         if ($diffRes <= 8) {
@@ -496,7 +496,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
             if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                 try {
-                    $tablaResponsableDetalle[$clave]['segundos'][] = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
+                    $tablaResponsableDetalle[$clave]['segundos'][] = max(0, \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso) - (float) ($ticket->HorasPausadas ?? 0));
                 } catch (\Exception $e) {
                 }
             }
@@ -546,7 +546,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
             if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                 try {
-                    $tablaCategoriaDetallada[$clave]['segundos'][] = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
+                    $tablaCategoriaDetallada[$clave]['segundos'][] = max(0, \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso) - (float) ($ticket->HorasPausadas ?? 0));
                 } catch (\Exception $e) {
                 }
             }

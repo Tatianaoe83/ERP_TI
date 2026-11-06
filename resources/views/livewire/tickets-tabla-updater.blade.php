@@ -23,6 +23,7 @@
                 <option value="">Todos los estados</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="En progreso">En progreso</option>
+                <option value="Pausado">Pausado</option>
                 <option value="Cerrado">Cerrado</option>
             </select>
         </div>
@@ -118,6 +119,7 @@
                             <span class="erp-chip
                                 @if($estadoActual == 'Pendiente') erp-chip--aviso
                                 @elseif($estadoActual == 'En progreso') erp-chip--info
+                                @elseif($estadoActual == 'Pausado') erp-chip--acento
                                 @elseif($estadoActual == 'Cerrado') erp-chip--ok
                                 @else erp-chip--neutro
                                 @endif">

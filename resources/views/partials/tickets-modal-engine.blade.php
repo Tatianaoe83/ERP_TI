@@ -2,7 +2,7 @@
     // Default para vistas que no pasan $ticketsStatus (el modal global del layout).
     // En /tickets llega con datos reales; en otras vistas, contadores en cero.
     // Mantenimiento usa otro esquema (pendiente, en_proceso, …): no reutilizar esa variable.
-    $defaultTicketsStatus = ['nuevos' => [], 'proceso' => [], 'resueltos' => []];
+    $defaultTicketsStatus = ['nuevos' => [], 'proceso' => [], 'pausado' => [], 'resueltos' => []];
     $esTicketsSoporte = isset($ticketsStatus)
         && is_array($ticketsStatus)
         && array_key_exists('nuevos', $ticketsStatus)
@@ -66,6 +66,7 @@
             paginaLista: {
                 'nuevos': 1,
                 'proceso': 1,
+                'pausado': 1,
                 'resueltos': 1
             },
             paginaTabla: 1,
@@ -74,14 +75,16 @@
             ordenColumna: 'fecha',
             ordenDireccion: 'desc',
             ticketsLista: {
-                'nuevos': {{ count($ticketsStatus['nuevos']) }},
-                'proceso': {{ count($ticketsStatus['proceso']) }},
-                'resueltos': {{ count($ticketsStatus['resueltos']) }}
+                'nuevos': {{ count($ticketsStatus['nuevos'] ?? []) }},
+                'proceso': {{ count($ticketsStatus['proceso'] ?? []) }},
+                'pausado': {{ count($ticketsStatus['pausado'] ?? []) }},
+                'resueltos': {{ count($ticketsStatus['resueltos'] ?? []) }}
             },
             ultimaActualizacionTickets: {
-                'nuevos': {{ count($ticketsStatus['nuevos']) }},
-                'proceso': {{ count($ticketsStatus['proceso']) }},
-                'resueltos': {{ count($ticketsStatus['resueltos']) }}
+                'nuevos': {{ count($ticketsStatus['nuevos'] ?? []) }},
+                'proceso': {{ count($ticketsStatus['proceso'] ?? []) }},
+                'pausado': {{ count($ticketsStatus['pausado'] ?? []) }},
+                'resueltos': {{ count($ticketsStatus['resueltos'] ?? []) }}
             },
             ticketsTabla: [],
             // Variable para rastrear tickets que se están moviendo manualmente
@@ -162,25 +165,28 @@
                             // Actualizar solo estado externo. Livewire repinta las columnas; no mutar su DOM manualmente.
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
                             const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
+                            const pausadoCount = datos.ticketsStatus.pausado ? datos.ticketsStatus.pausado.length : 0;
                             const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
                             
                             this.ticketsLista = {
                                 nuevos: nuevosCount,
                                 proceso: procesoCount,
+                                pausado: pausadoCount,
                                 resueltos: resueltosCount
                             };
                             
-                            this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
+                            this.actualizarContadoresTickets(nuevosCount, procesoCount, pausadoCount, resueltosCount);
                             
                         }
                     }
                 };
                 
                 // Función para actualizar los contadores de tickets en los headers
-                this.actualizarContadoresTickets = (nuevos, proceso, resueltos) => {
+                this.actualizarContadoresTickets = (nuevos, proceso, pausado, resueltos) => {
                     const contadores = {
                         'nuevos': nuevos,
                         'proceso': proceso,
+                        'pausado': pausado,
                         'resueltos': resueltos
                     };
                     
@@ -219,18 +225,19 @@
                     const estadoACategoria = {
                         'Pendiente': 'nuevos',
                         'En progreso': 'proceso',
+                        'Pausado': 'pausado',
                         'Cerrado': 'resueltos'
                     };
                     
                     // Primero, identificar qué tickets han cambiado de estado
                     const ticketsPorId = {};
-                    ['nuevos', 'proceso', 'resueltos'].forEach(categoria => {
+                    ['nuevos', 'proceso', 'pausado', 'resueltos'].forEach(categoria => {
                         const tickets = ticketsStatus[categoria] || [];
                         tickets.forEach(ticket => {
                             ticketsPorId[ticket.id] = {
                                 ...ticket,
                                 categoriaActual: categoria,
-                                estado: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado')
+                                estado: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : (categoria === 'pausado' ? 'Pausado' : 'Cerrado'))
                             };
                         });
                     });
@@ -299,8 +306,9 @@
                                     elemento.setAttribute('data-categoria', categoriaNueva);
                                     
                                     // Actualizar wire:key con el nuevo estatus para que Livewire lo rastree correctamente
-                                    const nuevoEstatus = categoriaNueva === 'nuevos' ? 'Pendiente' : 
-                                                         (categoriaNueva === 'proceso' ? 'En progreso' : 'Cerrado');
+                                    const nuevoEstatus = categoriaNueva === 'nuevos' ? 'Pendiente' :
+                                                         (categoriaNueva === 'proceso' ? 'En progreso' :
+                                                         (categoriaNueva === 'pausado' ? 'Pausado' : 'Cerrado'));
                                     const isLista = elemento.closest('[x-show*="lista"]') || elemento.closest('.divide-y');
                                     const prefix = isLista ? 'ticket-lista-' : 'ticket-';
                                     elemento.setAttribute('wire:key', `${prefix}${ticket.id}-${nuevoEstatus}`);
@@ -496,7 +504,7 @@
                             let seccionActual = null;
                             
                             if (this.vista === 'kanban') {
-                                const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                                const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                                 const columnasNuevas = doc.querySelectorAll('.kanban-root .grid > div');
                                 const columnasActuales = document.querySelectorAll('.kanban-root .grid > div');
                                 
@@ -535,7 +543,7 @@
                         const grid = document.querySelector('.kanban-root .grid');
                         if (grid) {
                             const columnas = Array.from(grid.children);
-                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                             const columna = columnas[indices[categoria]];
                             if (columna) return columna.querySelector('.flex-1.overflow-y-auto');
                         }
@@ -553,14 +561,14 @@
                                     el.querySelector && el.querySelector('.divide-y')
                                 );
                                 if (seccionesAlternativas.length > 0) {
-                                    const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                                    const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                                     const seccion = seccionesAlternativas[indices[categoria]];
                                     return seccion ? seccion.querySelector('.divide-y') : null;
                                 }
                             }
                             
                             // Mapeo de categorías a índices de sección (orden: nuevos, proceso, resueltos)
-                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                             const indiceNueva = indices[categoria];
                             const seccion = todasLasSecciones[indiceNueva];
                             
@@ -1380,7 +1388,7 @@
 
                     elementos.forEach(el => {
                         const categoria = el.getAttribute('data-categoria');
-                        if (!['nuevos', 'proceso', 'resueltos'].includes(categoria)) return;
+                        if (!['nuevos', 'proceso', 'pausado', 'resueltos'].includes(categoria)) return;
 
                         // Usar getAttribute para obtener los valores incluso si el elemento está oculto
                         const ticketId = el.getAttribute('data-ticket-id') || el.dataset.ticketId;
@@ -1416,7 +1424,7 @@
                                 departamento: ticketDepartamento || '',
                                 obra: ticketObra || '',
                                 fecha: ticketFecha || '',
-                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
+                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : (categoria === 'pausado' ? 'Pausado' : 'Cerrado')),
                                 responsable: ticketResponsable ? ticketResponsable.trim() : '',
                                 tiempoTranscurrido: ticketTiempoTranscurrido ? ticketTiempoTranscurrido.trim() : '',
                                 tiempoEstimado: ticketTiempoEstimado ? ticketTiempoEstimado.trim() : '',
@@ -1741,6 +1749,9 @@
                             } else if (data.ticket.Estatus === 'En progreso' || data.ticket.Estatus === 'Proceso') {
                                 nuevaCategoria = 'proceso';
                                 nuevoEstatusTexto = 'En progreso';
+                            } else if (data.ticket.Estatus === 'Pausado') {
+                                nuevaCategoria = 'pausado';
+                                nuevoEstatusTexto = 'Pausado';
                             } else if (data.ticket.Estatus === 'Cerrado' || data.ticket.Estatus === 'Resuelto') {
                                 nuevaCategoria = 'resueltos';
                                 nuevoEstatusTexto = 'Cerrado';
@@ -1775,6 +1786,8 @@
                     categoriaAnterior = 'nuevos';
                 } else if (estatusAnterior === 'En progreso' || estatusAnterior === 'Proceso') {
                     categoriaAnterior = 'proceso';
+                } else if (estatusAnterior === 'Pausado') {
+                    categoriaAnterior = 'pausado';
                 } else if (estatusAnterior === 'Cerrado' || estatusAnterior === 'Resuelto') {
                     categoriaAnterior = 'resueltos';
                 }

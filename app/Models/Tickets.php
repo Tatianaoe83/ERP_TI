@@ -74,6 +74,8 @@ class Tickets extends Model
         'TertipoID',
         'FechaInicioProgreso',
         'FechaFinProgreso',
+        'FechaInicioPausa',
+        'HorasPausadas',
         'fecha_ultima_notificacion_exceso'
     ];
 
@@ -99,6 +101,8 @@ class Tickets extends Model
         'TertipoID' => 'integer',
         'FechaInicioProgreso' => 'datetime',
         'FechaFinProgreso' => 'datetime',
+        'FechaInicioPausa' => 'datetime',
+        'HorasPausadas' => 'float',
         'fecha_ultima_notificacion_exceso' => 'datetime'
     ];
 
@@ -210,6 +214,18 @@ class Tickets extends Model
                     $ticket->FechaInicioProgreso = now();
                     // Resetear la fecha de última notificación cuando inicia progreso
                     $ticket->fecha_ultima_notificacion_exceso = null;
+                }
+
+                if ($nuevoEstatus === 'Pausado' && !$ticket->FechaInicioPausa) {
+                    $ticket->FechaInicioPausa = now();
+                }
+
+                if ($estatusAnterior === 'Pausado' && $nuevoEstatus !== 'Pausado' && $ticket->FechaInicioPausa) {
+                    $ticket->HorasPausadas = round(
+                        (float) $ticket->HorasPausadas + $ticket->calcularHorasLaborales($ticket->FechaInicioPausa, now()),
+                        2
+                    );
+                    $ticket->FechaInicioPausa = null;
                 }
 
                 // Si cambia a "Cerrado" y tiene fecha de inicio pero no de fin
@@ -390,7 +406,36 @@ class Tickets extends Model
 
         $fechaFin = $this->FechaFinProgreso ?? now();
 
-        return $this->calcularHorasLaborales($this->FechaInicioProgreso, $fechaFin);
+        return $this->horasTrabajoHasta($fechaFin);
+    }
+
+    /**
+     * Horas laborales de trabajo, sin el tiempo que el ticket estuvo pausado.
+     */
+    public function horasTrabajoHasta($fechaFin): float
+    {
+        if (!$this->FechaInicioProgreso || !$fechaFin) {
+            return 0;
+        }
+
+        $fin = \Carbon\Carbon::parse($fechaFin);
+
+        return max(0, round(
+            $this->calcularHorasLaborales($this->FechaInicioProgreso, $fin) - $this->horasPausadasHasta($fin),
+            2
+        ));
+    }
+
+    public function horasPausadasHasta($referencia = null): float
+    {
+        $referencia = $referencia ? \Carbon\Carbon::parse($referencia) : now();
+        $horas = (float) ($this->HorasPausadas ?? 0);
+
+        if ($this->Estatus === 'Pausado' && $this->FechaInicioPausa) {
+            $horas += $this->calcularHorasLaborales($this->FechaInicioPausa, $referencia);
+        }
+
+        return round($horas, 2);
     }
 
     /**
@@ -403,7 +448,7 @@ class Tickets extends Model
             return null;
         }
 
-        return $this->calcularHorasLaborales($this->FechaInicioProgreso, $this->FechaFinProgreso);
+        return $this->horasTrabajoHasta($this->FechaFinProgreso);
     }
 
     /**
@@ -463,12 +508,14 @@ class Tickets extends Model
     public const COLUMNAS_VISTA = [
         'nuevos'    => 'Nuevos',
         'proceso'   => 'En Progreso',
+        'pausado'   => 'Pausado',
         'resueltos' => 'Resueltos',
     ];
 
     public const COLORES_COLUMNA = [
         'nuevos'    => 'bg-yellow-500',
         'proceso'   => 'bg-blue-500',
+        'pausado'   => 'bg-orange-500',
         'resueltos' => 'bg-green-500',
     ];
 
@@ -512,6 +559,12 @@ class Tickets extends Model
                 'border' => 'border-red-100 dark:border-red-800',
                 'bar'    => 'bg-red-500',
             ],
+            'pausado'    => [
+                'bg'     => 'bg-orange-50 dark:bg-orange-900/20',
+                'text'   => 'text-orange-700 dark:text-orange-300',
+                'border' => 'border-orange-100 dark:border-orange-800',
+                'bar'    => 'bg-orange-400',
+            ],
         ];
 
         $estado = $tiempoInfo['estado'] ?? 'normal';
@@ -521,7 +574,9 @@ class Tickets extends Model
             'estimado'     => $tiempoInfo['estimado'],
             'porcentaje'   => min(100, (float) ($tiempoInfo['porcentaje'] ?? 0)),
             'estado'       => $estado,
-            'texto'        => "{$tiempoInfo['transcurrido']}h / {$tiempoInfo['estimado']}h",
+            'texto'        => $estado === 'pausado'
+                ? "{$tiempoInfo['transcurrido']}h / {$tiempoInfo['estimado']}h · en pausa"
+                : "{$tiempoInfo['transcurrido']}h / {$tiempoInfo['estimado']}h",
             'estilo'       => $estilos[$estado] ?? $estilos['normal'],
         ];
     }
@@ -532,7 +587,7 @@ class Tickets extends Model
         $tiemposProgreso = [];
 
         $ticketsEnProgreso = collect($tickets)
-            ->where('Estatus', 'En progreso')
+            ->whereIn('Estatus', ['En progreso', 'Pausado'])
             ->whereNotNull('FechaInicioProgreso');
 
         foreach ($ticketsEnProgreso as $ticket) {
@@ -552,12 +607,14 @@ class Tickets extends Model
                 'transcurrido' => round($tiempoTranscurrido, 1),
                 'estimado'     => round($tiempoEstimadoHoras, 1),
                 'porcentaje'   => round($porcentajeUsado, 1),
-                'estado'       => $porcentajeUsado >= 100
-                    ? 'agotado'
-                    : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal'),
+                'estado'       => $ticket->Estatus === 'Pausado'
+                    ? 'pausado'
+                    : ($porcentajeUsado >= 100
+                        ? 'agotado'
+                        : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')),
             ];
 
-            if ($tiempoTranscurrido > $tiempoEstimadoHoras) {
+            if ($ticket->Estatus === 'En progreso' && $tiempoTranscurrido > $tiempoEstimadoHoras) {
                 $tiempoExcedido = round($tiempoTranscurrido - $tiempoEstimadoHoras, 2);
                 $porcentajeExcedido = round(($tiempoTranscurrido / $tiempoEstimadoHoras) * 100, 1);
 

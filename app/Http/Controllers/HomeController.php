@@ -237,7 +237,7 @@ class HomeController extends Controller
         }
 
         $operacion = [
-            'tickets_abiertos' => $this->contarSeguro(fn () => (clone $ticketsBase)->whereIn('Estatus', ['Pendiente', 'En progreso'])->count()),
+            'tickets_abiertos' => $this->contarSeguro(fn () => (clone $ticketsBase)->whereIn('Estatus', ['Pendiente', 'En progreso', 'Pausado'])->count()),
             'tickets_pendientes' => $this->contarSeguro(fn () => (clone $ticketsBase)->where('Estatus', 'Pendiente')->count()),
             'tickets_progreso' => $this->contarSeguro(fn () => (clone $ticketsBase)->where('Estatus', 'En progreso')->count()),
             'tickets_estatus' => $this->contarSeguro(function () use ($ticketsBase) {

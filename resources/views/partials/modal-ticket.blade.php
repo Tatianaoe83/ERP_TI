@@ -232,10 +232,12 @@
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
                    dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="Pendiente">Pendiente</option>
-                                    <option value="En progreso">En progreso</option>
-                                    <option value="Cerrado">Cerrado</option>
+                                    <option value="Pendiente" :disabled="selected.estatus && selected.estatus !== 'Pendiente'">Pendiente</option>
+                                    <option value="En progreso" :disabled="selected.estatus === 'Cerrado'">En progreso</option>
+                                    <option value="Pausado" :disabled="selected.estatus && selected.estatus !== 'En progreso' && selected.estatus !== 'Pausado'">Pausado</option>
+                                    <option value="Cerrado" :disabled="selected.estatus === 'Pendiente'">Cerrado</option>
                                 </select>
+                                <p x-show="ticketEstatus === 'Pausado'" class="mt-1 text-xs text-orange-600 dark:text-orange-300">El tiempo en pausa no cuenta para métricas ni producción.</p>
                             </div>
 
                             <div>
@@ -257,12 +259,12 @@
                                 </select>
                             </div>
 
-                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'"
+                            <div x-show="(selected.estatus === 'En progreso' || selected.estatus === 'Pausado') && ticketEstatus !== 'Cerrado'"
                                 class="p-2 rounded-md text-xs border flex items-center gap-2
                 bg-blue-50 text-blue-700 border-blue-200
                 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
                                 <i class="fas fa-info-circle"></i>
-                                <span>El Responsable no se puede modificar cuando el ticket está en "En progreso"</span>
+                                <span>El Responsable no se puede modificar mientras el ticket está en progreso o en pausa</span>
                             </div>
 
                             <div>
@@ -271,7 +273,7 @@
                                 </label>
                                 <select
                                     x-model="ticketResponsableTI"
-                                    :disabled="selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')"
+                                    :disabled="selected.estatus === 'Cerrado' || ((selected.estatus === 'En progreso' || selected.estatus === 'Pausado') && ticketEstatus !== 'Cerrado')"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 

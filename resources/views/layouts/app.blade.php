@@ -795,6 +795,11 @@
             color: #1d4ed8;
             border-color: #bfdbfe;
         }
+        .kpi-chip--pausado {
+            background: #fff7ed;
+            color: #c2410c;
+            border-color: #fed7aa;
+        }
         html.dark .kpi-chip--normal,
         html.dark .kpi-chip--cumplido {
             background: rgba(22, 163, 74, 0.18) !important;
@@ -834,6 +839,14 @@
         }
         html.dark .kpi-chip--en_tiempo * {
             color: #93c5fd !important;
+        }
+        html.dark .kpi-chip--pausado {
+            background: rgba(234, 88, 12, 0.18) !important;
+            border-color: rgba(251, 146, 60, 0.4) !important;
+            color: #fdba74 !important;
+        }
+        html.dark .kpi-chip--pausado * {
+            color: #fdba74 !important;
         }
         .sol-approvals {
             display: flex;
@@ -1049,7 +1062,7 @@
             background: transparent !important;
         }
     </style>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023o">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261104b">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1063,7 +1076,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
-    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261023o">
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261104b">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">

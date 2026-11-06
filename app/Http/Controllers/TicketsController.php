@@ -66,6 +66,7 @@ class TicketsController extends Controller
         $ticketsStatus = [
             'nuevos'    => collect(),
             'proceso'   => collect(),
+            'pausado'   => collect(),
             'resueltos' => collect(),
         ];
         $metricasProductividad = [];
@@ -92,6 +93,7 @@ class TicketsController extends Controller
             $ticketsStatus = [
                 'nuevos'    => $tickets->where('Estatus', 'Pendiente'),
                 'proceso'   => $tickets->where('Estatus', 'En progreso'),
+                'pausado'   => $tickets->where('Estatus', 'Pausado'),
                 'resueltos' => $tickets->where('Estatus', 'Cerrado'),
             ];
             $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin, $unidadesSeleccionadas);
@@ -179,6 +181,7 @@ class TicketsController extends Controller
         $distribucionEstado = [
             'Pendiente'   => $ticketsDelMes->where('Estatus', 'Pendiente')->count(),
             'En progreso' => $ticketsDelMes->where('Estatus', 'En progreso')->count(),
+            'Pausado'     => $ticketsDelMes->where('Estatus', 'Pausado')->count(),
             'Cerrado'     => $ticketsDelMes->where('Estatus', 'Cerrado')->count(),
         ];
 
@@ -199,7 +202,7 @@ class TicketsController extends Controller
         );
 
         $ticketsConRespuesta = $ticketsDelMes->filter(
-            fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null && ($t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado')
+            fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null && in_array($t->Estatus, ['En progreso', 'Pausado', 'Cerrado'], true)
         );
 
         $tiempoPromedioRespuesta = 0;
@@ -236,6 +239,7 @@ class TicketsController extends Controller
                     'total'      => $grupo->count(),
                     'cerrados'   => $grupo->where('Estatus', 'Cerrado')->count(),
                     'en_progreso' => $grupo->where('Estatus', 'En progreso')->count(),
+                    'pausados'    => $grupo->where('Estatus', 'Pausado')->count(),
                     'pendientes' => $grupo->where('Estatus', 'Pendiente')->count(),
                     'problemas'  => $grupo->where('Clasificacion', 'Problema')->count(),
                     'servicios'  => $grupo->where('Clasificacion', 'Servicio')->count(),
@@ -245,7 +249,7 @@ class TicketsController extends Controller
         $ticketsPorPrioridad = $ticketsDelMes->groupBy('Prioridad')->map(fn($g) => $g->count());
 
         $ticketsPorClasificacion = $ticketsDelMes->filter(
-            fn($t) => $t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado'
+            fn($t) => in_array($t->Estatus, ['En progreso', 'Pausado', 'Cerrado'], true)
         )->groupBy('Clasificacion')->map(fn($g) => $g->count());
 
         $diffDias = $fechaInicioMes->diffInDays($fechaFinMes);
@@ -452,7 +456,7 @@ class TicketsController extends Controller
             );
             // Filtrar tickets EN PROGRESO para tiempo de respuesta (igual que KPI)
             $ticketsEnProgresoComp = $ticketsMesComp->filter(
-                fn($t) => ($t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado') && $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
+                fn($t) => in_array($t->Estatus, ['En progreso', 'Pausado', 'Cerrado'], true) && $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
             );
             $tiempoPromedioRespuestaComp = $ticketsEnProgresoComp->count() > 0
                 ? round($ticketsEnProgresoComp->avg(fn($t) => $t->tiempo_respuesta ?? 0), 1)
@@ -729,7 +733,8 @@ class TicketsController extends Controller
 
             $transicionesValidas = [
                 'Pendiente'   => ['En progreso'],
-                'En progreso' => ['Cerrado'],
+                'En progreso' => ['Pausado', 'Cerrado'],
+                'Pausado'     => ['En progreso', 'Cerrado'],
                 'Cerrado'     => [],
             ];
 
@@ -756,12 +761,12 @@ class TicketsController extends Controller
                 }
             }
 
-            if ($estatusAnterior === 'En progreso' && $request->has('responsableTI')) {
+            if (in_array($estatusAnterior, ['En progreso', 'Pausado'], true) && $request->has('responsableTI')) {
                 $nuevoResponsable = $request->input('responsableTI');
                 if ($nuevoEstatus !== 'Cerrado' && $nuevoResponsable != $ticket->ResponsableTI) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'No se puede modificar el Responsable cuando el ticket está en "En progreso"',
+                        'message' => 'No se puede modificar el Responsable cuando el ticket está en progreso o en pausa',
                     ], 400);
                 }
             }
@@ -772,7 +777,7 @@ class TicketsController extends Controller
             if ($request->has('estatus'))         $ticket->Estatus        = $request->input('estatus');
 
             if ($request->has('responsableTI')) {
-                if ($estatusAnterior !== 'En progreso' || $nuevoEstatus === 'Cerrado') {
+                if (!in_array($estatusAnterior, ['En progreso', 'Pausado'], true) || $nuevoEstatus === 'Cerrado') {
                     $ticket->ResponsableTI = $request->input('responsableTI') ?: null;
                 }
             }
@@ -1749,13 +1754,15 @@ class TicketsController extends Controller
                     ($incidenciasPorGerencia[$gerenciaNombre]['por_responsable'][$responsableNombre] ?? 0) + 1;
             } elseif ($ticket->Estatus === 'En progreso') {
                 $incidenciasPorGerencia[$gerenciaNombre]['en_progreso']++;
+            } elseif ($ticket->Estatus === 'Pausado') {
+                $incidenciasPorGerencia[$gerenciaNombre]['pausados'] = ($incidenciasPorGerencia[$gerenciaNombre]['pausados'] ?? 0) + 1;
             } else {
                 $incidenciasPorGerencia[$gerenciaNombre]['pendientes']++;
             }
         }
 
         $ticketsConRespuesta  = $tickets->filter(
-            fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null && ($t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado')
+            fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null && in_array($t->Estatus, ['En progreso', 'Pausado', 'Cerrado'], true)
         );
         $ticketsConResolucion = $tickets->filter(
             fn($t) => $t->Estatus === 'Cerrado' && $t->FechaInicioProgreso && $t->FechaFinProgreso
@@ -1781,6 +1788,7 @@ class TicketsController extends Controller
                     'total'       => 0,
                     'cerrados'    => 0,
                     'en_progreso' => 0,
+                    'pausados'    => 0,
                     'pendientes'  => 0,
                     'problemas'   => 0,
                     'servicios'   => 0,
@@ -1793,6 +1801,7 @@ class TicketsController extends Controller
 
             if ($ticket->Estatus === 'Cerrado')          $totalesPorEmpleado[$empleadoNombre]['cerrados']++;
             elseif ($ticket->Estatus === 'En progreso')  $totalesPorEmpleado[$empleadoNombre]['en_progreso']++;
+            elseif ($ticket->Estatus === 'Pausado')      $totalesPorEmpleado[$empleadoNombre]['pausados']++;
             else                                          $totalesPorEmpleado[$empleadoNombre]['pendientes']++;
         }
 
@@ -1817,6 +1826,7 @@ class TicketsController extends Controller
                     'total'       => 0,
                     'cerrados'    => 0,
                     'en_progreso' => 0,
+                    'pausados'    => 0,
                     'pendientes'  => 0,
                     'problemas'   => 0,
                     'servicios'   => 0,
@@ -1829,6 +1839,7 @@ class TicketsController extends Controller
 
             if ($ticket->Estatus === 'Cerrado')          $ticketsPorGerenciaResponsable[$key]['cerrados']++;
             elseif ($ticket->Estatus === 'En progreso')  $ticketsPorGerenciaResponsable[$key]['en_progreso']++;
+            elseif ($ticket->Estatus === 'Pausado')      $ticketsPorGerenciaResponsable[$key]['pausados']++;
             else                                          $ticketsPorGerenciaResponsable[$key]['pendientes']++;
         }
 

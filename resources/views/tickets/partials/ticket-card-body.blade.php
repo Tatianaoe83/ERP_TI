@@ -29,7 +29,7 @@
     <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug flex-1 min-w-0">
         {{ $descripcionTarjeta }}
     </p>
-    @if($columna === 'proceso')
+    @if($columna === 'proceso' || $columna === 'pausado')
         @include('tickets.partials.notificacion-badge', ['notificaciones' => $ticket['notificaciones'] ?? 0])
     @endif
 </div>
@@ -52,7 +52,7 @@
         @include('tickets.partials.tiempo-tarjeta', ['tiempo' => $ticket['tiempo']])
     @endif
 
-    @if($columna === 'proceso' && !empty($ticket['responsable_nombre']))
+    @if(in_array($columna, ['proceso', 'pausado'], true) && !empty($ticket['responsable_nombre']))
     <div class="tk-person">
         <i class="fas fa-user-tie text-[10px] opacity-80"></i>
         <span class="truncate font-medium">{{ $ticket['responsable_nombre'] }}</span>
