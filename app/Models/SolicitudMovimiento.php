@@ -66,4 +66,9 @@ class SolicitudMovimiento extends Model
     {
         return $this->hasMany(SolicitudMovimientoLinea::class, 'SolicitudMovimientoID', 'SolicitudMovimientoID')->orderBy('Orden');
     }
+
+    public function pasos()
+    {
+        return $this->hasMany(SolicitudMovimientoPaso::class, 'SolicitudMovimientoID', 'SolicitudMovimientoID')->orderBy('step_order');
+    }
 }

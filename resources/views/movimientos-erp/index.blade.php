@@ -58,7 +58,16 @@
                             <td>{{ $solicitud->solicitante->NombreEmpleado ?? '—' }}</td>
                             <td>{{ $solicitud->autorizador->NombreEmpleado ?? $solicitud->AutorizadorRol }}</td>
                             <td>{{ $solicitud->residente->NombreEmpleado ?? '—' }}</td>
-                            <td><span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span></td>
+                            <td>
+                                <span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span>
+                                @foreach ($solicitud->pasos as $paso)
+                                    @php
+                                        $pasoChip = ['approved' => 'erp-chip--ok', 'rejected' => 'erp-chip--alerta', 'pending' => 'erp-chip--aviso'][$paso->status] ?? 'erp-chip--neutro';
+                                        $pasoTexto = ['approved' => 'Listo', 'rejected' => 'Rechazado', 'pending' => 'Pendiente'][$paso->status] ?? $paso->status;
+                                    @endphp
+                                    <span class="erp-chip {{ $pasoChip }}">{{ $paso->stage_label }} · {{ $pasoTexto }}</span>
+                                @endforeach
+                            </td>
                             <td>
                                 <a href="{{ route('movimientos-erp.show', $solicitud->SolicitudMovimientoID) }}" class="index-action" title="Ver">
                                     <i class="fas fa-eye"></i>

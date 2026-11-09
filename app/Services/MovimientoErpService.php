@@ -6,9 +6,12 @@ use App\Models\CargoMovimiento;
 use App\Models\Empleados;
 use App\Models\Gerencia;
 use App\Models\SolicitudMovimiento;
+use App\Models\SolicitudMovimientoPaso;
+use App\Models\SolicitudMovimientoToken;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class MovimientoErpService
 {
@@ -69,10 +72,10 @@ class MovimientoErpService
             : $this->residentesControl();
 
         $destinatarios = $this->auxiliaresControl()
-            ->merge($this->autorizadoresDe($solicitud))
             ->merge($residentes)
             ->filter()
-            ->unique('EmpleadoID');
+            ->unique('EmpleadoID')
+            ->reject(fn ($persona) => (int) $persona->EmpleadoID === (int) $solicitud->AutorizadorID);
 
         $folio = $solicitud->Folio ?: ('solicitud ' . $solicitud->SolicitudMovimientoID);
         $asunto = 'Solicitud de movimiento ERP ' . $folio;
@@ -164,6 +167,104 @@ class MovimientoErpService
             ->whereHas('puestos', fn ($q) => $q->where('NombrePuesto', 'like', '%DIRECTOR%PROYECT%'))
             ->orderBy('NombreEmpleado')
             ->first();
+    }
+
+    public function abrirFirma(SolicitudMovimiento $solicitud, Empleados $firmante): SolicitudMovimientoToken
+    {
+        $vobo = SolicitudMovimientoPaso::create([
+            'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
+            'step_order' => 1,
+            'stage' => 'vobo',
+            'stage_label' => 'Visto bueno',
+            'approver_empleado_id' => $firmante->EmpleadoID,
+            'status' => 'pending',
+        ]);
+
+        SolicitudMovimientoPaso::create([
+            'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
+            'step_order' => 2,
+            'stage' => 'control',
+            'stage_label' => 'Control aplica',
+            'status' => 'pending',
+        ]);
+
+        return SolicitudMovimientoToken::create([
+            'paso_id' => $vobo->id,
+            'token' => (string) Str::uuid(),
+            'expires_at' => now()->addDays(7),
+        ]);
+    }
+
+    public function renovarFirma(SolicitudMovimiento $solicitud): ?SolicitudMovimientoToken
+    {
+        $paso = $solicitud->pasos()->where('stage', 'vobo')->where('status', 'pending')->first();
+        if (!$paso) {
+            return null;
+        }
+
+        SolicitudMovimientoToken::query()
+            ->where('paso_id', $paso->id)
+            ->whereNull('used_at')
+            ->whereNull('revoked_at')
+            ->update(['revoked_at' => now()]);
+
+        return SolicitudMovimientoToken::create([
+            'paso_id' => $paso->id,
+            'token' => (string) Str::uuid(),
+            'expires_at' => now()->addDays(7),
+        ]);
+    }
+
+    public function cerrarPaso(SolicitudMovimiento $solicitud, string $stage, string $status, ?string $comment, ?int $empleadoId): void
+    {
+        $paso = $solicitud->pasos()->where('stage', $stage)->first();
+        if (!$paso || $paso->status !== 'pending') {
+            return;
+        }
+
+        $paso->status = $status;
+        $paso->comment = $comment;
+        $paso->decided_at = now();
+        $paso->decided_by_empleado_id = $empleadoId;
+        $paso->save();
+
+        $token = SolicitudMovimientoToken::query()
+            ->where('paso_id', $paso->id)
+            ->whereNull('used_at')
+            ->whereNull('revoked_at')
+            ->latest('id')
+            ->first();
+        if ($token) {
+            $token->used_at = now();
+            $token->save();
+        }
+    }
+
+    public function enviarLigaFirma(SolicitudMovimiento $solicitud, Empleados $firmante, SolicitudMovimientoToken $liga): bool
+    {
+        if (empty($firmante->Correo)) {
+            return false;
+        }
+
+        $solicitud->loadMissing(['solicitante', 'obra']);
+
+        try {
+            Mail::send('emails.movimientos.firma', [
+                'solicitud' => $solicitud,
+                'firmante' => $firmante,
+                'url' => url('/revision-movimiento/' . $liga->token),
+                'vence' => optional($liga->expires_at)->format('d/m/Y H:i'),
+            ], function ($mensaje) use ($firmante, $solicitud) {
+                $mensaje->to($firmante->Correo, $firmante->NombreEmpleado)
+                    ->subject('Visto bueno de movimiento ERP #' . $solicitud->SolicitudMovimientoID);
+            });
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo enviar la liga de firma del movimiento ' . $solicitud->SolicitudMovimientoID . ': ' . $e->getMessage());
+
+            return false;
+        }
     }
 
     public function generarFormato(SolicitudMovimiento $solicitud): string

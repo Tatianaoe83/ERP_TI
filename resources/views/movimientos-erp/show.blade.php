@@ -28,6 +28,24 @@
 
     <div class="index-page__card p-4 mb-4">
         <p class="mb-3"><span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span></p>
+        @if ($solicitud->pasos->isNotEmpty())
+            <div class="flex flex-wrap gap-2 mb-4">
+                @foreach ($solicitud->pasos as $paso)
+                    @php
+                        $pasoChip = ['approved' => 'erp-chip--ok', 'rejected' => 'erp-chip--alerta', 'pending' => 'erp-chip--aviso'][$paso->status] ?? 'erp-chip--neutro';
+                        $pasoTexto = ['approved' => 'Listo', 'rejected' => 'Rechazado', 'pending' => 'Pendiente'][$paso->status] ?? $paso->status;
+                    @endphp
+                    <span class="erp-chip {{ $pasoChip }}">{{ $paso->stage_label }} · {{ $pasoTexto }}{{ $paso->approver ? ' · ' . $paso->approver->NombreEmpleado : '' }}</span>
+                @endforeach
+            </div>
+            @php $pasoVobo = $solicitud->pasos->firstWhere('stage', 'vobo'); @endphp
+            @if ($solicitud->Estatus === 'Por autorizar' && $pasoVobo && $pasoVobo->status === 'pending')
+                <form method="POST" action="{{ route('movimientos-erp.reenviar-firma', $solicitud->SolicitudMovimientoID) }}" class="mb-3">
+                    @csrf
+                    <button type="submit" class="index-page__btn-secondary">Reenviar liga de firma</button>
+                </form>
+            @endif
+        @endif
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <p><strong>Solicitó:</strong> {{ $solicitud->solicitante->NombreEmpleado ?? '—' }}{{ $solicitud->solicitante && $solicitud->solicitante->puestos ? ' · ' . $solicitud->solicitante->puestos->NombrePuesto : '' }}</p>
             <p><strong>Obra:</strong> {{ $solicitud->obra->NombreObra ?? '—' }}</p>

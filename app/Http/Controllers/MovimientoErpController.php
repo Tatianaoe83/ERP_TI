@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\CargoMovimiento;
+use App\Models\Empleados;
 use App\Models\Obras;
 use App\Models\SolicitudMovimiento;
 use App\Models\SolicitudMovimientoArchivo;
 use App\Models\SolicitudMovimientoComentario;
+use App\Models\SolicitudMovimientoToken;
 use App\Services\MovimientoErpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,7 +69,7 @@ class MovimientoErpController extends Controller
         $buscar = trim((string) $request->input('q'));
 
         $solicitudes = SolicitudMovimiento::query()
-            ->with(['solicitante', 'obra', 'cargo', 'autorizador', 'residente', 'lineas.cargo'])
+            ->with(['solicitante', 'obra', 'cargo', 'autorizador', 'residente', 'lineas.cargo', 'pasos.approver'])
             ->when($estatus, fn ($q) => $q->where('Estatus', $estatus))
             ->when($buscar !== '', function ($q) use ($buscar) {
                 $q->where(function ($inner) use ($buscar) {
@@ -93,7 +95,7 @@ class MovimientoErpController extends Controller
     public function show(int $id)
     {
         $solicitud = SolicitudMovimiento::query()
-            ->with(['solicitante.puestos', 'obra', 'cargo', 'autorizador.puestos', 'residente', 'archivos', 'comentarios', 'lineas.cargo'])
+            ->with(['solicitante.puestos', 'obra', 'cargo', 'autorizador.puestos', 'residente', 'archivos', 'comentarios', 'lineas.cargo', 'pasos.approver', 'pasos.token'])
             ->findOrFail($id);
 
         return view('movimientos-erp.show', compact('solicitud'));
@@ -129,7 +131,7 @@ class MovimientoErpController extends Controller
             ->with('success', 'Comentario registrado.');
     }
 
-    public function autorizar(Request $request, int $id)
+    public function autorizar(Request $request, int $id, MovimientoErpService $servicio)
     {
         $data = $request->validate([
             'Texto' => 'required|string|max:2000',
@@ -140,11 +142,12 @@ class MovimientoErpController extends Controller
             return back()->with('error', 'Esta solicitud ya no está pendiente de autorización.');
         }
 
-        DB::transaction(function () use ($solicitud, $data) {
+        DB::transaction(function () use ($solicitud, $data, $servicio) {
             $solicitud->Estatus = 'Autorizada';
             $solicitud->Respuesta = $data['Texto'];
             $solicitud->autorizado_en = now();
             $solicitud->save();
+            $servicio->cerrarPaso($solicitud, 'vobo', 'approved', $data['Texto'], $this->empleadoDeSesion());
             SolicitudMovimientoComentario::create([
                 'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
                 'UserID' => auth()->id(),
@@ -156,7 +159,7 @@ class MovimientoErpController extends Controller
         return back()->with('success', 'El cargo quedó autorizado. Control ya puede aplicar el movimiento.');
     }
 
-    public function rechazar(Request $request, int $id)
+    public function rechazar(Request $request, int $id, MovimientoErpService $servicio)
     {
         $data = $request->validate([
             'Texto' => 'required|string|max:4000',
@@ -167,9 +170,10 @@ class MovimientoErpController extends Controller
             return back()->with('error', 'Esta solicitud ya no está pendiente de autorización.');
         }
 
-        DB::transaction(function () use ($solicitud, $data) {
+        DB::transaction(function () use ($solicitud, $data, $servicio) {
             $solicitud->Estatus = 'Rechazada';
             $solicitud->save();
+            $servicio->cerrarPaso($solicitud, 'vobo', 'rejected', $data['Texto'], $this->empleadoDeSesion());
             SolicitudMovimientoComentario::create([
                 'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
                 'UserID' => auth()->id(),
@@ -181,7 +185,7 @@ class MovimientoErpController extends Controller
         return back()->with('success', 'La solicitud fue rechazada.');
     }
 
-    public function aplicar(Request $request, int $id)
+    public function aplicar(Request $request, int $id, MovimientoErpService $servicio)
     {
         $data = $request->validate([
             'Folio' => 'required|string|max:40',
@@ -202,11 +206,12 @@ class MovimientoErpController extends Controller
             return back()->with('error', 'Ese folio ya está usado en otra solicitud.')->withInput();
         }
 
-        DB::transaction(function () use ($request, $solicitud, $folio) {
+        DB::transaction(function () use ($request, $solicitud, $folio, $servicio) {
             $solicitud->Folio = $folio;
             $solicitud->Estatus = 'Aplicada';
             $solicitud->aplicado_en = now();
             $solicitud->save();
+            $servicio->cerrarPaso($solicitud, 'control', 'approved', 'Folio ' . $folio, $this->empleadoDeSesion());
 
             if ($request->hasFile('correo')) {
                 $archivo = $request->file('correo');
@@ -222,5 +227,103 @@ class MovimientoErpController extends Controller
         });
 
         return back()->with('success', 'Movimiento aplicado. La copia quedó con el folio ' . $folio . '.');
+    }
+
+    public function reenviarFirma(int $id, MovimientoErpService $servicio)
+    {
+        $solicitud = SolicitudMovimiento::query()->with(['pasos', 'autorizador', 'solicitante', 'obra'])->findOrFail($id);
+        $firmante = $solicitud->autorizador;
+        if (!$firmante || $solicitud->Estatus !== 'Por autorizar') {
+            return back()->with('error', 'Esta solicitud ya no está esperando el visto bueno.');
+        }
+
+        $liga = $servicio->renovarFirma($solicitud);
+        if (!$liga || !$servicio->enviarLigaFirma($solicitud, $firmante, $liga)) {
+            return back()->with('error', 'No se pudo reenviar la liga de firma.');
+        }
+
+        return back()->with('success', 'Se envió una liga nueva a ' . $firmante->NombreEmpleado . '.');
+    }
+
+    public function firma(string $token)
+    {
+        $liga = $this->liga($token);
+        if (!$liga) {
+            abort(404);
+        }
+
+        $paso = $liga->paso;
+        $solicitud = $paso->solicitud;
+
+        return view('movimientos-erp.firmar', [
+            'liga' => $liga,
+            'paso' => $paso,
+            'solicitud' => $solicitud,
+            'puedeFirmar' => $liga->vigente() && $paso->status === 'pending' && $solicitud->Estatus === 'Por autorizar',
+        ]);
+    }
+
+    public function decidir(Request $request, string $token, MovimientoErpService $servicio)
+    {
+        $data = $request->validate([
+            'decision' => 'required|in:approved,rejected',
+            'Texto' => 'required|string|max:2000',
+        ]);
+
+        $liga = $this->liga($token);
+        if (!$liga || !$liga->vigente()) {
+            return back()->with('error', 'Esta liga ya no sirve. Pide que te envíen otra.');
+        }
+
+        $paso = $liga->paso;
+        $solicitud = $paso->solicitud;
+        if ($paso->status !== 'pending' || $solicitud->Estatus !== 'Por autorizar') {
+            return back()->with('error', 'Esta solicitud ya no está pendiente de firma.');
+        }
+
+        DB::transaction(function () use ($solicitud, $data, $servicio, $paso) {
+            if ($data['decision'] === 'approved') {
+                $solicitud->Estatus = 'Autorizada';
+                $solicitud->Respuesta = $data['Texto'];
+                $solicitud->autorizado_en = now();
+            } else {
+                $solicitud->Estatus = 'Rechazada';
+            }
+            $solicitud->save();
+            $servicio->cerrarPaso(
+                $solicitud,
+                'vobo',
+                $data['decision'],
+                $data['Texto'],
+                (int) $paso->approver_empleado_id
+            );
+            SolicitudMovimientoComentario::create([
+                'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
+                'Autor' => $paso->approver->NombreEmpleado ?? 'Visto bueno',
+                'Texto' => ($data['decision'] === 'approved' ? 'Firmó el visto bueno: ' : 'Rechazó el visto bueno: ') . $data['Texto'],
+            ]);
+        });
+
+        return redirect()->route('movimientos-erp.public.show', $token);
+    }
+
+    private function liga(string $token): ?SolicitudMovimientoToken
+    {
+        return SolicitudMovimientoToken::query()
+            ->with(['paso.solicitud.solicitante', 'paso.solicitud.obra', 'paso.solicitud.lineas.cargo', 'paso.approver'])
+            ->where('token', $token)
+            ->first();
+    }
+
+    private function empleadoDeSesion(): ?int
+    {
+        $correo = auth()->user()->email ?? null;
+        if (!$correo) {
+            return null;
+        }
+
+        $id = Empleados::query()->where('Correo', $correo)->value('EmpleadoID');
+
+        return $id ? (int) $id : null;
     }
 }

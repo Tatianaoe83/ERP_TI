@@ -536,6 +536,7 @@ public function crearTickets(Request $request)
             'lineas.*.Cantidad' => 'required|numeric',
             'lineas.*.Precio' => 'required|numeric',
             'lineas.*.Justificacion' => 'required|string|max:500',
+            'VoBoEmpleadoID' => 'required|integer',
         ]);
 
         $solicitante = Empleados::query()->fisicosActivos()->with('puestos')->where('Correo', $data['Correo'])->first();
@@ -560,19 +561,21 @@ public function crearTickets(Request $request)
 
         $primerCargo = $cargos->get((int) $data['lineas'][0]['CargoID']);
         $roles = $cargos->map(fn ($cargo) => $cargo->etiquetaAutoriza())->unique()->implode(', ');
-        $autorizadores = collect();
-        foreach ($cargos as $cargo) {
-            $autorizadores = $autorizadores->merge($servicio->autorizadores($cargo, (int) $data['ObraID']));
+        $firmante = Empleados::query()->fisicosActivos()->find((int) $data['VoBoEmpleadoID']);
+        if (!$firmante) {
+            return redirect()->back()->with('error', 'El visto bueno se envía a una persona física activa.')->withInput();
         }
-        $autorizadores = $autorizadores->unique('EmpleadoID')->values();
+        if (empty($firmante->Correo)) {
+            return redirect()->back()->with('error', 'Esa persona no tiene correo para enviarle la liga de firma.')->withInput();
+        }
 
-        $solicitud = DB::transaction(function () use ($data, $solicitante, $primerCargo, $roles, $autorizadores, $folio, $cargos) {
+        $solicitud = DB::transaction(function () use ($data, $solicitante, $primerCargo, $roles, $firmante, $folio, $cargos, $servicio) {
             $solicitud = SolicitudMovimiento::create([
                 'EmpleadoID' => $solicitante->EmpleadoID,
                 'ObraID' => $data['ObraID'],
                 'CargoID' => $primerCargo->CargoID,
                 'ResidenteControlID' => null,
-                'AutorizadorID' => $autorizadores->first()->EmpleadoID ?? null,
+                'AutorizadorID' => $firmante->EmpleadoID,
                 'AutorizadorRol' => $roles,
                 'Justificacion' => $data['Justificacion'],
                 'Folio' => $folio !== '' ? $folio : null,
@@ -596,13 +599,19 @@ public function crearTickets(Request $request)
                 ]);
             }
 
+            $servicio->abrirFirma($solicitud, $firmante);
+
             return $solicitud;
         });
 
         $servicio->avisar($solicitud);
+        $liga = $solicitud->pasos()->where('stage', 'vobo')->first()?->token;
+        $enviada = $liga ? $servicio->enviarLigaFirma($solicitud, $firmante, $liga) : false;
 
         return redirect()->back()->with([
-            'success' => 'Solicitud de movimiento registrada. Se avisó al autorizador, al auxiliar de control y al residente del proyecto.',
+            'success' => $enviada
+                ? 'Solicitud registrada. Se envió la liga de firma a ' . $firmante->NombreEmpleado . ' y se avisó a control.'
+                : 'Solicitud registrada y se avisó a control. No se pudo enviar la liga de firma; se puede reenviar desde el detalle.',
             'tipo' => 'Movimiento',
         ]);
     }

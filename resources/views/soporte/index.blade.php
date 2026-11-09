@@ -124,6 +124,68 @@
             box-shadow:0 6px 12px -1px rgba(255, 165, 0, 0.4);
         }
 
+        #btnEnviarMovimiento {
+            background: #9ca3af;
+            color: #fff;
+        }
+
+        #btnEnviarMovimiento:not(:disabled) {
+            background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(22, 101, 52, 0.3);
+        }
+
+        #btnEnviarMovimiento:not(:disabled):hover {
+            transform: translateY(-2px);
+        }
+
+        #movimiento-form .grid > * {
+            min-width: 0;
+        }
+
+        .partida-mov {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.6rem;
+        }
+
+        @media (min-width: 640px) {
+            .partida-mov {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .partida-mov {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                align-items: end;
+            }
+        }
+
+        .partida-mov label {
+            display: block;
+            font-size: 0.7rem;
+            color: #6b7280;
+            min-width: 0;
+        }
+
+        .partida-mov input,
+        .partida-mov select {
+            display: block;
+            width: 100%;
+            margin-top: 0.2rem;
+            box-sizing: border-box;
+        }
+
+        .mov-enviar {
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            padding-top: 0.75rem;
+            z-index: 5;
+        }
+
         /* Inputs focus mejorados */
         input:focus,
         textarea:focus,
@@ -197,11 +259,33 @@
             margin-top: -3px !important;
         }
 
+        .select2-container--open,
+        .select2-dropdown {
+            z-index: 100000 !important;
+        }
+
         .select2-dropdown {
             border: 1px solid #d1d5db !important;
             border-radius: 0.375rem !important;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
             margin-top: 4px !important;
+        }
+
+        .select2-container--disabled .select2-selection--single {
+            background: #f3f4f6 !important;
+            cursor: not-allowed !important;
+        }
+
+        .cargo-linea + .select2-container .select2-selection--single {
+            height: 32px !important;
+            border-width: 1px !important;
+            border-radius: 0.4rem !important;
+            padding: 0 0.35rem !important;
+        }
+
+        .cargo-linea + .select2-container .select2-selection__rendered {
+            line-height: 28px !important;
+            font-size: 0.75rem !important;
         }
 
         .select2-results__option {
@@ -505,7 +589,7 @@
 <body class="h-screen flex items-center justify-center p-4 md:p-6 theme-general">
     <div id="tsparticles" class="fixed inset-0 -z-10"></div>
 
-    <div class="w-full max-w-4xl flex flex-col" id="main-container">
+    <div class="w-full max-w-6xl xl:max-w-7xl flex flex-col" id="main-container">
         <!-- Header Compacto -->
         <div class="text-center mb-4 md:mb-6 fade-in flex-shrink-0">
             <div class="inline-flex items-center gap-3 mb-3">
@@ -698,6 +782,11 @@
                                 <input type="text" id="folioMovimiento" name="Folio" maxlength="40" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" placeholder="Ejemplo: 83" disabled>
                             </div>
                             <div class="md:col-span-2">
+                                <label for="voboMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Enviar visto bueno a *</label>
+                                <select id="voboMovimiento" name="VoBoEmpleadoID" class="w-full" disabled></select>
+                                <p class="text-xs text-gray-600 mt-1">Se propone según el cargo. Puedes buscar a otra persona. Le llega una liga temporal para firmar.</p>
+                            </div>
+                            <div class="md:col-span-2">
                                 <label for="justificacionMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
                                 <textarea id="justificacionMovimiento" name="Justificacion" rows="3" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" placeholder="Me apoyas con tu visto bueno para esta solicitud de movimiento" disabled></textarea>
                             </div>
@@ -706,41 +795,26 @@
                                     <label class="block text-xs md:text-sm font-medium text-gray-700">Partidas del movimiento *</label>
                                     <button type="button" id="agregarLineaMovimiento" class="text-sm text-green-800 underline">Agregar partida</button>
                                 </div>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-xs text-left">
-                                        <thead>
-                                            <tr class="text-gray-600">
-                                                <th class="p-1">Con cargo a</th>
-                                                <th class="p-1">Código</th>
-                                                <th class="p-1">Descripción</th>
-                                                <th class="p-1">Partida</th>
-                                                <th class="p-1">Cantidad</th>
-                                                <th class="p-1">Precio</th>
-                                                <th class="p-1">Importe</th>
-                                                <th class="p-1">Justificación</th>
-                                                <th class="p-1"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="lineasMovimiento"></tbody>
-                                    </table>
-                                </div>
+                                <div id="lineasMovimiento" class="space-y-3"></div>
                                 <p id="cargoMovimientoAutoriza" class="text-sm text-green-800 mt-2"></p>
                             </div>
                             <template id="lineaMovimientoTpl">
-                                <tr class="linea-movimiento">
-                                    <td class="p-1"><select class="cargo-linea w-36 px-2 py-1 border border-gray-200 rounded"></select></td>
-                                    <td class="p-1"><input type="text" class="codigo-linea w-24 px-2 py-1 border border-gray-200 rounded" maxlength="40"></td>
-                                    <td class="p-1"><input type="text" class="desc-linea w-36 px-2 py-1 border border-gray-200 rounded" maxlength="180"></td>
-                                    <td class="p-1"><input type="text" class="partida-linea w-28 px-2 py-1 border border-gray-200 rounded" maxlength="120"></td>
-                                    <td class="p-1"><input type="number" step="0.01" class="cantidad-linea w-20 px-2 py-1 border border-gray-200 rounded"></td>
-                                    <td class="p-1"><input type="number" step="0.01" class="precio-linea w-20 px-2 py-1 border border-gray-200 rounded"></td>
-                                    <td class="p-1"><input type="text" class="importe-linea w-24 px-2 py-1 border border-gray-200 rounded bg-gray-50" readonly></td>
-                                    <td class="p-1"><input type="text" class="just-linea w-40 px-2 py-1 border border-gray-200 rounded" maxlength="500"></td>
-                                    <td class="p-1"><button type="button" class="quitar-linea text-red-600">Quitar</button></td>
-                                </tr>
+                                <div class="linea-movimiento rounded-xl border border-gray-200 p-3">
+                                    <div class="partida-mov">
+                                        <label>Con cargo a<select class="cargo-linea px-2 py-2 border border-gray-200 rounded"></select></label>
+                                        <label>Código<input type="text" class="codigo-linea px-2 py-2 border border-gray-200 rounded" maxlength="40"></label>
+                                        <label>Descripción<input type="text" class="desc-linea px-2 py-2 border border-gray-200 rounded" maxlength="180"></label>
+                                        <label>Partida<input type="text" class="partida-linea px-2 py-2 border border-gray-200 rounded" maxlength="120"></label>
+                                        <label>Cantidad<input type="number" step="0.01" class="cantidad-linea px-2 py-2 border border-gray-200 rounded"></label>
+                                        <label>Precio<input type="number" step="0.01" class="precio-linea px-2 py-2 border border-gray-200 rounded"></label>
+                                        <label>Importe<input type="text" class="importe-linea px-2 py-2 border border-gray-200 rounded bg-gray-50" readonly></label>
+                                        <label>Justificación<input type="text" class="just-linea px-2 py-2 border border-gray-200 rounded" maxlength="500"></label>
+                                        <button type="button" class="quitar-linea text-red-600 text-sm py-2 cursor-pointer">Quitar</button>
+                                    </div>
+                                </div>
                             </template>
-                            <div class="md:col-span-2">
-                                <button type="submit" id="btnEnviarMovimiento" class="w-full md:w-auto px-8 py-3 bg-gray-400 text-white rounded-xl font-medium cursor-not-allowed" disabled>
+                            <div class="md:col-span-2 mov-enviar">
+                                <button type="submit" id="btnEnviarMovimiento" class="w-full md:w-auto px-8 py-3 rounded-xl font-medium cursor-not-allowed" disabled>
                                     <i class="fas fa-paper-plane mr-2"></i>Enviar solicitud
                                 </button>
                             </div>
@@ -842,6 +916,38 @@
         window.correoTicketValido = false; // Para el formulario Ticket
         window.correoMantenimientoValido = false; // Para el formulario Mantenimiento
         window.telefonoReal = ''; // Valor real de 10 dígitos para validación y envío
+
+        window.montarSelectBusqueda = function ($el, placeholder, ancho) {
+            if (!$el || !$el.length || !$.fn.select2) return;
+            var deshabilitado = $el.prop('disabled');
+            if ($el.hasClass('select2-hidden-accessible')) {
+                try { $el.select2('destroy'); } catch (e) {}
+            }
+            $el.select2({
+                width: ancho || '100%',
+                dropdownParent: $(document.body),
+                placeholder: placeholder || 'Selecciona',
+                minimumResultsForSearch: 0
+            });
+            if (deshabilitado) {
+                $el.prop('disabled', true);
+                $el.next('.select2-container').addClass('select2-container--disabled');
+            }
+        };
+
+        window.estadoSelectBusqueda = function ($el, activo) {
+            if (!$el || !$el.length) return;
+            $el.prop('disabled', !activo);
+            var $caja = $el.next('.select2-container');
+            if ($caja.length) $caja.toggleClass('select2-container--disabled', !activo);
+        };
+
+        $(document).on('select2:open', function () {
+            window.setTimeout(function () {
+                var campo = document.querySelector('.select2-container--open .select2-search__field');
+                if (campo) campo.focus();
+            }, 0);
+        });
 
         $(document).ready(function() {
 
@@ -1031,7 +1137,10 @@
                     $mainContainer.addClass('h-full max-h-[95vh]');
                     $formContainer.addClass('flex-1');
                     $scrollContent.addClass('h-full');
-                    setTimeout(function() { revivirSelect2(); }, 50);
+                    setTimeout(function() {
+                        revivirSelect2();
+                        window.montarSelectBusqueda($('#Motivo'), 'Selecciona el motivo');
+                    }, 50);
                 } else if (seleccion === 'Movimiento') {
                     $('#movimiento-form').removeClass('hidden');
                     prepararMovimiento();
@@ -1400,6 +1509,7 @@ function renderTelefono() {
             }
             var $cont = $p.next('.select2-container');
             if ($cont.length) $cont.addClass('select2-container--disabled');
+            window.estadoSelectBusqueda($('#Motivo'), false);
         }
 
         function buscarEmpleadoSolicitud(correo) {
@@ -1465,6 +1575,7 @@ function renderTelefono() {
 
                     // 4. Habilitar el resto de los campos (Nota: Quité #SupervisorNombre de aquí porque ya se manejó arriba)
                     $('#Motivo, #DescripcionMotivo, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+                    window.estadoSelectBusqueda($('#Motivo'), true);
 
                     // 5. Activar botón de envío
                     $('#btnEnviarSolicitud').prop('disabled', false).removeClass('cursor-not-allowed');
@@ -1508,6 +1619,7 @@ function renderTelefono() {
                 placeholder: "Selecciona ubicación...",
                 allowClear: true,
                 width: '100%',
+                minimumResultsForSearch: 0,
                 templateResult: function(d) {
                     return d.id ? $('<span>' + d.text + '</span>') : d.text;
                 },
@@ -1651,8 +1763,46 @@ function renderTelefono() {
             $('#lineasMovimiento').append(fila);
             var $fila = $('#lineasMovimiento .linea-movimiento').last();
             $fila.find('.cargo-linea').html(opcionesCargoMovimiento());
+            window.montarSelectBusqueda($fila.find('.cargo-linea'), 'Cargo', '100%');
             numerarLineasMovimiento();
             consultarAutorizadoresMovimiento();
+        }
+
+        window.voboElegidoAMano = false;
+
+        function iniciarVoboMovimiento() {
+            var $campo = $('#voboMovimiento');
+            if (!$campo.length || $campo.hasClass('select2-hidden-accessible') || !$.fn.select2) return;
+            $campo.select2({
+                width: '100%',
+                dropdownParent: $(document.body),
+                placeholder: 'Busca a quién se envía el visto bueno',
+                minimumInputLength: 2,
+                minimumResultsForSearch: 0,
+                ajax: {
+                    url: '/autocompleteEmpleado',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { query: params.term || '' }; },
+                    processResults: function (data) {
+                        return {
+                            results: (data || []).map(function (persona) {
+                                return { id: persona.EmpleadoID, text: persona.NombreEmpleado };
+                            })
+                        };
+                    }
+                }
+            });
+            $campo.on('select2:select', function () { window.voboElegidoAMano = true; });
+        }
+
+        function proponerVoboMovimiento(persona) {
+            if (!persona || window.voboElegidoAMano) return;
+            var $campo = $('#voboMovimiento');
+            if (!$campo.find('option[value="' + persona.id + '"]').length) {
+                $campo.append(new Option(persona.nombre, persona.id, true, true));
+            }
+            $campo.val(String(persona.id)).trigger('change');
         }
 
         function consultarAutorizadoresMovimiento() {
@@ -1669,29 +1819,49 @@ function renderTelefono() {
                 var texto = (data.autorizadores || []).map(function (persona) {
                     return persona.nombre + (persona.puesto ? ' (' + persona.puesto + ')' : '');
                 }).join(', ');
-                $('#cargoMovimientoAutoriza').text(texto ? 'Visto bueno: ' + texto + '.' : 'No se encontró quién autoriza estos cargos en el proyecto.');
+                $('#cargoMovimientoAutoriza').text(texto ? 'Se propone: ' + texto + '.' : 'No se encontró quién autoriza estos cargos. Busca a la persona.');
+                if (!window.voboElegidoAMano && data.autorizadores && data.autorizadores[0]) {
+                    proponerVoboMovimiento(data.autorizadores[0]);
+                }
             });
         }
 
         function prepararMovimiento() {
-            $('#correoMovimiento, #obraMovimiento, #folioMovimiento, #justificacionMovimiento').prop('disabled', false);
+            $('#correoMovimiento, #obraMovimiento, #folioMovimiento, #justificacionMovimiento, #voboMovimiento').prop('disabled', false);
+            iniciarVoboMovimiento();
             $('#lineasMovimiento').find('input, select, button').prop('disabled', false);
             if (window.__catalogoMovimiento) {
+                window.montarSelectBusqueda($('#obraMovimiento'), 'Selecciona el proyecto');
                 if (!$('#lineasMovimiento .linea-movimiento').length) {
                     agregarLineaMovimiento();
+                } else {
+                    $('#lineasMovimiento .cargo-linea').each(function () {
+                        window.montarSelectBusqueda($(this), 'Cargo', '100%');
+                    });
                 }
                 return;
             }
             $.get('/movimientos-erp/catalogo', function (data) {
                 window.__catalogoMovimiento = data;
-                var $obra = $('#obraMovimiento').empty().append('<option value="">Selecciona el proyecto</option>');
+                var $obra = $('#obraMovimiento');
+                if ($obra.hasClass('select2-hidden-accessible')) {
+                    try { $obra.select2('destroy'); } catch (e) {}
+                }
+                $obra.empty().append('<option value="">Selecciona el proyecto</option>');
                 (data.obras || []).forEach(function (obra) {
                     $obra.append($('<option>', { value: obra.ObraID, text: obra.NombreObra }));
                 });
+                window.montarSelectBusqueda($obra, 'Selecciona el proyecto');
                 if (!$('#lineasMovimiento .linea-movimiento').length) {
                     agregarLineaMovimiento();
                 } else {
-                    $('#lineasMovimiento .cargo-linea').html(opcionesCargoMovimiento());
+                    $('#lineasMovimiento .cargo-linea').each(function () {
+                        if ($(this).hasClass('select2-hidden-accessible')) {
+                            try { $(this).select2('destroy'); } catch (e) {}
+                        }
+                        $(this).html(opcionesCargoMovimiento());
+                        window.montarSelectBusqueda($(this), 'Cargo', '100%');
+                    });
                 }
             });
         }
@@ -1701,12 +1871,12 @@ function renderTelefono() {
             if ($('#lineasMovimiento .linea-movimiento').length === 1) {
                 return;
             }
-            $(this).closest('tr').remove();
+            $(this).closest('.linea-movimiento').remove();
             numerarLineasMovimiento();
             consultarAutorizadoresMovimiento();
         });
         $('#lineasMovimiento').on('input', '.cantidad-linea, .precio-linea', function () {
-            var $fila = $(this).closest('tr');
+            var $fila = $(this).closest('.linea-movimiento');
             var cantidad = parseFloat($fila.find('.cantidad-linea').val());
             var precio = parseFloat($fila.find('.precio-linea').val());
             if (isNaN(cantidad) || isNaN(precio)) {
@@ -2776,6 +2946,7 @@ function renderTelefono() {
 
                         // Habilitar campos de texto generales
                         $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
+                        if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), true);
                         $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                         $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
 
@@ -2998,6 +3169,7 @@ function renderTelefono() {
                         placeholder: "Busca y selecciona una ubicación...",
                         allowClear: true,
                         width: '100%',
+                        minimumResultsForSearch: 0,
                         templateResult: function(data) {
                             return data.id ? $('<span>' + data.text + '</span>') : data.text;
                         },
@@ -3005,6 +3177,7 @@ function renderTelefono() {
                             return data.text;
                         }
                     });
+                    if (window.montarSelectBusqueda) window.montarSelectBusqueda($('#Motivo'), 'Selecciona el motivo');
                 }, 100);
             } else if (seleccion === 'Mantenimiento') {
                 $('#mantenimiento-form').removeClass('hidden');
@@ -3029,6 +3202,7 @@ function renderTelefono() {
                 $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
                 $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+                if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), false);
                 $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
                 // Deshabilitar campo Proyecto (Select2)
@@ -3220,6 +3394,7 @@ function renderTelefono() {
 
                 // Habilitar todos los demás campos
                 $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
+                if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), true);
                 $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
 
@@ -3244,6 +3419,7 @@ function renderTelefono() {
                 $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
                 $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+                if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), false);
                 $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
                 $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
@@ -3552,6 +3728,7 @@ function renderTelefono() {
                         errores.push('El solicitante debe ser una persona física activa.');
                     }
                     if (!$('#obraMovimiento').val()) errores.push('Selecciona el proyecto.');
+                    if (!$('#voboMovimiento').val()) errores.push('Elige a quién se envía el visto bueno.');
                     if (!$('#justificacionMovimiento').val().trim()) errores.push('Escribe el mensaje de la solicitud.');
                     var partidas = 0;
                     $('#lineasMovimiento .linea-movimiento').each(function () {

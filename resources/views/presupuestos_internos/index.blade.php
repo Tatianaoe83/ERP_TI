@@ -10,70 +10,118 @@
     :show-count="false"
 >
     @if(auth()->user()->can('editar-empleados'))
-        <form method="POST" action="{{ route('presupuestos-internos.store') }}" class="index-page__card crud-page__card" style="margin-bottom:1rem;">
-            @csrf
-            <div class="row crud-form">
-                <div class="col-sm-8">
+        <x-slot name="filters">
+            <form method="POST" action="{{ route('presupuestos-internos.store') }}">
+                @csrf
+                <div class="form-group">
                     <label for="Nombre">Nombre</label>
                     <input type="text" name="Nombre" id="Nombre" class="form-control" maxlength="150" required value="{{ old('Nombre') }}" placeholder="Ej. G601 TI DIRECCION ADM Y FINANZAS" @error('Nombre') style="border-color:#f87171;" @enderror>
                     @error('Nombre')
                         <p role="alert" style="margin:.45rem 0 0;color:#fca5a5;font-size:.85rem;font-weight:600;">{{ $message }}</p>
                     @enderror
                 </div>
-                <div class="col-sm-4 d-flex align-items-end">
+                <div class="form-group d-flex align-items-end">
                     <button type="submit" class="index-page__btn-primary">Agregar</button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </x-slot>
     @endif
 
     <div class="index-page__table-wrap table-responsive">
-        <table class="table index-table w-full">
+        <table class="table index-table w-full js-index-table">
             <thead>
                 <tr>
                     <th>Nombre</th>
                     <th>Empleados</th>
                     @if(auth()->user()->can('editar-empleados'))
-                        <th>Acción</th>
+                        <th>Acciones</th>
                     @endif
                 </tr>
             </thead>
             <tbody>
-                @forelse ($presupuestos as $presupuesto)
+                @foreach ($presupuestos as $presupuesto)
                     <tr>
-                        <td>
+                        <td data-order="{{ $presupuesto->Nombre }}">
+                            <span class="pi-nombre">{{ $presupuesto->Nombre }}</span>
                             @if(auth()->user()->can('editar-empleados'))
-                                <form method="POST" action="{{ route('presupuestos-internos.update', $presupuesto->PresupuestoInternoID) }}" style="display:flex;gap:.5rem;align-items:center;">
+                                <form id="pi-{{ $presupuesto->PresupuestoInternoID }}" class="pi-form" method="POST" action="{{ route('presupuestos-internos.update', $presupuesto->PresupuestoInternoID) }}" hidden>
                                     @csrf
                                     @method('PUT')
                                     <input type="text" name="Nombre" class="form-control" maxlength="150" required value="{{ $presupuesto->Nombre }}">
-                                    <button type="submit" class="index-page__btn-secondary">Guardar</button>
                                 </form>
-                            @else
-                                {{ $presupuesto->Nombre }}
                             @endif
                         </td>
-                        <td><span class="erp-chip erp-chip--info">{{ $presupuesto->empleados_count }}</span></td>
+                        <td data-order="{{ $presupuesto->empleados_count }}">{{ $presupuesto->empleados_count }}</td>
                         @if(auth()->user()->can('editar-empleados'))
                             <td>
-                                <form method="POST" action="{{ route('presupuestos-internos.destroy', $presupuesto->PresupuestoInternoID) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="index-page__btn-secondary index-action-confirm" data-confirm-title="¿Eliminar este presupuesto interno?">Eliminar</button>
-                                </form>
+                                <div class="index-actions">
+                                    <button type="button" class="index-action index-action--edit pi-editar" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="submit" form="pi-{{ $presupuesto->PresupuestoInternoID }}" class="index-action index-action--success pi-guardar" title="Guardar" hidden>
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button type="button" class="index-action pi-cancelar" title="Cancelar" hidden>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <form method="POST" action="{{ route('presupuestos-internos.destroy', $presupuesto->PresupuestoInternoID) }}" class="index-action-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="index-action index-action--delete index-action-confirm" title="Eliminar" data-confirm-title="¿Eliminar este presupuesto interno?" data-success-title="Presupuesto interno eliminado">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         @endif
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="3">Todavía no hay presupuestos internos.</td>
-                    </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>
 </x-index-page>
-@push('third_party_scripts')
-@include('layouts.partials.index-page-js')
-@endpush
 @endsection
+
+@push('styles')
+<style>
+    .pi-form { display: flex; align-items: center; margin: 0; }
+    .pi-form[hidden] { display: none !important; }
+    .pi-form .form-control { min-height: 2.25rem; }
+</style>
+@endpush
+
+@include('layouts.partials.index-client-table')
+
+@push('third_party_scripts')
+<script>
+    document.addEventListener('click', function (event) {
+        var editar = event.target.closest('.pi-editar');
+        if (editar) {
+            var fila = editar.closest('tr');
+            if (!fila) return;
+            fila.querySelector('.pi-nombre').hidden = true;
+            fila.querySelector('.pi-form').hidden = false;
+            editar.hidden = true;
+            fila.querySelector('.pi-guardar').hidden = false;
+            fila.querySelector('.pi-cancelar').hidden = false;
+            var campo = fila.querySelector('.pi-form input');
+            if (campo) campo.focus();
+            return;
+        }
+
+        var cancelar = event.target.closest('.pi-cancelar');
+        if (!cancelar) return;
+        var filaCancelar = cancelar.closest('tr');
+        if (!filaCancelar) return;
+        var form = filaCancelar.querySelector('.pi-form');
+        var nombre = filaCancelar.querySelector('.pi-nombre');
+        var input = form.querySelector('input');
+        if (input && nombre) input.value = nombre.textContent.trim();
+        form.hidden = true;
+        nombre.hidden = false;
+        filaCancelar.querySelector('.pi-editar').hidden = false;
+        filaCancelar.querySelector('.pi-guardar').hidden = true;
+        cancelar.hidden = true;
+    });
+</script>
+@endpush
