@@ -19,27 +19,47 @@
 
     @php
         $chip = [
-            'Por autorizar' => 'erp-chip--aviso',
-            'Autorizada' => 'erp-chip--info',
+            \App\Models\SolicitudMovimiento::PENDIENTE => 'erp-chip--aviso',
+            \App\Models\SolicitudMovimiento::APROBADA => 'erp-chip--info',
             'Aplicada' => 'erp-chip--ok',
             'Rechazada' => 'erp-chip--alerta',
         ][$solicitud->Estatus] ?? 'erp-chip--neutro';
     @endphp
 
     <div class="index-page__card p-4 mb-4">
-        <p class="mb-3"><span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span></p>
+        @php
+            $vobo = $solicitud->pasos->firstWhere('stage', 'vobo');
+            $control = $solicitud->pasos->firstWhere('stage', 'control');
+            $textoPaso = ['approved' => 'Aprobado', 'rejected' => 'Rechazado', 'pending' => 'Pendiente'];
+        @endphp
+        <div class="flex flex-wrap items-center gap-4 mb-4">
+            <span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span>
+            @if ($solicitud->pasos->isNotEmpty())
+                <div class="sol-approvals">
+                    @if ($vobo && $vobo->status === 'approved')
+                        <i class="fas fa-check-circle text-green-500" title="Visto bueno"></i>
+                    @elseif ($vobo && $vobo->status === 'rejected')
+                        <i class="fas fa-times-circle text-red-500" title="Visto bueno"></i>
+                    @else
+                        <i class="far fa-circle text-yellow-500" title="Visto bueno"></i>
+                    @endif
+                    <span class="text-sm">Visto bueno{{ $vobo ? ' · ' . ($textoPaso[$vobo->status] ?? $vobo->status) : '' }}{{ $vobo && $vobo->approver ? ' · ' . $vobo->approver->NombreEmpleado : '' }}</span>
+                    @if ($control && $control->status === 'approved')
+                        <i class="fas fa-check-circle text-green-500" title="Control"></i>
+                    @elseif ($control && $control->status === 'rejected')
+                        <i class="fas fa-times-circle text-red-500" title="Control"></i>
+                    @elseif ($vobo && $vobo->status === 'approved')
+                        <i class="far fa-circle text-orange-500" title="Control"></i>
+                    @else
+                        <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Control"></i>
+                    @endif
+                    <span class="text-sm">Neodata{{ $control ? ' · ' . ($textoPaso[$control->status] ?? $control->status) : '' }}{{ $solicitud->aplicado_por ? ' · ' . $solicitud->aplicado_por : '' }}</span>
+                </div>
+            @endif
+        </div>
         @if ($solicitud->pasos->isNotEmpty())
-            <div class="flex flex-wrap gap-2 mb-4">
-                @foreach ($solicitud->pasos as $paso)
-                    @php
-                        $pasoChip = ['approved' => 'erp-chip--ok', 'rejected' => 'erp-chip--alerta', 'pending' => 'erp-chip--aviso'][$paso->status] ?? 'erp-chip--neutro';
-                        $pasoTexto = ['approved' => 'Listo', 'rejected' => 'Rechazado', 'pending' => 'Pendiente'][$paso->status] ?? $paso->status;
-                    @endphp
-                    <span class="erp-chip {{ $pasoChip }}">{{ $paso->stage_label }} · {{ $pasoTexto }}{{ $paso->approver ? ' · ' . $paso->approver->NombreEmpleado : '' }}</span>
-                @endforeach
-            </div>
             @php $pasoVobo = $solicitud->pasos->firstWhere('stage', 'vobo'); @endphp
-            @if ($solicitud->Estatus === 'Por autorizar' && $pasoVobo && $pasoVobo->status === 'pending')
+            @if ($solicitud->Estatus === \App\Models\SolicitudMovimiento::PENDIENTE && $pasoVobo && $pasoVobo->status === 'pending')
                 <form method="POST" action="{{ route('movimientos-erp.reenviar-firma', $solicitud->SolicitudMovimientoID) }}" class="mb-3">
                     @csrf
                     <button type="submit" class="index-page__btn-secondary">Reenviar liga de firma</button>
@@ -100,57 +120,32 @@
         </div>
     </div>
 
-    <div class="index-page__card p-4 mb-4">
-        <h2 class="text-sm font-semibold uppercase tracking-wide mb-3">Documentos</h2>
-        @forelse ($solicitud->archivos as $archivo)
-            <p class="mb-1">
-                <a href="{{ asset('storage/' . $archivo->Ruta) }}" target="_blank" rel="noopener">{{ $archivo->Nombre }}</a>
-                <span class="erp-chip erp-chip--neutro">{{ $archivo->Tipo === 'correo' ? 'Copia del correo' : 'Soporte' }}</span>
-            </p>
-        @empty
-            <p class="text-sm">Sin documentos.</p>
-        @endforelse
-    </div>
-
-    @if ($solicitud->Estatus === 'Por autorizar')
-        <div class="index-page__card p-4 mb-4 flex flex-wrap gap-3">
-            <form method="POST" action="{{ route('movimientos-erp.autorizar', $solicitud->SolicitudMovimientoID) }}" class="flex flex-wrap gap-2 items-end">
-                @csrf
-                <div>
-                    <label for="respuesta" class="block text-xs font-semibold uppercase mb-1">Respuesta</label>
-                    <input type="text" name="Texto" id="respuesta" class="form-control" required maxlength="2000" placeholder="Adelante con el movimiento">
-                </div>
-                <button type="submit" class="index-page__btn-primary">Autorizar cargo</button>
-            </form>
-            <form method="POST" action="{{ route('movimientos-erp.rechazar', $solicitud->SolicitudMovimientoID) }}" class="flex flex-wrap gap-2 items-end">
-                @csrf
-                <div>
-                    <label for="motivo" class="block text-xs font-semibold uppercase mb-1">Motivo del rechazo</label>
-                    <input type="text" name="Texto" id="motivo" class="form-control" required maxlength="4000">
-                </div>
-                <button type="submit" class="index-page__btn-secondary">Rechazar</button>
-            </form>
+    @if ($solicitud->Estatus === \App\Models\SolicitudMovimiento::PENDIENTE)
+        <div class="index-page__card p-4 mb-4">
+            <p class="text-sm">El visto bueno solo lo firma quien recibió la liga. Desde aquí no se aprueba ni se rechaza.</p>
         </div>
     @endif
 
-    @if ($solicitud->Estatus === 'Autorizada')
+    @if ($solicitud->Estatus === \App\Models\SolicitudMovimiento::APROBADA)
         <div class="index-page__card p-4 mb-4">
-            <h2 class="text-sm font-semibold uppercase tracking-wide mb-3">Aplicar movimiento</h2>
-            <p class="text-sm mb-3">El folio se escribe a mano, con el mismo número del ERP. La copia del correo se guarda con ese nombre.</p>
-            <form method="POST" action="{{ route('movimientos-erp.aplicar', $solicitud->SolicitudMovimientoID) }}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <h2 class="text-sm font-semibold uppercase tracking-wide mb-3">Aplicar en Neodata</h2>
+            <p class="text-sm mb-3">Confirma que el movimiento ya se hizo en Neodata y escribe el folio del ERP. Queda registrado con tu usuario.</p>
+            <form method="POST" action="{{ route('movimientos-erp.aplicar', $solicitud->SolicitudMovimientoID) }}" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 @csrf
                 <div>
                     <label for="Folio" class="block text-xs font-semibold uppercase mb-1">Folio</label>
                     <input type="text" name="Folio" id="Folio" value="{{ old('Folio', $solicitud->Folio) }}" class="form-control" required maxlength="40">
                 </div>
-                <div>
-                    <label for="correo" class="block text-xs font-semibold uppercase mb-1">Copia del correo</label>
-                    <input type="file" name="correo" id="correo" class="form-control">
-                </div>
-                <div>
-                    <button type="submit" class="index-page__btn-primary">Marcar aplicado</button>
+                <div class="flex items-end">
+                    <button type="submit" class="index-page__btn-primary">Marcar aplicada</button>
                 </div>
             </form>
+        </div>
+    @endif
+
+    @if ($solicitud->Estatus === \App\Models\SolicitudMovimiento::APLICADA)
+        <div class="index-page__card p-4 mb-4">
+            <p class="text-sm"><strong>Aplicada en Neodata por:</strong> {{ $solicitud->aplicado_por ?: 'Sin registro' }}{{ $solicitud->aplicado_en ? ' · ' . $solicitud->aplicado_en->format('d/m/Y H:i') : '' }}</p>
         </div>
     @endif
 

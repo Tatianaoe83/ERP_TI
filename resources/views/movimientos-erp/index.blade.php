@@ -8,7 +8,7 @@
                 <label for="estatus">Estatus</label>
                 <select name="estatus" id="estatus" class="form-control" onchange="this.form.submit()">
                     <option value="">Todos</option>
-                    @foreach (['Por autorizar', 'Autorizada', 'Aplicada', 'Rechazada'] as $opcion)
+                    @foreach ([\App\Models\SolicitudMovimiento::PENDIENTE, \App\Models\SolicitudMovimiento::APROBADA, \App\Models\SolicitudMovimiento::APLICADA, \App\Models\SolicitudMovimiento::RECHAZADA] as $opcion)
                         <option value="{{ $opcion }}" {{ $estatus === $opcion ? 'selected' : '' }}>{{ $opcion }}</option>
                     @endforeach
                 </select>
@@ -30,13 +30,12 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Folio</th>
-                        <th>Proyecto</th>
-                        <th>Cargo</th>
                         <th>Solicitante</th>
-                        <th>Autoriza</th>
-                        <th>Residente</th>
+                        <th>Proyecto</th>
                         <th>Estatus</th>
+                        <th>Pasos</th>
+                        <th>Folio</th>
+                        <th>Creado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -44,39 +43,70 @@
                     @forelse ($solicitudes as $solicitud)
                         @php
                             $chip = [
-                                'Por autorizar' => 'erp-chip--aviso',
-                                'Autorizada' => 'erp-chip--info',
-                                'Aplicada' => 'erp-chip--ok',
-                                'Rechazada' => 'erp-chip--alerta',
-                            ][$solicitud->Estatus] ?? 'erp-chip--neutro';
+                                \App\Models\SolicitudMovimiento::PENDIENTE => 'sol-status--pendiente',
+                                \App\Models\SolicitudMovimiento::APROBADA => 'sol-status--aprobada',
+                                \App\Models\SolicitudMovimiento::APLICADA => 'sol-status--listo',
+                                \App\Models\SolicitudMovimiento::RECHAZADA => 'sol-status--rechazada',
+                            ][$solicitud->Estatus] ?? 'sol-status--default';
+                            $vobo = $solicitud->pasos->firstWhere('stage', 'vobo');
+                            $control = $solicitud->pasos->firstWhere('stage', 'control');
+                            $cargo = $solicitud->lineas->pluck('cargo.Clave')->filter()->unique()->implode(', ') ?: ($solicitud->cargo->Clave ?? '');
                         @endphp
                         <tr>
-                            <td>{{ $solicitud->SolicitudMovimientoID }}</td>
-                            <td>{{ $solicitud->Folio ?: '—' }}</td>
-                            <td>{{ $solicitud->obra->NombreObra ?? '—' }}</td>
-                            <td>{{ $solicitud->lineas->pluck('cargo.Clave')->filter()->unique()->implode(', ') ?: ($solicitud->cargo->Clave ?? '—') }}</td>
-                            <td>{{ $solicitud->solicitante->NombreEmpleado ?? '—' }}</td>
-                            <td>{{ $solicitud->autorizador->NombreEmpleado ?? $solicitud->AutorizadorRol }}</td>
-                            <td>{{ $solicitud->residente->NombreEmpleado ?? '—' }}</td>
+                            <td><strong>#{{ $solicitud->SolicitudMovimientoID }}</strong></td>
                             <td>
-                                <span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span>
-                                @foreach ($solicitud->pasos as $paso)
-                                    @php
-                                        $pasoChip = ['approved' => 'erp-chip--ok', 'rejected' => 'erp-chip--alerta', 'pending' => 'erp-chip--aviso'][$paso->status] ?? 'erp-chip--neutro';
-                                        $pasoTexto = ['approved' => 'Listo', 'rejected' => 'Rechazado', 'pending' => 'Pendiente'][$paso->status] ?? $paso->status;
-                                    @endphp
-                                    <span class="erp-chip {{ $pasoChip }}">{{ $paso->stage_label }} · {{ $pasoTexto }}</span>
-                                @endforeach
+                                <div>{{ $solicitud->solicitante->NombreEmpleado ?? '—' }}</div>
+                                <div>{{ $solicitud->solicitante->Correo ?? 'N/A' }}</div>
                             </td>
                             <td>
-                                <a href="{{ route('movimientos-erp.show', $solicitud->SolicitudMovimientoID) }}" class="index-action" title="Ver">
-                                    <i class="fas fa-eye"></i>
-                                </a>
+                                <div>{{ $solicitud->obra->NombreObra ?? '—' }}</div>
+                                @if ($cargo !== '')
+                                    <div>{{ $cargo }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="erp-chip {{ $chip }}">{{ $solicitud->Estatus }}</span>
+                            </td>
+                            <td>
+                                <div class="sol-approvals">
+                                    @if ($vobo && $vobo->status === 'approved')
+                                        <i class="fas fa-check-circle text-green-500" title="Visto bueno: aprobado{{ $vobo->approver ? ' · ' . $vobo->approver->NombreEmpleado : '' }}"></i>
+                                    @elseif ($vobo && $vobo->status === 'rejected')
+                                        <i class="fas fa-times-circle text-red-500" title="Visto bueno: rechazado{{ $vobo->approver ? ' · ' . $vobo->approver->NombreEmpleado : '' }}"></i>
+                                    @else
+                                        <i class="far fa-circle text-yellow-500" title="Visto bueno: pendiente{{ $vobo && $vobo->approver ? ' · ' . $vobo->approver->NombreEmpleado : '' }}"></i>
+                                    @endif
+                                    @php $aplico = $solicitud->aplicado_por ?: optional(optional($control)->decidedBy)->NombreEmpleado; @endphp
+                                    @if ($control && $control->status === 'approved')
+                                        <i class="fas fa-check-circle text-green-500" title="Neodata: aplicada por {{ $aplico ?: 'sin registro' }}"></i>
+                                    @elseif ($control && $control->status === 'rejected')
+                                        <i class="fas fa-times-circle text-red-500" title="Control: rechazado"></i>
+                                    @elseif ($vobo && $vobo->status === 'approved')
+                                        <i class="far fa-circle text-orange-500" title="Control: pendiente de aplicar"></i>
+                                    @else
+                                        <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Control: en espera del visto bueno"></i>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>
+                                @if ($solicitud->Folio)
+                                    <span class="erp-chip erp-chip--ok">{{ $solicitud->Folio }}</span>
+                                @else
+                                    <span class="erp-chip erp-chip--neutro">N/A</span>
+                                @endif
+                            </td>
+                            <td>{{ optional($solicitud->created_at)->format('d/m/Y') }}</td>
+                            <td>
+                                <div class="index-actions">
+                                    <button type="button" class="index-action index-action--view" title="Ver" onclick="window.__abrirModalMovimiento({{ $solicitud->SolicitudMovimientoID }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9">No hay solicitudes de movimiento.</td>
+                            <td colspan="8">No hay solicitudes de movimiento.</td>
                         </tr>
                     @endforelse
                 </tbody>

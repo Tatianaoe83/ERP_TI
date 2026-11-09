@@ -52,7 +52,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td style="font-family:Segoe UI,Helvetica,Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#FFFFFF;">
-                                        Sistema de Solicitudes
+                                        {{ $marca ?? 'Sistema de Solicitudes' }}
                                     </td>
                                     @if(!empty($folio))
                                         <td align="right" style="font-family:Segoe UI,Helvetica,Arial,sans-serif; font-size:13px; font-weight:600; color:#FFFFFF;">
@@ -70,6 +70,11 @@
                             @if(!empty($eyebrow))
                                 <p style="margin:0 0 12px 0;">
                                     <span style="display:inline-block; padding:5px 12px; border-radius:999px; background-color:{{ $accentSoft }}; color:{{ $accent }}; font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;">{{ $eyebrow }}</span>
+                                </p>
+                            @endif
+                            @if(!empty($logoCid))
+                                <p style="margin:0 0 16px 0;">
+                                    <img src="cid:{{ $logoCid }}" alt="Proser" height="42" style="display:block; height:42px; width:auto; border:0;">
                                 </p>
                             @endif
                             <h1 style="margin:0; font-size:24px; line-height:1.3; font-weight:700; color:{{ $ink }};">{{ $titulo }}</h1>
@@ -124,7 +129,7 @@
                                         @if(!empty($nota))
                                             <p style="margin:0 0 6px 0; color:{{ $muted }};">{!! $nota !!}</p>
                                         @endif
-                                        <p style="margin:0;">Correo automático del Sistema de Solicitudes. No es necesario responder este mensaje.</p>
+                                        <p style="margin:0;">Correo automático de {{ $marca ?? 'Sistema de Solicitudes' }}. No es necesario responder este mensaje.</p>
                                     </td>
                                 </tr>
                             </table>

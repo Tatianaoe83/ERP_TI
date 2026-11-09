@@ -153,6 +153,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/tickets', [TicketsController::class, 'index'])->name('tickets.index');
     Route::get('/movimientos-erp', [MovimientoErpController::class, 'index'])->name('movimientos-erp.index');
     Route::get('/movimientos-erp/{id}', [MovimientoErpController::class, 'show'])->whereNumber('id')->name('movimientos-erp.show');
+    Route::get('/movimientos-erp/{id}/datos', [MovimientoErpController::class, 'datos'])->whereNumber('id')->name('movimientos-erp.datos');
     Route::get('/movimientos-erp/{id}/formato', [MovimientoErpController::class, 'formato'])->whereNumber('id')->name('movimientos-erp.formato');
     Route::post('/movimientos-erp/{id}/comentar', [MovimientoErpController::class, 'comentar'])->whereNumber('id')->name('movimientos-erp.comentar');
     Route::post('/movimientos-erp/{id}/autorizar', [MovimientoErpController::class, 'autorizar'])->whereNumber('id')->name('movimientos-erp.autorizar');

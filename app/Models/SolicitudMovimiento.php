@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class SolicitudMovimiento extends Model
 {
+    public const PENDIENTE = 'Pendiente aprobación';
+    public const APROBADA = 'Aprobada';
+    public const APLICADA = 'Aplicada';
+    public const RECHAZADA = 'Rechazada';
+
     protected $table = 'solicitudes_movimiento';
 
     protected $primaryKey = 'SolicitudMovimientoID';
@@ -25,6 +30,7 @@ class SolicitudMovimiento extends Model
         'Folio',
         'autorizado_en',
         'aplicado_en',
+        'aplicado_por',
     ];
 
     public function solicitante()

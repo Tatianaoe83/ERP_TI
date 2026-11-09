@@ -69,7 +69,7 @@ class MovimientoErpController extends Controller
         $buscar = trim((string) $request->input('q'));
 
         $solicitudes = SolicitudMovimiento::query()
-            ->with(['solicitante', 'obra', 'cargo', 'autorizador', 'residente', 'lineas.cargo', 'pasos.approver'])
+            ->with(['solicitante', 'obra', 'cargo', 'autorizador', 'residente', 'lineas.cargo', 'pasos.approver', 'pasos.decidedBy'])
             ->when($estatus, fn ($q) => $q->where('Estatus', $estatus))
             ->when($buscar !== '', function ($q) use ($buscar) {
                 $q->where(function ($inner) use ($buscar) {
@@ -95,10 +95,59 @@ class MovimientoErpController extends Controller
     public function show(int $id)
     {
         $solicitud = SolicitudMovimiento::query()
-            ->with(['solicitante.puestos', 'obra', 'cargo', 'autorizador.puestos', 'residente', 'archivos', 'comentarios', 'lineas.cargo', 'pasos.approver', 'pasos.token'])
+            ->with(['solicitante.puestos', 'obra', 'cargo', 'autorizador.puestos', 'residente', 'comentarios', 'lineas.cargo', 'pasos.approver', 'pasos.decidedBy', 'pasos.token'])
             ->findOrFail($id);
 
         return view('movimientos-erp.show', compact('solicitud'));
+    }
+
+    public function datos(int $id)
+    {
+        $solicitud = SolicitudMovimiento::query()
+            ->with(['solicitante.puestos', 'obra', 'lineas.cargo', 'pasos.approver', 'pasos.decidedBy'])
+            ->findOrFail($id);
+
+        $etiquetas = ['approved' => 'Aprobado', 'rejected' => 'Rechazado', 'pending' => 'Pendiente'];
+
+        return response()->json([
+            'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
+            'Estatus' => $solicitud->Estatus,
+            'Folio' => $solicitud->Folio,
+            'Justificacion' => $solicitud->Justificacion,
+            'fechaCreacion' => optional($solicitud->created_at)->format('d/m/Y H:i'),
+            'aplicadoPor' => $solicitud->aplicado_por,
+            'solicitante' => $solicitud->solicitante->NombreEmpleado ?? '',
+            'correo' => $solicitud->solicitante->Correo ?? '',
+            'puesto' => $solicitud->solicitante->puestos->NombrePuesto ?? '',
+            'obra' => $solicitud->obra->NombreObra ?? '',
+            'pasos' => $solicitud->pasos->map(function ($paso) use ($solicitud, $etiquetas) {
+                $decidio = optional($paso->decidedBy)->NombreEmpleado;
+                if ($paso->stage === 'control' && !$decidio) {
+                    $decidio = $solicitud->aplicado_por;
+                }
+
+                return [
+                    'stage' => $paso->stage,
+                    'stageLabel' => $paso->stage === 'control' ? 'Neodata' : ($paso->stage_label ?: 'Visto bueno'),
+                    'status' => $paso->status,
+                    'statusLabel' => $etiquetas[$paso->status] ?? $paso->status,
+                    'approverNombre' => optional($paso->approver)->NombreEmpleado,
+                    'decidedByNombre' => $decidio,
+                    'decidedAt' => optional($paso->decided_at)->format('d/m/Y H:i'),
+                    'comment' => $paso->comment,
+                ];
+            })->values(),
+            'lineas' => $solicitud->lineas->map(function ($linea) {
+                return [
+                    'cargo' => $linea->cargo->Clave ?? '',
+                    'codigo' => $linea->CodigoInsumo,
+                    'descripcion' => $linea->Descripcion,
+                    'partida' => $linea->Partida,
+                    'cantidad' => number_format((float) $linea->Cantidad, 2),
+                    'importe' => number_format((float) $linea->Importe, 2),
+                ];
+            })->values(),
+        ]);
     }
 
     public function formato(int $id, MovimientoErpService $servicio)
@@ -138,12 +187,12 @@ class MovimientoErpController extends Controller
         ]);
 
         $solicitud = SolicitudMovimiento::query()->findOrFail($id);
-        if ($solicitud->Estatus !== 'Por autorizar') {
+        if ($solicitud->Estatus !== \App\Models\SolicitudMovimiento::PENDIENTE) {
             return back()->with('error', 'Esta solicitud ya no está pendiente de autorización.');
         }
 
         DB::transaction(function () use ($solicitud, $data, $servicio) {
-            $solicitud->Estatus = 'Autorizada';
+            $solicitud->Estatus = \App\Models\SolicitudMovimiento::APROBADA;
             $solicitud->Respuesta = $data['Texto'];
             $solicitud->autorizado_en = now();
             $solicitud->save();
@@ -166,7 +215,7 @@ class MovimientoErpController extends Controller
         ]);
 
         $solicitud = SolicitudMovimiento::query()->findOrFail($id);
-        if ($solicitud->Estatus !== 'Por autorizar') {
+        if ($solicitud->Estatus !== \App\Models\SolicitudMovimiento::PENDIENTE) {
             return back()->with('error', 'Esta solicitud ya no está pendiente de autorización.');
         }
 
@@ -189,11 +238,10 @@ class MovimientoErpController extends Controller
     {
         $data = $request->validate([
             'Folio' => 'required|string|max:40',
-            'correo' => 'nullable|file|max:15360',
         ]);
 
         $solicitud = SolicitudMovimiento::query()->findOrFail($id);
-        if ($solicitud->Estatus !== 'Autorizada') {
+        if ($solicitud->Estatus !== \App\Models\SolicitudMovimiento::APROBADA) {
             return back()->with('error', 'El movimiento solo se aplica cuando el cargo ya está autorizado.');
         }
 
@@ -206,34 +254,29 @@ class MovimientoErpController extends Controller
             return back()->with('error', 'Ese folio ya está usado en otra solicitud.')->withInput();
         }
 
-        DB::transaction(function () use ($request, $solicitud, $folio, $servicio) {
-            $solicitud->Folio = $folio;
-            $solicitud->Estatus = 'Aplicada';
-            $solicitud->aplicado_en = now();
-            $solicitud->save();
-            $servicio->cerrarPaso($solicitud, 'control', 'approved', 'Folio ' . $folio, $this->empleadoDeSesion());
+        $empleadoId = $this->empleadoDeSesion();
+        $nombre = $empleadoId
+            ? Empleados::query()->where('EmpleadoID', $empleadoId)->value('NombreEmpleado')
+            : null;
+        $nombre = $nombre ?: (auth()->user()->name ?? auth()->user()->email ?? 'Usuario del sistema');
 
-            if ($request->hasFile('correo')) {
-                $archivo = $request->file('correo');
-                $nombre = $folio . '.' . $archivo->getClientOriginalExtension();
-                $ruta = $archivo->storeAs('movimientos-erp/' . $solicitud->SolicitudMovimientoID, $nombre, 'public');
-                SolicitudMovimientoArchivo::create([
-                    'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
-                    'Ruta' => $ruta,
-                    'Nombre' => $nombre,
-                    'Tipo' => 'correo',
-                ]);
-            }
+        DB::transaction(function () use ($solicitud, $folio, $servicio, $empleadoId, $nombre) {
+            $solicitud->Folio = $folio;
+            $solicitud->Estatus = \App\Models\SolicitudMovimiento::APLICADA;
+            $solicitud->aplicado_en = now();
+            $solicitud->aplicado_por = $nombre;
+            $solicitud->save();
+            $servicio->cerrarPaso($solicitud, 'control', 'approved', 'Verificado en Neodata. Folio ' . $folio, $empleadoId);
         });
 
-        return back()->with('success', 'Movimiento aplicado. La copia quedó con el folio ' . $folio . '.');
+        return back()->with('success', 'Movimiento aplicado en Neodata por ' . $nombre . '.');
     }
 
     public function reenviarFirma(int $id, MovimientoErpService $servicio)
     {
         $solicitud = SolicitudMovimiento::query()->with(['pasos', 'autorizador', 'solicitante', 'obra'])->findOrFail($id);
         $firmante = $solicitud->autorizador;
-        if (!$firmante || $solicitud->Estatus !== 'Por autorizar') {
+        if (!$firmante || $solicitud->Estatus !== \App\Models\SolicitudMovimiento::PENDIENTE) {
             return back()->with('error', 'Esta solicitud ya no está esperando el visto bueno.');
         }
 
@@ -259,7 +302,7 @@ class MovimientoErpController extends Controller
             'liga' => $liga,
             'paso' => $paso,
             'solicitud' => $solicitud,
-            'puedeFirmar' => $liga->vigente() && $paso->status === 'pending' && $solicitud->Estatus === 'Por autorizar',
+            'puedeFirmar' => $liga->vigente() && $paso->status === 'pending' && $solicitud->Estatus === \App\Models\SolicitudMovimiento::PENDIENTE,
         ]);
     }
 
@@ -277,13 +320,13 @@ class MovimientoErpController extends Controller
 
         $paso = $liga->paso;
         $solicitud = $paso->solicitud;
-        if ($paso->status !== 'pending' || $solicitud->Estatus !== 'Por autorizar') {
+        if ($paso->status !== 'pending' || $solicitud->Estatus !== \App\Models\SolicitudMovimiento::PENDIENTE) {
             return back()->with('error', 'Esta solicitud ya no está pendiente de firma.');
         }
 
         DB::transaction(function () use ($solicitud, $data, $servicio, $paso) {
             if ($data['decision'] === 'approved') {
-                $solicitud->Estatus = 'Autorizada';
+                $solicitud->Estatus = \App\Models\SolicitudMovimiento::APROBADA;
                 $solicitud->Respuesta = $data['Texto'];
                 $solicitud->autorizado_en = now();
             } else {

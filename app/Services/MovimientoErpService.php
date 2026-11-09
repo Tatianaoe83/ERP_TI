@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class MovimientoErpService
 {
@@ -246,18 +247,70 @@ class MovimientoErpService
             return false;
         }
 
-        $solicitud->loadMissing(['solicitante', 'obra']);
+        $solicitud->loadMissing(['solicitante', 'obra', 'lineas.cargo']);
+        $folio = '#' . $solicitud->SolicitudMovimientoID;
+        $vence = optional($liga->expires_at)->format('d/m/Y H:i');
+        $lineas = $solicitud->lineas->map(function ($linea) {
+            return ($linea->cargo->Clave ?? '') . ' · ' . $linea->CodigoInsumo . ' · ' . $linea->Descripcion
+                . ' · ' . $linea->Cantidad . ' x ' . $linea->Precio;
+        })->implode("\n");
+
+        $html = view('emails.movimientos.firma', [
+            'accent' => '#101D49',
+            'accentSoft' => '#E8EEF8',
+            'eyebrow' => 'Visto bueno',
+            'titulo' => 'Necesitamos tu firma para un movimiento en el ERP',
+            'preheader' => 'Solicitud ' . $folio . ' de ' . ($solicitud->solicitante->NombreEmpleado ?? 'Proser'),
+            'folio' => $folio,
+            'saludo' => $firmante->NombreEmpleado,
+            'intro' => 'Hay un movimiento en el ERP pendiente de tu aprobación. Revisa el detalle y firma o rechaza el visto bueno.',
+            'url' => url('/revision-movimiento/' . $liga->token),
+            'boton' => 'Revisar y firmar',
+            'nota' => 'La liga es personal y vence el ' . $vence . '. Cuando firmes, deja de servir.',
+            'logoCid' => 'logoProser',
+            'marca' => 'Proser',
+            'filas' => [
+                'Solicitud' => $folio,
+                'Solicitó' => $solicitud->solicitante->NombreEmpleado ?? '',
+                'Proyecto' => $solicitud->obra->NombreObra ?? '',
+                'Estatus' => SolicitudMovimiento::PENDIENTE,
+            ],
+            'bloques' => array_filter([
+                'Mensaje' => $solicitud->Justificacion,
+                'Partidas' => $lineas,
+            ]),
+        ])->render();
 
         try {
-            Mail::send('emails.movimientos.firma', [
-                'solicitud' => $solicitud,
-                'firmante' => $firmante,
-                'url' => url('/revision-movimiento/' . $liga->token),
-                'vence' => optional($liga->expires_at)->format('d/m/Y H:i'),
-            ], function ($mensaje) use ($firmante, $solicitud) {
-                $mensaje->to($firmante->Correo, $firmante->NombreEmpleado)
-                    ->subject('Visto bueno de movimiento ERP #' . $solicitud->SolicitudMovimientoID);
-            });
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = config('email_tickets.smtp.host');
+            $mail->Port = config('email_tickets.smtp.port');
+            $mail->SMTPSecure = config('email_tickets.smtp.encryption');
+            $mail->SMTPAuth = true;
+            $mail->Username = config('email_tickets.smtp.username');
+            $mail->Password = config('email_tickets.smtp.password');
+            $mail->CharSet = 'UTF-8';
+            $mail->Timeout = config('email_tickets.smtp.timeout', 30);
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ],
+            ];
+            $desde = config('email_tickets.smtp.from_address', config('mail.from.address'));
+            $mail->setFrom($desde, 'Proser');
+            $mail->addAddress($firmante->Correo, $firmante->NombreEmpleado);
+            $logo = public_path('img/LogoAzul.png');
+            if (is_file($logo)) {
+                $mail->addEmbeddedImage($logo, 'logoProser', 'LogoAzul.png');
+            }
+            $mail->isHTML(true);
+            $mail->Subject = 'Visto bueno de movimiento ERP ' . $folio;
+            $mail->Body = $html;
+            $mail->AltBody = trim(html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8'));
+            $mail->send();
 
             return true;
         } catch (\Throwable $e) {

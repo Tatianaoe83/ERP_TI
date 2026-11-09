@@ -1115,6 +1115,7 @@
     @include('profile.change_password')
     @include('profile.edit_profile')
     @include('partials.modal-detalle-solicitud')
+    @include('partials.modal-detalle-movimiento')
     @livewire('tabla-solicitudes', ['soloModal' => true], key('tabla-solicitudes-asignacion-global'))
 
     {{-- Panel de ticket global: solo fuera de /tickets (ahí el tablero ya lo monta) --}}

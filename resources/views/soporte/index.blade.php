@@ -606,6 +606,12 @@
         <!-- Contenedor Principal con Scroll -->
         <div class="glass-effect rounded-3xl shadow-2xl overflow-hidden flex flex-col" id="form-container">
             <div class="scroll-container p-4 md:p-6" id="scroll-content">
+                @if (session('success'))
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-green-200 text-green-800">
+                        <p class="font-semibold">{{ session('tipo') === 'Movimiento' ? 'Solicitud enviada' : 'Enviado' }}</p>
+                        <p class="text-sm mt-1">{{ session('tipo') === 'Movimiento' ? (session('success') ?: 'La solicitud se envió con éxito. Espera a que aprueben el visto bueno.') : session('success') }}</p>
+                    </div>
+                @endif
                 <form action="{{ route('soporte.ticket') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
 
@@ -1928,43 +1934,40 @@ function renderTelefono() {
     $titulo = match($tipo) {
         'Solicitud' => '¡Solicitud Enviada Exitosamente! 🎉',
         'Mantenimiento' => '¡Solicitud de Mantenimiento Enviada! 🎉',
-        'Movimiento' => '¡Solicitud de movimiento registrada!',
+        'Movimiento' => 'Solicitud enviada',
         default => '¡Ticket Enviado Exitosamente! 🎉',
     };
     $mensaje = match($tipo) {
         'Solicitud' => 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.',
         'Mantenimiento' => 'Hemos recibido tu solicitud de mantenimiento y el equipo de compras la atenderá pronto.',
-        'Movimiento' => 'Se avisó al autorizador del cargo, al auxiliar de control y al residente del proyecto.',
+        'Movimiento' => session('success') ?: 'La solicitud se envió con éxito. Espera a que aprueben el visto bueno.',
         default => 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.',
     };
     @endphp
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        if (!window.Swal) return;
         Swal.fire({
             icon: 'success',
-            title: '{{ $titulo }}',
+            title: @json($titulo),
             html: `
                 <div style="text-align: center; padding: 10px;">
                     <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
                         <strong>¡Gracias por contactarnos!</strong>
                     </p>
                     <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
-                        {{ $mensaje }}
+                        ${@json($mensaje)}
                     </p>
                     <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <i class="fas fa-clock"></i> Te contactaremos a la brevedad posible
+                        ${@json($tipo === 'Movimiento' ? 'Espera a que firmen el visto bueno.' : 'Te contactaremos a la brevedad posible')}
                     </p>
                 </div>
             `,
-            confirmButtonText: '¡Entendido!',
+            confirmButtonText: 'Entendido',
             confirmButtonColor: '#10b981',
             timer: 10000,
-            timerProgressBar: true,
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp'
-            }
+            timerProgressBar: true
+        });
         });
     </script>
     @elseif (session('error'))

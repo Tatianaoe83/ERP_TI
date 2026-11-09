@@ -579,7 +579,7 @@ public function crearTickets(Request $request)
                 'AutorizadorRol' => $roles,
                 'Justificacion' => $data['Justificacion'],
                 'Folio' => $folio !== '' ? $folio : null,
-                'Estatus' => 'Por autorizar',
+                'Estatus' => \App\Models\SolicitudMovimiento::PENDIENTE,
             ]);
 
             foreach (array_values($data['lineas']) as $indice => $linea) {
@@ -610,8 +610,8 @@ public function crearTickets(Request $request)
 
         return redirect()->back()->with([
             'success' => $enviada
-                ? 'Solicitud registrada. Se envió la liga de firma a ' . $firmante->NombreEmpleado . ' y se avisó a control.'
-                : 'Solicitud registrada y se avisó a control. No se pudo enviar la liga de firma; se puede reenviar desde el detalle.',
+                ? 'La solicitud se envió con éxito. Espera a que aprueben el visto bueno.'
+                : 'La solicitud se guardó, pero no se pudo enviar la liga de firma. Se puede reenviar desde el detalle.',
             'tipo' => 'Movimiento',
         ]);
     }
