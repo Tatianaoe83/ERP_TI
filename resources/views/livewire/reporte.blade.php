@@ -484,11 +484,61 @@
                                     @endforeach
                                 </tr>
                             </thead>
+                                @php
+                                    $formatearValorPreview = function ($columna, $valor) {
+                                        if ($valor === null || (is_string($valor) && trim((string) $valor) === '')) {
+                                            return $valor;
+                                        }
+
+                                        $columna = strtolower(trim($columna));
+                                        if ($columna === 'estado' || str_ends_with($columna, '_estado')) {
+                                                $columna = 'estado';
+                                            }
+                                        $valorNormalizado = is_bool($valor)
+                                            ? ($valor ? 'true' : 'false')
+                                            : strtolower(trim((string) $valor));
+
+                                        // Columnas relacionadas con presupuesto.
+                                        if (in_array($columna, ['tipoequipo', 'presupuestado'], true)) {
+                                            return \App\Helpers\PresupuestoAsignacion::etiqueta($valor);
+                                        }
+
+                                        // Columnas con valores compartidos.
+                                        if (in_array($columna, ['estado', 'activo', 'empleado estado'], true)) {
+                                            return match ($valorNormalizado) {
+                                                '0', 'false' => 'Inactivo',
+                                                '1', 'true' => 'Activo',
+                                                default => $valor,
+                                            };
+                                        }
+
+                                        // Disponibilidad.
+                                        if ($columna === 'disponible') {
+                                            return match ($valorNormalizado) {
+                                                '0' => 'Asignada',
+                                                '1' => 'Disponible',
+                                                default => $valor,
+                                            };
+                                        }
+
+                                        return $valor;
+                                    };
+                                @endphp
                             <tbody>
                                 @foreach(collect($resultado)->take(10) as $fila)
                                 <tr>
-                                    @foreach((array)$fila as $valor)
-                                    <td class="px-2 px-sm-3 py-2 small">{{ $valor }}</td>
+                                    @foreach((array)$fila as $columna => $valor)
+                                    <td class="px-2 px-sm-3 py-2 small">
+                                        @if(str_contains(strtolower($columna), 'mesdepago') && !empty($valor))
+                                            @foreach(explode(',', $valor) as $mes)
+                                                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis px-1 py-1 me-1 mb-1 fw-semibold" style="font-size: 0.50rem; letter-spacing: 0.2px;">
+                                                    {{ trim($mes) }}
+                                                </span>
+                                            @endforeach
+                                        @else
+                                            {{ $formatearValorPreview($columna, $valor) }}
+                                        @endif
+                                    </td>
                                     @endforeach
                                 </tr>
                                 @endforeach
