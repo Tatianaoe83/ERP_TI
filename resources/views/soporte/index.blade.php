@@ -1951,7 +1951,7 @@ function renderTelefono() {
                 }).join(', ');
                 var $aviso = $('#cargoMovimientoAviso');
                 if (texto) {
-                    $('#cargoMovimientoAutoriza').text('Se propone para el visto bueno: ' + texto + '. El correo se envía solo a quien elijas en Enviar visto bueno.');
+                    $('#cargoMovimientoAutoriza').text('Se propone para el visto bueno: ' + texto + '.');
                     $aviso.removeClass('hidden aviso-destino--alerta');
                 } else {
                     $('#cargoMovimientoAutoriza').text('No se encontró quién autoriza estos cargos. Busca a la persona en Enviar visto bueno.');
