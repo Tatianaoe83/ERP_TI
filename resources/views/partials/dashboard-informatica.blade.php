@@ -7,8 +7,8 @@
     .dash-top-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        gap: 0.55rem;
+        margin-bottom: 0.7rem;
         align-items: stretch;
     }
     @media (min-width: 1024px) {
@@ -17,7 +17,7 @@
     .dash-top-col {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.55rem;
         min-height: 0;
     }
     .dash-kpi--fill {
@@ -48,8 +48,8 @@
     .dash-kpi-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        gap: 0.55rem;
+        margin-bottom: 0.7rem;
     }
     @media (min-width: 900px) {
         .dash-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -61,8 +61,8 @@
         .dash-kpi-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     .dash-kpi-grid.dash-kpi-grid--ops {
-        gap: 0.75rem;
-        margin-bottom: 1rem;
+        gap: 0.55rem;
+        margin-bottom: 0.65rem;
     }
     @media (min-width: 640px) {
         .dash-kpi-grid.dash-kpi-grid--ops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -249,11 +249,11 @@
         <h3>Tickets abiertos</h3>
         <canvas id="chartTicketsDash"></canvas>
     </div>
-    <div class="dash-chart dash-chart--wide">
+    <div class="dash-chart">
         <h3>Personal por presupuesto interno</h3>
         <canvas id="chartPresupuestoDash"></canvas>
     </div>
-    <div class="dash-chart dash-chart--wide">
+    <div class="dash-chart">
         <h3>Equipos por categoría</h3>
         <canvas id="chartCategoriasDash"></canvas>
     </div>
@@ -265,7 +265,7 @@
 
 @push('third_party_scripts')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261110a"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
 <script>
 (function () {
     function bootDashInformatica() {
@@ -467,8 +467,8 @@
     .dash-charts {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
     }
     @media (min-width: 900px) {
         .dash-charts { grid-template-columns: 1fr 1fr; }
@@ -525,11 +525,11 @@
         <h3>Personal por gerencia</h3>
         <canvas id="chartGerenciasDash"></canvas>
     </div>
-    <div class="dash-chart dash-chart--wide">
+    <div class="dash-chart">
         <h3>Licencias en inventario</h3>
         <canvas id="chartLicenciasDash"></canvas>
     </div>
-    <div class="dash-chart dash-chart--wide">
+    <div class="dash-chart">
         <h3>Estructura</h3>
         <canvas id="chartOrganizacionDash"></canvas>
     </div>

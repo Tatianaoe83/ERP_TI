@@ -339,7 +339,7 @@
                             name="comment"
                             placeholder="Observaciones de {{ strtolower($stageLabel) }}..."
                             rows="4"
-                            {{ (!$canDecide) ? 'disabled' : '' }}></textarea>
+                            {{ (!$canDecide) ? 'disabled' : '' }}>{{ $step->comment }}</textarea>
                     </div>
 
                     @if(!$canDecide && $status === 'pending')

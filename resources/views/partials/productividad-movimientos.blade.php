@@ -64,7 +64,7 @@
     </div>
 </div>
 
-<div class="dash-kpi-grid prod-mov-tiempos" style="margin-top:1rem;">
+<div class="dash-kpi-grid prod-mov-tiempos" style="margin-top:0.55rem;">
     <div class="dash-kpi">
         <div class="dash-kpi__top">
             <div>
@@ -86,11 +86,11 @@
 </div>
 
 <style>
-    .dash-kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .dash-kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin-bottom: 0.65rem; }
     @media (min-width: 900px) { .dash-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     .prod-mov-tiempos { grid-template-columns: 1fr; }
     @media (min-width: 700px) { .prod-mov-tiempos { grid-template-columns: 1fr 1fr; } }
-    .prod-mov-charts { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
+    .prod-mov-charts { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 0.55rem; }
     @media (min-width: 900px) {
         .prod-mov-charts { grid-template-columns: 1fr 1fr; }
         .prod-mov-charts .dash-chart--wide { grid-column: 1 / -1; }
@@ -106,7 +106,7 @@
         <h3>Por estatus</h3>
         <canvas id="chartMovEstatus"></canvas>
     </div>
-    <div class="dash-chart dash-chart--wide">
+    <div class="dash-chart">
         <h3>Solicitudes por mes</h3>
         <canvas id="chartMovMes"></canvas>
     </div>
@@ -122,7 +122,7 @@
 
 @push('third_party_scripts')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261110a"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
 <script>
 (function () {
     var meses = @json(collect($p['meses'] ?? [])->values());

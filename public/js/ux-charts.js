@@ -240,8 +240,8 @@ window.UxCharts = (function () {
     function fijarCaja(caja) {
         caja.style.position = 'relative';
         caja.style.width = '100%';
-        caja.style.height = '240px';
-        caja.style.maxHeight = '240px';
+        caja.style.height = '200px';
+        caja.style.maxHeight = '200px';
         caja.style.overflow = 'hidden';
     }
 

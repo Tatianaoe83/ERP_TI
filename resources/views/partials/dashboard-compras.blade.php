@@ -21,7 +21,7 @@
     .dash-filtro { display: flex; flex-direction: column; gap: 0.35rem; flex: 0 1 180px; min-width: 0; }
     .dash-filtro > span { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
     .dash-filtros .select2-container { width: 100% !important; }
-    .dash-charts { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .dash-charts { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-bottom: 0.65rem; }
     @media (min-width: 900px) { .dash-charts { grid-template-columns: 1fr 1fr; } }
     .dash-chart { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.85rem; padding: 1rem 1rem 0.75rem; }
     .dash-chart h3 { margin: 0 0 0.35rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
@@ -65,7 +65,7 @@
 
 @push('third_party_scripts')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261110a"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
 <script>
 (function () {
     function bootDashCompras() {

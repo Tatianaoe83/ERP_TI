@@ -1622,7 +1622,7 @@
 
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
 <script src="{{ asset('assets/js/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>

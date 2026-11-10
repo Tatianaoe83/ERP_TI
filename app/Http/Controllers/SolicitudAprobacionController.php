@@ -48,15 +48,6 @@ class SolicitudAprobacionController extends Controller
             return $vistaDetenida;
         }
 
-        // Verificar si el token está usado
-        if ($tokenRow->used_at) {
-            $tokenInfo = [
-                'razon' => 'Este enlace ya fue utilizado para firmar la solicitud',
-                'fecha_usado' => $tokenRow->used_at->translatedFormat('d M Y, H:i'),
-            ];
-            return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
-        }
-
         // Verificar si el token está revocado
         if ($tokenRow->revoked_at) {
             $tokenInfo = [
@@ -66,8 +57,11 @@ class SolicitudAprobacionController extends Controller
             return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
         }
 
-        // Verificar si el token expiró
-        if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
+        $yaFirmado = (bool) $tokenRow->used_at;
+
+        // Un enlace vencido que todavía no se usó ya no abre la solicitud.
+        // Si ya firmó, el mismo enlace sigue mostrando la solicitud, sin botones.
+        if (!$yaFirmado && $tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
             $tokenInfo = [
                 'razon' => 'Este enlace ha expirado. El tiempo límite para revisar esta solicitud ha finalizado',
                 'fecha_expiracion' => $tokenRow->expires_at->translatedFormat('d M Y, H:i'),
@@ -96,7 +90,7 @@ class SolicitudAprobacionController extends Controller
             ->where('status', '!=', 'approved')
             ->exists();
 
-        $canDecide = ! $prevNotApproved && $step->status === 'pending';
+        $canDecide = ! $yaFirmado && ! $prevNotApproved && $step->status === 'pending';
 
         $proyectoNombre = $this->obtenerNombreProyecto($solicitud->Proyecto);
         $destinoVoBo = $this->destinoVisibleEnSupervisor($solicitud, $step);

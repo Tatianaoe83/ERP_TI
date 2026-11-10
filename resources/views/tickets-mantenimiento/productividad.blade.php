@@ -331,7 +331,7 @@
 </div>
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
 <script>
 let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos, chartMantArea, chartMantResponsable;
 

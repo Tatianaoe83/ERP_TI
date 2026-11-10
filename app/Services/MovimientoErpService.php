@@ -237,16 +237,18 @@ class MovimientoErpService
         ])->render();
 
         try {
+            $smtp = config('mail.mailers.smtp', []);
             $mail = new PHPMailer(true);
             $mail->isSMTP();
-            $mail->Host = config('email_tickets.smtp.host');
-            $mail->Port = config('email_tickets.smtp.port');
-            $mail->SMTPSecure = config('email_tickets.smtp.encryption');
+            $mail->Host = $smtp['host'] ?? config('email_tickets.smtp.host');
+            $mail->Port = (int) ($smtp['port'] ?? config('email_tickets.smtp.port'));
+            $mail->SMTPSecure = $smtp['encryption'] ?? config('email_tickets.smtp.encryption');
             $mail->SMTPAuth = true;
-            $mail->Username = config('email_tickets.smtp.username');
-            $mail->Password = config('email_tickets.smtp.password');
+            $mail->Username = $smtp['username'] ?? config('email_tickets.smtp.username');
+            $mail->Password = $smtp['password'] ?? config('email_tickets.smtp.password');
             $mail->CharSet = 'UTF-8';
-            $mail->Timeout = config('email_tickets.smtp.timeout', 30);
+            $mail->Timeout = (int) config('email_tickets.smtp.timeout', 30);
+            $mail->SMTPAutoTLS = ($mail->SMTPSecure !== 'ssl');
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,
@@ -254,8 +256,9 @@ class MovimientoErpService
                     'allow_self_signed' => true,
                 ],
             ];
-            $desde = config('email_tickets.smtp.from_address', config('mail.from.address'));
-            $mail->setFrom($desde, 'Proser');
+            $desde = config('mail.from.address') ?: config('email_tickets.smtp.from_address');
+            $nombreDesde = config('mail.from.name') ?: 'Proser';
+            $mail->setFrom($desde, $nombreDesde);
             $mail->clearAllRecipients();
             $mail->clearReplyTos();
             $mail->addAddress($firmante->Correo, $firmante->NombreEmpleado);
