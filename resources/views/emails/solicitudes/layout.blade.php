@@ -28,9 +28,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="x-apple-disable-message-reformatting">
-    <meta name="color-scheme" content="light">
+    <meta name="color-scheme" content="light only">
     <meta name="supported-color-schemes" content="light">
     <title>{{ $titulo }}</title>
+    <style>
+        :root { color-scheme: light only; }
+        body, table, td { color-scheme: light only; }
+    </style>
 </head>
 <body style="margin:0; padding:0; background-color:#F1F5F9; -webkit-font-smoothing:antialiased;">
 
@@ -52,7 +56,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td style="font-family:Segoe UI,Helvetica,Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#FFFFFF;">
-                                        {{ $marca ?? 'Sistema de Solicitudes' }}
+                                        {{ $marca ?? 'Proser' }}
                                     </td>
                                     @if(!empty($folio))
                                         <td align="right" style="font-family:Segoe UI,Helvetica,Arial,sans-serif; font-size:13px; font-weight:600; color:#FFFFFF;">
@@ -74,7 +78,7 @@
                             @endif
                             @if(!empty($logoCid))
                                 <p style="margin:0 0 16px 0;">
-                                    <img src="cid:{{ $logoCid }}" alt="Proser" height="42" style="display:block; height:42px; width:auto; border:0;">
+                                    <img src="cid:{{ $logoCid }}" alt="Proser" height="42" style="display:block; height:42px; width:auto; border:0; background-color:#FFFFFF;">
                                 </p>
                             @endif
                             <h1 style="margin:0; font-size:24px; line-height:1.3; font-weight:700; color:{{ $ink }};">{{ $titulo }}</h1>
@@ -129,7 +133,7 @@
                                         @if(!empty($nota))
                                             <p style="margin:0 0 6px 0; color:{{ $muted }};">{!! $nota !!}</p>
                                         @endif
-                                        <p style="margin:0;">Correo automático de {{ $marca ?? 'Sistema de Solicitudes' }}. No es necesario responder este mensaje.</p>
+                                        <p style="margin:0;">Correo automático de {{ $marca ?? 'Proser' }}. No es necesario responder este mensaje.</p>
                                     </td>
                                 </tr>
                             </table>

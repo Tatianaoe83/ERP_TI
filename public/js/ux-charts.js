@@ -237,14 +237,32 @@ window.UxCharts = (function () {
         });
     }
 
+    function fijarCaja(caja) {
+        caja.style.position = 'relative';
+        caja.style.width = '100%';
+        caja.style.height = '240px';
+        caja.style.maxHeight = '240px';
+        caja.style.overflow = 'hidden';
+    }
+
     function envolverLienzos(raiz) {
         var alcance = raiz && raiz.querySelectorAll ? raiz : document;
         alcance.querySelectorAll('.dash-chart > canvas').forEach(function (canvas) {
             var caja = document.createElement('div');
             caja.className = 'dash-chart__lienzo';
+            fijarCaja(caja);
             canvas.parentNode.insertBefore(caja, canvas);
             caja.appendChild(canvas);
         });
+        alcance.querySelectorAll('.dash-chart__lienzo').forEach(fijarCaja);
+    }
+
+    function crear(canvas, config) {
+        if (!canvas || !window.Chart) return null;
+        var previo = typeof Chart.getChart === 'function' ? Chart.getChart(canvas) : null;
+        if (previo) previo.destroy();
+        envolverLienzos(canvas.closest ? (canvas.closest('.dash-charts') || document) : document);
+        return new Chart(canvas, config);
     }
 
     envolverLienzos(document);
@@ -274,6 +292,8 @@ window.UxCharts = (function () {
         barras: barras,
         linea: linea,
         centro: centro,
-        refrescar: refrescar
+        refrescar: refrescar,
+        preparar: envolverLienzos,
+        crear: crear
     };
 })();

@@ -606,12 +606,6 @@
         <!-- Contenedor Principal con Scroll -->
         <div class="glass-effect rounded-3xl shadow-2xl overflow-hidden flex flex-col" id="form-container">
             <div class="scroll-container p-4 md:p-6" id="scroll-content">
-                @if (session('success'))
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-green-200 text-green-800">
-                        <p class="font-semibold">{{ session('tipo') === 'Movimiento' ? 'Solicitud enviada' : 'Enviado' }}</p>
-                        <p class="text-sm mt-1">{{ session('tipo') === 'Movimiento' ? (session('success') ?: 'La solicitud se envió con éxito. Espera a que aprueben el visto bueno.') : session('success') }}</p>
-                    </div>
-                @endif
                 <form action="{{ route('soporte.ticket') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
 

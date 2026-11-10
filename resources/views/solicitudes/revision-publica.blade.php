@@ -123,6 +123,7 @@
 
                 <div class="p-6 lg:p-8 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
+                        <img src="{{ asset('img/LogoAzul.png') }}" alt="Proser" class="h-10 w-auto mb-4">
                         <span class="text-xs font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase mb-2 block">
                             {{ $solicitud->gerenciaid->NombreGerencia ?? 'Sin Gerencia' }}
                         </span>

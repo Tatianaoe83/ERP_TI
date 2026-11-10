@@ -353,7 +353,7 @@ class MovimientoErpController extends Controller
     private function liga(string $token): ?SolicitudMovimientoToken
     {
         return SolicitudMovimientoToken::query()
-            ->with(['paso.solicitud.solicitante', 'paso.solicitud.obra', 'paso.solicitud.lineas.cargo', 'paso.approver'])
+            ->with(['paso.solicitud.solicitante.puestos', 'paso.solicitud.obra', 'paso.solicitud.lineas.cargo', 'paso.approver'])
             ->where('token', $token)
             ->first();
     }

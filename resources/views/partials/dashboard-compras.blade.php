@@ -65,19 +65,21 @@
 
 @push('third_party_scripts')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110a"></script>
 <script>
 (function () {
     function bootDashCompras() {
         if (!window.Chart || !window.UxCharts || document.getElementById('chartComprasEstatus')?.dataset.listo === '1') return;
         UxCharts.aplicar(Chart);
+        if (typeof UxCharts.preparar === 'function') UxCharts.preparar(document);
+        var nueva = typeof UxCharts.crear === 'function' ? UxCharts.crear : function (canvas, config) { return new window.Chart(canvas, config); };
         var estatus = document.getElementById('chartComprasEstatus');
         var categorias = document.getElementById('chartComprasCategoria');
         if (estatus) {
             estatus.dataset.listo = '1';
             var filas = @json($estatusChart);
             var labels = Object.keys(filas);
-            new Chart(estatus, {
+            nueva(estatus, {
                 type: 'doughnut',
                 plugins: [UxCharts.centro],
                 data: {
@@ -93,7 +95,7 @@
         }
         if (categorias) {
             var cats = @json($categoriaChart->values());
-            new Chart(categorias, {
+            nueva(categorias, {
                 type: 'bar',
                 data: {
                     labels: cats.map(function (f) { return f.Categoria || 'Sin categoría'; }),
@@ -110,7 +112,7 @@
         var movimiento = document.getElementById('chartComprasMovimiento');
         if (movimiento) {
             var filasM = @json($chartComprasMovimiento);
-            new Chart(movimiento, {
+            nueva(movimiento, {
                 type: 'bar',
                 data: {
                     labels: filasM.map(function (f) { return f.nombre; }),
@@ -129,7 +131,7 @@
             var filasP = @json($chartComprasPrioridad);
             if (!filasP.length) filasP = [{ nombre: 'Sin activas', total: 1 }];
             var vacia = filasP[0].nombre === 'Sin activas';
-            new Chart(prioridad, {
+            nueva(prioridad, {
                 type: 'doughnut',
                 plugins: vacia ? [] : [UxCharts.centro],
                 data: {

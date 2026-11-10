@@ -265,12 +265,14 @@
 
 @push('third_party_scripts')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
-<script src="{{ asset('js/ux-charts.js') }}?v=20261022l"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110a"></script>
 <script>
 (function () {
     function bootDashInformatica() {
         if (!window.Chart || !window.UxCharts || document.getElementById('chartInventarioDash')?.dataset.listo === '1') return;
         UxCharts.aplicar(Chart);
+        if (typeof UxCharts.preparar === 'function') UxCharts.preparar(document);
+        var nueva = typeof UxCharts.crear === 'function' ? UxCharts.crear : function (canvas, config) { return new window.Chart(canvas, config); };
         var inventario = document.getElementById('chartInventarioDash');
         var gerencias = document.getElementById('chartPresupuestoDash');
         var categorias = document.getElementById('chartCategoriasDash');
@@ -280,7 +282,7 @@
             var meses = @json($chartMeses);
             var optsMes = UxCharts.barras(false);
             optsMes.plugins.legend.display = true;
-            new Chart(presupuestoMes, {
+            nueva(presupuestoMes, {
                 type: 'bar',
                 data: {
                     labels: meses.map(function (f) { return f.nombre; }),
@@ -298,7 +300,7 @@
             if (!filasT.length) {
                 filasT = [{ nombre: 'Sin tickets abiertos', total: 1 }];
             }
-            new Chart(ticketsChart, {
+            nueva(ticketsChart, {
                 type: 'doughnut',
                 plugins: filasT[0].nombre === 'Sin tickets abiertos' ? [] : [UxCharts.centro],
                 data: {
@@ -313,7 +315,7 @@
         }
         if (inventario) {
             inventario.dataset.listo = '1';
-            new Chart(inventario, {
+            nueva(inventario, {
                 type: 'doughnut',
                 plugins: [UxCharts.centro],
                 data: {
@@ -333,7 +335,7 @@
         }
         if (gerencias) {
             var filasG = @json($chartPresupuestos);
-            new Chart(gerencias, {
+            nueva(gerencias, {
                 type: 'bar',
                 data: {
                     labels: filasG.map(function (f) { return f.nombre; }),
@@ -349,7 +351,7 @@
         }
         if (categorias) {
             var filasC = @json($chartCategorias);
-            new Chart(categorias, {
+            nueva(categorias, {
                 type: 'bar',
                 data: {
                     labels: filasC.map(function (f) { return f.nombre; }),
@@ -367,7 +369,7 @@
             if (!canvas) return;
             var sinDatos = !filas.length || filas.every(function (f) { return !f.total; });
             if (sinDatos) filas = [{ nombre: vacio, total: 1 }];
-            new Chart(canvas, {
+            nueva(canvas, {
                 type: 'doughnut',
                 plugins: sinDatos ? [] : [UxCharts.centro],
                 data: {
@@ -382,7 +384,7 @@
         }
         function barrasNom(canvas, filas, horizontal) {
             if (!canvas) return;
-            new Chart(canvas, {
+            nueva(canvas, {
                 type: 'bar',
                 data: {
                     labels: filas.map(function (f) { return f.nombre; }),

@@ -705,6 +705,9 @@ class SolicitudAprobacionEmailService
 
     private function renderMensaje(array $datos): string
     {
+        $datos['logoCid'] = $datos['logoCid'] ?? 'logoProser';
+        $datos['marca'] = $datos['marca'] ?? 'Proser';
+
         return view('emails.solicitudes.mensaje', $datos)->render();
     }
 
@@ -718,9 +721,12 @@ class SolicitudAprobacionEmailService
             $this->configurarMailer($mail);
 
             $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
-            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
 
-            $mail->setFrom($fromAddress, $nombreSoporte);
+            $mail->setFrom($fromAddress, 'Proser');
+            $logo = public_path('img/LogoAzul.png');
+            if (is_file($logo)) {
+                $mail->addEmbeddedImage($logo, 'logoProser', 'LogoAzul.png');
+            }
             $mail->addAddress($correo, $nombre ?? '');
             $mail->isHTML(true);
             $mail->CharSet = 'UTF-8';
