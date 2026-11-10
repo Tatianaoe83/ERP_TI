@@ -10,7 +10,6 @@ use App\Models\SolicitudMovimientoPaso;
 use App\Models\SolicitudMovimientoToken;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -66,50 +65,6 @@ class MovimientoErpService
 
     public function avisar(SolicitudMovimiento $solicitud): void
     {
-        $solicitud->loadMissing(['solicitante', 'obra', 'cargo', 'residente', 'autorizador', 'lineas.cargo']);
-
-        $residentes = $solicitud->ResidenteControlID
-            ? collect([$solicitud->residente])
-            : $this->residentesControl();
-
-        $destinatarios = $this->auxiliaresControl()
-            ->merge($residentes)
-            ->filter()
-            ->unique('EmpleadoID')
-            ->reject(fn ($persona) => (int) $persona->EmpleadoID === (int) $solicitud->AutorizadorID);
-
-        $folio = $solicitud->Folio ?: ('solicitud ' . $solicitud->SolicitudMovimientoID);
-        $asunto = 'Solicitud de movimiento ERP ' . $folio;
-        $lineas = $solicitud->lineas->map(function ($linea) {
-            return ($linea->Orden) . '. ' . ($linea->cargo->Clave ?? '')
-                . ' | ' . $linea->CodigoInsumo
-                . ' | ' . $linea->Descripcion
-                . ' | ' . $linea->Partida
-                . ' | ' . $linea->Cantidad . ' x ' . $linea->Precio
-                . ' = ' . $linea->Importe
-                . ' | ' . $linea->Justificacion;
-        })->implode("\n");
-
-        $cuerpo = "Hay una solicitud de movimiento en el ERP.\n\n"
-            . 'Solicitante: ' . ($solicitud->solicitante->NombreEmpleado ?? '') . "\n"
-            . 'Proyecto: ' . ($solicitud->obra->NombreObra ?? '') . "\n"
-            . 'Autoriza: ' . $solicitud->AutorizadorRol . "\n"
-            . 'Residente de control: ' . ($solicitud->residente->NombreEmpleado ?? 'residentes de control') . "\n\n"
-            . $solicitud->Justificacion . "\n\n"
-            . $lineas;
-
-        foreach ($destinatarios as $persona) {
-            if (empty($persona->Correo)) {
-                continue;
-            }
-            try {
-                Mail::raw($cuerpo, function ($mensaje) use ($persona, $asunto) {
-                    $mensaje->to($persona->Correo, $persona->NombreEmpleado)->subject($asunto);
-                });
-            } catch (\Throwable $e) {
-                Log::warning('No se pudo avisar el movimiento ERP a ' . $persona->Correo . ': ' . $e->getMessage());
-            }
-        }
     }
 
     private function porPuestoExacto(string $puesto): ?Empleados
@@ -301,6 +256,8 @@ class MovimientoErpService
             ];
             $desde = config('email_tickets.smtp.from_address', config('mail.from.address'));
             $mail->setFrom($desde, 'Proser');
+            $mail->clearAllRecipients();
+            $mail->clearReplyTos();
             $mail->addAddress($firmante->Correo, $firmante->NombreEmpleado);
             $logo = public_path('img/LogoAzul.png');
             if (is_file($logo)) {

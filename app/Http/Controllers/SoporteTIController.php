@@ -609,8 +609,8 @@ public function crearTickets(Request $request)
 
         return redirect()->back()->with([
             'success' => $enviada
-                ? 'La solicitud se envió con éxito. Espera a que aprueben el visto bueno.'
-                : 'La solicitud se guardó, pero no se pudo enviar la liga de firma. Se puede reenviar desde el detalle.',
+                ? 'La solicitud se envió. El correo de visto bueno se mandó solo a ' . $firmante->NombreEmpleado . '.'
+                : 'La solicitud se guardó, pero no se pudo enviar el correo a ' . $firmante->NombreEmpleado . '. Se puede reenviar desde el detalle.',
             'tipo' => 'Movimiento',
         ]);
     }

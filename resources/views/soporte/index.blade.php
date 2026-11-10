@@ -783,8 +783,9 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label for="voboMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Enviar visto bueno a *</label>
-                                <select id="voboMovimiento" name="VoBoEmpleadoID" class="w-full" disabled></select>
-                                <p class="text-xs text-gray-600 mt-1">Se propone según el cargo. Puedes buscar a otra persona. Le llega una liga temporal para firmar.</p>
+                                <input type="hidden" name="VoBoEmpleadoID" id="voboMovimientoId" value="">
+                                <select id="voboMovimiento" class="w-full" disabled></select>
+                                <p class="text-xs text-gray-600 mt-1">El correo de la solicitud se envía solo a esta persona, con una liga temporal para firmar. Puedes cambiarla.</p>
                             </div>
                             <div class="md:col-span-2">
                                 <label for="justificacionMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
@@ -1793,7 +1794,15 @@ function renderTelefono() {
                     }
                 }
             });
-            $campo.on('select2:select', function () { window.voboElegidoAMano = true; });
+            $campo.on('select2:select', function (evento) {
+                window.voboElegidoAMano = true;
+                fijarVoboMovimiento(evento.params && evento.params.data ? evento.params.data.id : $campo.val());
+            });
+            $campo.on('select2:clear', function () { fijarVoboMovimiento(''); });
+        }
+
+        function fijarVoboMovimiento(id) {
+            $('#voboMovimientoId').val(id ? String(id) : '');
         }
 
         function proponerVoboMovimiento(persona) {
@@ -1803,6 +1812,7 @@ function renderTelefono() {
                 $campo.append(new Option(persona.nombre, persona.id, true, true));
             }
             $campo.val(String(persona.id)).trigger('change');
+            fijarVoboMovimiento(persona.id);
         }
 
         function consultarAutorizadoresMovimiento() {
@@ -1819,7 +1829,7 @@ function renderTelefono() {
                 var texto = (data.autorizadores || []).map(function (persona) {
                     return persona.nombre + (persona.puesto ? ' (' + persona.puesto + ')' : '');
                 }).join(', ');
-                $('#cargoMovimientoAutoriza').text(texto ? 'Se propone: ' + texto + '.' : 'No se encontró quién autoriza estos cargos. Busca a la persona.');
+                $('#cargoMovimientoAutoriza').text(texto ? 'Sugerencia según el cargo: ' + texto + '. El correo se envía solo a quien elijas en Enviar visto bueno.' : 'No se encontró quién autoriza estos cargos. Busca a la persona.');
                 if (!window.voboElegidoAMano && data.autorizadores && data.autorizadores[0]) {
                     proponerVoboMovimiento(data.autorizadores[0]);
                 }
@@ -3725,7 +3735,8 @@ function renderTelefono() {
                         errores.push('El solicitante debe ser una persona física activa.');
                     }
                     if (!$('#obraMovimiento').val()) errores.push('Selecciona el proyecto.');
-                    if (!$('#voboMovimiento').val()) errores.push('Elige a quién se envía el visto bueno.');
+                    if (!$('#voboMovimiento').val() && !$('#voboMovimientoId').val()) errores.push('Elige a quién se envía el visto bueno.');
+                    if (!$('#voboMovimientoId').val() && $('#voboMovimiento').val()) fijarVoboMovimiento($('#voboMovimiento').val());
                     if (!$('#justificacionMovimiento').val().trim()) errores.push('Escribe el mensaje de la solicitud.');
                     var partidas = 0;
                     $('#lineasMovimiento .linea-movimiento').each(function () {

@@ -1601,40 +1601,37 @@
                     card.querySelectorAll('.bg-red-500.rounded-full.w-4.h-4').forEach(badge => badge.remove());
                 });
 
-                fetch(`/tickets/${datos.id}/mark-notifications-read`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                }).catch(() => {});
                 this.asuntoCorreo = `Re: Ticket #${datos.id}`;
                 this.mostrarCc = false;
                 this.mostrarBcc = false;
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
-                // Limpiar archivos adjuntos al abrir un nuevo modal
                 this.archivosAdjuntos = [];
                 const adjuntosInput = document.getElementById('adjuntos');
                 if (adjuntosInput) {
                     adjuntosInput.value = '';
                 }
-                // Cargar datos del ticket para el formulario
                 this.cargarDatosTicket(datos.id);
-                this.cargarMensajes();
-                // Iniciar verificación automática de mensajes nuevos
-                this.iniciarVerificacionMensajes();
-                // Inicializar TinyMCE si no está inicializado
-                this.$nextTick(() => {
+                const ticketAbierto = datos.id;
+                setTimeout(() => {
+                    if (!this.mostrar || this.selected.id !== ticketAbierto) return;
+                    fetch(`/tickets/${ticketAbierto}/mark-notifications-read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    }).catch(() => {});
+                    this.cargarMensajes();
+                    this.iniciarVerificacionMensajes();
                     if (!this.tinyMCEInstance) {
                         this.inicializarTinyMCE();
                     } else {
-                        // Si ya está inicializado, actualizar su estado
                         this.actualizarEstadoEditor();
                     }
-                });
+                }, 200);
             },
 
             refrescarSelectsFormulario() {
@@ -1680,13 +1677,6 @@
                                 this.selected.estado_empleado = data.ticket.estado_empleado || '';
                             }
                             
-                            this.$nextTick(() => {
-                                this.actualizarEstadoEditor();
-                                this.refrescarSelectsFormulario();
-                            });
-                            setTimeout(() => this.refrescarSelectsFormulario(), 160);
-
-                            // Reasienta los <select> ya que x-for renderizó y libera la cascada.
                             this.restaurarCascada();
                         }
                     }
