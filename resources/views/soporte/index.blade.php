@@ -144,10 +144,96 @@
             min-width: 0;
         }
 
+        .agregar-partida {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            height: 2rem;
+            padding: 0 0.75rem;
+            border: 1px solid #166534;
+            border-radius: 8px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 200ms ease, color 200ms ease;
+        }
+
+        .agregar-partida:hover {
+            background: #166534;
+            color: #fff;
+        }
+
+        .linea-movimiento {
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .linea-movimiento__barra {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.65rem;
+            background: #f0fdf4;
+            border-bottom: 1px solid #dcfce7;
+        }
+
+        .linea-movimiento__num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.45rem;
+            height: 1.45rem;
+            border-radius: 999px;
+            background: #166534;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .linea-movimiento__titulo {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #166534;
+        }
+
+        .quitar-linea {
+            margin-left: auto;
+            width: 1.7rem;
+            height: 1.7rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            background: #fff;
+            color: #b91c1c;
+            cursor: pointer;
+            transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+        }
+
+        .quitar-linea:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            color: #fff;
+        }
+
+        .linea-movimiento--unica .quitar-linea {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
         .partida-mov {
             display: grid;
             grid-template-columns: 1fr;
             gap: 0.6rem;
+            padding: 0.75rem;
         }
 
         @media (min-width: 640px) {
@@ -165,7 +251,10 @@
 
         .partida-mov label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
             color: #6b7280;
             min-width: 0;
         }
@@ -174,16 +263,37 @@
         .partida-mov select {
             display: block;
             width: 100%;
-            margin-top: 0.2rem;
+            margin-top: 0.25rem;
             box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #111827;
+        }
+
+        .partida-mov .importe-linea {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #14532d;
         }
 
         .mov-enviar {
-            position: sticky;
-            bottom: 0;
-            background: #fff;
-            padding-top: 0.75rem;
-            z-index: 5;
+            padding-top: 0.35rem;
+        }
+
+        .aviso-destino {
+            border-radius: 12px;
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1e293b;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            line-height: 1.45;
+        }
+
+        .aviso-destino--alerta {
+            border-color: #fcd34d;
+            background: #fffbeb;
         }
 
         /* Inputs focus mejorados */
@@ -794,23 +904,29 @@
                             <div class="md:col-span-2">
                                 <div class="flex items-center justify-between gap-2 mb-2">
                                     <label class="block text-xs md:text-sm font-medium text-gray-700">Partidas del movimiento *</label>
-                                    <button type="button" id="agregarLineaMovimiento" class="text-sm text-green-800 underline">Agregar partida</button>
+                                    <button type="button" id="agregarLineaMovimiento" class="agregar-partida"><i class="fas fa-plus"></i>Agregar partida</button>
                                 </div>
                                 <div id="lineasMovimiento" class="space-y-3"></div>
-                                <p id="cargoMovimientoAutoriza" class="text-sm text-green-800 mt-2"></p>
+                            </div>
+                            <div id="cargoMovimientoAviso" class="aviso-destino md:col-span-2 hidden">
+                                <p id="cargoMovimientoAutoriza"></p>
                             </div>
                             <template id="lineaMovimientoTpl">
-                                <div class="linea-movimiento rounded-xl border border-gray-200 p-3">
+                                <div class="linea-movimiento">
+                                    <div class="linea-movimiento__barra">
+                                        <span class="linea-movimiento__num">1</span>
+                                        <span class="linea-movimiento__titulo">Partida</span>
+                                        <button type="button" class="quitar-linea" title="Quitar partida" aria-label="Quitar partida"><i class="fas fa-times"></i></button>
+                                    </div>
                                     <div class="partida-mov">
-                                        <label>Con cargo a<select class="cargo-linea px-2 py-2 border border-gray-200 rounded"></select></label>
-                                        <label>Código<input type="text" class="codigo-linea px-2 py-2 border border-gray-200 rounded" maxlength="40"></label>
-                                        <label>Descripción<input type="text" class="desc-linea px-2 py-2 border border-gray-200 rounded" maxlength="180"></label>
-                                        <label>Partida<input type="text" class="partida-linea px-2 py-2 border border-gray-200 rounded" maxlength="120"></label>
-                                        <label>Cantidad<input type="number" step="0.01" class="cantidad-linea px-2 py-2 border border-gray-200 rounded"></label>
-                                        <label>Precio<input type="number" step="0.01" class="precio-linea px-2 py-2 border border-gray-200 rounded"></label>
-                                        <label>Importe<input type="text" class="importe-linea px-2 py-2 border border-gray-200 rounded bg-gray-50" readonly></label>
-                                        <label>Justificación<input type="text" class="just-linea px-2 py-2 border border-gray-200 rounded" maxlength="500"></label>
-                                        <button type="button" class="quitar-linea text-red-600 text-sm py-2 cursor-pointer">Quitar</button>
+                                        <label>Con cargo a<select class="cargo-linea px-2 py-2"></select></label>
+                                        <label>Código<input type="text" class="codigo-linea px-2 py-2" maxlength="40"></label>
+                                        <label>Descripción<input type="text" class="desc-linea px-2 py-2" maxlength="180"></label>
+                                        <label>Partida<input type="text" class="partida-linea px-2 py-2" maxlength="120"></label>
+                                        <label>Cantidad<input type="number" step="0.01" class="cantidad-linea px-2 py-2"></label>
+                                        <label>Precio<input type="number" step="0.01" class="precio-linea px-2 py-2"></label>
+                                        <label>Importe<input type="text" class="importe-linea px-2 py-2" readonly></label>
+                                        <label>Justificación<input type="text" class="just-linea px-2 py-2" maxlength="500"></label>
                                     </div>
                                 </div>
                             </template>
@@ -1748,7 +1864,9 @@ function renderTelefono() {
         }
 
         function numerarLineasMovimiento() {
-            $('#lineasMovimiento .linea-movimiento').each(function (indice) {
+            var filas = $('#lineasMovimiento .linea-movimiento');
+            filas.each(function (indice) {
+                $(this).find('.linea-movimiento__num').text(indice + 1);
                 $(this).find('.cargo-linea').attr('name', 'lineas[' + indice + '][CargoID]');
                 $(this).find('.codigo-linea').attr('name', 'lineas[' + indice + '][CodigoInsumo]');
                 $(this).find('.desc-linea').attr('name', 'lineas[' + indice + '][Descripcion]');
@@ -1757,6 +1875,7 @@ function renderTelefono() {
                 $(this).find('.precio-linea').attr('name', 'lineas[' + indice + '][Precio]');
                 $(this).find('.just-linea').attr('name', 'lineas[' + indice + '][Justificacion]');
             });
+            filas.toggleClass('linea-movimiento--unica', filas.length < 2);
         }
 
         function agregarLineaMovimiento() {
@@ -1823,13 +1942,21 @@ function renderTelefono() {
             });
             if (!obra || !cargos.length) {
                 $('#cargoMovimientoAutoriza').text('');
+                $('#cargoMovimientoAviso').addClass('hidden').removeClass('aviso-destino--alerta');
                 return;
             }
             $.get('/movimientos-erp/autorizadores', { obra_id: obra, cargos: cargos }, function (data) {
                 var texto = (data.autorizadores || []).map(function (persona) {
                     return persona.nombre + (persona.puesto ? ' (' + persona.puesto + ')' : '');
                 }).join(', ');
-                $('#cargoMovimientoAutoriza').text(texto ? 'Sugerencia según el cargo: ' + texto + '. El correo se envía solo a quien elijas en Enviar visto bueno.' : 'No se encontró quién autoriza estos cargos. Busca a la persona.');
+                var $aviso = $('#cargoMovimientoAviso');
+                if (texto) {
+                    $('#cargoMovimientoAutoriza').text('Se propone para el visto bueno: ' + texto + '. El correo se envía solo a quien elijas en Enviar visto bueno.');
+                    $aviso.removeClass('hidden aviso-destino--alerta');
+                } else {
+                    $('#cargoMovimientoAutoriza').text('No se encontró quién autoriza estos cargos. Busca a la persona en Enviar visto bueno.');
+                    $aviso.removeClass('hidden').addClass('aviso-destino--alerta');
+                }
                 if (!window.voboElegidoAMano && data.autorizadores && data.autorizadores[0]) {
                     proponerVoboMovimiento(data.autorizadores[0]);
                 }
