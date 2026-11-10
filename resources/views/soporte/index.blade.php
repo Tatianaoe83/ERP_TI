@@ -2062,17 +2062,11 @@ function renderTelefono() {
     @if (session('success'))
     @php
     $tipo = session('tipo', 'Ticket');
-    $titulo = match($tipo) {
-        'Solicitud' => '¡Solicitud Enviada Exitosamente! 🎉',
-        'Mantenimiento' => '¡Solicitud de Mantenimiento Enviada! 🎉',
-        'Movimiento' => 'Solicitud enviada',
-        default => '¡Ticket Enviado Exitosamente! 🎉',
-    };
     $mensaje = match($tipo) {
-        'Solicitud' => 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.',
-        'Mantenimiento' => 'Hemos recibido tu solicitud de mantenimiento y el equipo de compras la atenderá pronto.',
-        'Movimiento' => session('success') ?: 'La solicitud se envió con éxito. Espera a que aprueben el visto bueno.',
-        default => 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.',
+        'Solicitud' => 'Recibimos tu solicitud de compra. El equipo la revisará pronto.',
+        'Mantenimiento' => 'Recibimos tu solicitud de mantenimiento. El equipo de compras la atenderá pronto.',
+        'Movimiento' => session('success') ?: 'La solicitud se envió. Espera el visto bueno.',
+        default => 'Recibimos tu ticket. El equipo de soporte lo revisará pronto.',
     };
     @endphp
     <script>
@@ -2080,22 +2074,19 @@ function renderTelefono() {
         if (!window.Swal) return;
         Swal.fire({
             icon: 'success',
-            title: @json($titulo),
+            title: 'Solicitud enviada',
             html: `
-                <div style="text-align: center; padding: 10px;">
-                    <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
-                        <strong>¡Gracias por contactarnos!</strong>
+                <div style="text-align: center; padding: 4px 8px 0;">
+                    <p style="font-size: 15px; margin: 0 0 8px; color: #1e293b;">
+                        <strong>Gracias por contactarnos</strong>
                     </p>
-                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                    <p style="font-size: 14px; color: #475569; margin: 0;">
                         ${@json($mensaje)}
-                    </p>
-                    <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        ${@json($tipo === 'Movimiento' ? 'Espera a que firmen el visto bueno.' : 'Te contactaremos a la brevedad posible')}
                     </p>
                 </div>
             `,
             confirmButtonText: 'Entendido',
-            confirmButtonColor: '#10b981',
+            confirmButtonColor: '#0f766e',
             timer: 10000,
             timerProgressBar: true
         });
@@ -2870,7 +2861,10 @@ function renderTelefono() {
                             $("#SupervisorID").val(id);
                             $suggestions.empty().addClass("hidden");
 
-                            $.get('/destinoDeJefe', { empleado_id: id }, function (resp) {
+                            $.get('/destinoDeJefe', {
+                                empleado_id: id,
+                                solicitante_id: $('#EmpleadoIDSolicitud').val()
+                            }, function (resp) {
                                 window.pintarAvisoSolicitud(resp);
                             });
                         });

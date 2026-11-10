@@ -147,7 +147,7 @@
                 <option value="{{ $id }}" @if((int) $filtrosDash['presupuesto_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
-    </div>
+            </div>
     <div class="form-group">
         <label for="dash-gerencia">Gerencia</label>
         <select id="dash-gerencia" name="gerencia_id" class="jz form-control">
@@ -156,7 +156,7 @@
                 <option value="{{ $id }}" @if((int) $filtrosDash['gerencia_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
             @endforeach
         </select>
-    </div>
+        </div>
     <div class="form-group">
         <label for="dash-centro">Centro de costos</label>
         <select id="dash-centro" name="centro_id" class="jz form-control">
@@ -173,7 +173,7 @@
                 <option value="{{ $anioOpcion }}" @if($anioDash === $anioOpcion) selected @endif>{{ $anioOpcion }}</option>
             @endfor
         </select>
-    </div>
+            </div>
     <div class="form-group d-flex align-items-end">
         <a href="{{ route('home') }}" class="index-page__btn-primary">
             <i class="fa fa-times"></i> Limpiar filtros
@@ -244,15 +244,15 @@
     <div class="dash-chart">
         <h3>Inventario asignado</h3>
         <canvas id="chartInventarioDash"></canvas>
-    </div>
+            </div>
     <div class="dash-chart">
         <h3>Tickets abiertos</h3>
         <canvas id="chartTicketsDash"></canvas>
-    </div>
+        </div>
     <div class="dash-chart">
         <h3>Personal por presupuesto interno</h3>
         <canvas id="chartPresupuestoDash"></canvas>
-    </div>
+            </div>
     <div class="dash-chart">
         <h3>Equipos por categoría</h3>
         <canvas id="chartCategoriasDash"></canvas>
@@ -505,12 +505,12 @@
         <h3>Líneas telefónicas</h3>
         <p class="dash-kpi__hint">Disponibles del inventario y asignadas al filtro.</p>
         <canvas id="chartLineasDash"></canvas>
-    </div>
+            </div>
     <div class="dash-chart">
         <h3>Asignación extra y propia</h3>
         <p class="dash-kpi__hint">Extra, compartido y equipo del colaborador.</p>
         <canvas id="chartExtraDash"></canvas>
-    </div>
+        </div>
     <div class="dash-chart">
         <h3>Carga operativa</h3>
         <p class="dash-kpi__hint">Tickets, tareas, solicitudes y auditorías del filtro.</p>
@@ -520,15 +520,15 @@
         <h3>Mantenimiento {{ $anioDash }}</h3>
         <p class="dash-kpi__hint">Programados frente a concluidos.</p>
         <canvas id="chartMantenimientoDash"></canvas>
-    </div>
+</div>
     <div class="dash-chart">
         <h3>Personal por gerencia</h3>
         <canvas id="chartGerenciasDash"></canvas>
-    </div>
+        </div>
     <div class="dash-chart">
         <h3>Licencias en inventario</h3>
         <canvas id="chartLicenciasDash"></canvas>
-    </div>
+        </div>
     <div class="dash-chart">
         <h3>Estructura</h3>
         <canvas id="chartOrganizacionDash"></canvas>

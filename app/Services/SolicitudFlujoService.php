@@ -60,6 +60,26 @@ class SolicitudFlujoService
     }
 
     /**
+     * El supervisor se puede cambiar. Después de su firma, la solicitud sigue
+     * con el gerente de quien la pidió. Si la persona elegida ya es el gerente
+     * o el director, se queda con ella.
+     *
+     * @return array{empleado: ?Empleados, rol: string, detalle: string, gerencia: ?Gerencia}
+     */
+    public function destinoDespuesDelSupervisor(Empleados $solicitante, ?Empleados $supervisor): array
+    {
+        if ($supervisor) {
+            $propio = $this->destinoVisible($supervisor);
+            $id = (int) ($propio['empleado']->EmpleadoID ?? 0);
+            if ($id > 0 && $id === (int) $supervisor->EmpleadoID) {
+                return $propio;
+            }
+        }
+
+        return $this->destinoTrasSupervisor($solicitante);
+    }
+
+    /**
      * @return array{empleado: ?Empleados, rol: string, detalle: string, gerencia: ?Gerencia}
      */
     public function destinoTrasSupervisor(Empleados $empleado): array

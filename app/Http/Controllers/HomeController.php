@@ -28,7 +28,7 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:ver-dashboard|ver-compras|ver-presupuesto|ver-presupuestos');
+        $this->middleware('permission:ver-dashboard|ver-compras|ver-control|ver-presupuesto|ver-presupuestos');
     }
 
     public static function destinoDe($user): string

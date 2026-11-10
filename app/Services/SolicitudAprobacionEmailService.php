@@ -630,17 +630,31 @@ class SolicitudAprobacionEmailService
      */
     private function fraseDestinoTrasSupervisor(Solicitud $solicitud): string
     {
-        $solicitud->loadMissing('empleadoid');
-        if (!$solicitud->empleadoid) {
+        $paso = SolicitudPasos::query()
+            ->where('solicitud_id', $solicitud->SolicitudID)
+            ->where('stage', 'gerencia')
+            ->with('approverEmpleado.puestos')
+            ->first();
+        $persona = $paso?->approverEmpleado;
+
+        if (!$persona) {
+            $solicitud->loadMissing('empleadoid');
+            if (!$solicitud->empleadoid) {
+                return '';
+            }
+            $destino = app(SolicitudFlujoService::class)->destinoTrasSupervisor($solicitud->empleadoid);
+            $persona = $destino['empleado'] ?? null;
+            $rol = $destino['rol'] ?? 'Gerente';
+        } else {
+            $puesto = (string) ($persona->puestos->NombrePuesto ?? '');
+            $rol = stripos($puesto, 'DIRECTOR') !== false ? 'Director' : 'Gerente';
+        }
+
+        if (!$persona) {
             return '';
         }
 
-        $destino = app(SolicitudFlujoService::class)->destinoTrasSupervisor($solicitud->empleadoid);
-        if (!$destino['empleado']) {
-            return '';
-        }
-
-        return ' Al firmar, se envía a <strong>' . e($destino['empleado']->NombreEmpleado) . '</strong> (' . e($destino['rol']) . ').';
+        return ' Al firmar, se envía a <strong>' . e($persona->NombreEmpleado) . '</strong> (' . e($rol) . ').';
     }
 
     private function filasSolicitud(Solicitud $solicitud): array

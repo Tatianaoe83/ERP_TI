@@ -125,7 +125,11 @@ class SoporteTIController extends Controller
             return response()->json(['error' => 'El jefe debe ser una persona física activa.'], 422);
         }
 
-        $destino = app(SolicitudFlujoService::class)->destinoVisible($persona);
+        $flujo = app(SolicitudFlujoService::class);
+        $solicitante = Empleados::query()->fisicosActivos()->find((int) $request->input('solicitante_id'));
+        $destino = $solicitante
+            ? $flujo->destinoDespuesDelSupervisor($solicitante, $persona)
+            : $flujo->destinoVisible($persona);
 
         $destinoId = (int) ($destino['empleado']->EmpleadoID ?? 0);
 
@@ -339,10 +343,9 @@ public function crearTickets(Request $request)
             }
 
             $gerencia = $empleadoSolicitante->puestos?->departamentos?->gerencia;
-            // Si eligieron otro jefe, el siguiente visto bueno es el de esa persona.
-            $destino = $supervisor
-                ? $flujo->destinoVisible($supervisor)
-                : $flujo->destinoTrasSupervisor($empleadoSolicitante);
+            // Cambiar al supervisor no cambia la gerencia de la compra.
+            // Solo si esa persona ya es el gerente o el director, la solicitud se queda con ella.
+            $destino = $flujo->destinoDespuesDelSupervisor($empleadoSolicitante, $supervisor);
             $gerente = $destino['empleado'];
             $gerencia = $gerencia ?: $destino['gerencia'];
 

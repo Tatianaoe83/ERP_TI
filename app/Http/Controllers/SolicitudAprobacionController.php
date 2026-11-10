@@ -126,17 +126,14 @@ class SolicitudAprobacionController extends Controller
             return null;
         }
 
-        $resuelto = app(SolicitudFlujoService::class)->destinoTrasSupervisor($solicitud->empleadoid);
+        $persona->loadMissing('puestos.departamentos.gerencia');
         $puesto = (string) ($persona->puestos->NombrePuesto ?? '');
-        $mismo = $resuelto['empleado'] && (int) $resuelto['empleado']->EmpleadoID === (int) $persona->EmpleadoID;
-        $rol = $mismo
-            ? ($resuelto['rol'] ?: 'Gerente')
-            : (stripos($puesto, 'DIRECTOR') !== false ? 'Director' : 'Gerente');
+        $gerencia = (string) ($persona->puestos->departamentos->gerencia->NombreGerencia ?? '');
 
         return [
             'nombre' => $persona->NombreEmpleado,
-            'rol' => $rol,
-            'detalle' => $mismo ? ($resuelto['detalle'] ?? '') : '',
+            'rol' => stripos($puesto, 'DIRECTOR') !== false ? 'Director' : 'Gerente',
+            'detalle' => $gerencia !== '' ? 'Gerencia ' . $gerencia : '',
         ];
     }
 

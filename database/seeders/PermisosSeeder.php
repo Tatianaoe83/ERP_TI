@@ -75,6 +75,7 @@ class PermisosSeeder extends Seeder
         'ver-categorias',
         'ver-comparativa',
         'ver-compras',
+        'ver-control',
         'ver-cortes',
         'ver-dashboard',
         'ver-departamentos',
