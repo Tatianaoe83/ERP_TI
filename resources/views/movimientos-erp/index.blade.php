@@ -1,7 +1,76 @@
 @extends('layouts.app')
 
 @section('content')
+@php $tabMov = request('tab') === 'productividad' ? 'productividad' : 'movimientos'; @endphp
+<div data-app-tabset>
 <x-index-page title="Movimientos ERP" icon="fa-exchange-alt" :show-count="false" subtitle="Solicitudes de cargo en Neodata. El folio se captura a mano, igual que en el ERP.">
+    <x-slot name="tabs">
+        <div class="app-tabs" role="tablist">
+            <a href="{{ route('movimientos-erp.index') }}" data-app-tab="movimientos" class="app-tabs__btn {{ $tabMov === 'movimientos' ? 'is-active' : '' }}">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Movimientos</span>
+            </a>
+            <a href="{{ route('movimientos-erp.index', ['tab' => 'productividad']) }}" data-app-tab="productividad" class="app-tabs__btn {{ $tabMov === 'productividad' ? 'is-active' : '' }}">
+                <i class="fas fa-chart-line"></i>
+                <span>Productividad</span>
+            </a>
+        </div>
+    </x-slot>
+    @if($tabMov === 'productividad')
+    <x-slot name="filters">
+        @php
+            $f = $productividad['filtros'] ?? [];
+            $cat = $productividad['catalogo'] ?? ['anios' => [], 'obras' => [], 'meses' => []];
+        @endphp
+        <form method="GET" action="{{ route('movimientos-erp.index') }}" class="contents">
+            <input type="hidden" name="tab" value="productividad">
+            <div class="form-group">
+                <label for="prod-anio">Año</label>
+                <select name="anio" id="prod-anio" class="jz form-control">
+                    <option value="0">Todos</option>
+                    @foreach ($cat['anios'] as $anio)
+                        <option value="{{ $anio }}" {{ (int) ($f['anio'] ?? 0) === (int) $anio ? 'selected' : '' }}>{{ $anio }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="prod-mes">Mes</label>
+                <select name="mes" id="prod-mes" class="jz form-control">
+                    <option value="0">Todos</option>
+                    @foreach ($cat['meses'] as $numero => $nombre)
+                        <option value="{{ $numero }}" {{ (int) ($f['mes'] ?? 0) === (int) $numero ? 'selected' : '' }}>{{ $nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="prod-obra">Proyecto</label>
+                <select name="obra_id" id="prod-obra" class="jz form-control">
+                    <option value="0">Todos</option>
+                    @foreach ($cat['obras'] as $obra)
+                        <option value="{{ $obra->ObraID }}" {{ (int) ($f['obra_id'] ?? 0) === (int) $obra->ObraID ? 'selected' : '' }}>{{ $obra->NombreObra }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="prod-estatus">Estatus</label>
+                <select name="estatus_prod" id="prod-estatus" class="jz form-control">
+                    <option value="">Todos</option>
+                    @foreach ([\App\Models\SolicitudMovimiento::PENDIENTE, \App\Models\SolicitudMovimiento::APROBADA, \App\Models\SolicitudMovimiento::APLICADA, \App\Models\SolicitudMovimiento::RECHAZADA] as $opcion)
+                        <option value="{{ $opcion }}" {{ ($f['estatus'] ?? '') === $opcion ? 'selected' : '' }}>{{ $opcion }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group d-flex align-items-end" style="gap:0.5rem;">
+                <button type="submit" class="index-page__btn-primary">
+                    <i class="fa fa-filter"></i> Filtrar
+                </button>
+                <a href="{{ route('movimientos-erp.index', ['tab' => 'productividad']) }}" class="index-page__btn-primary">
+                    <i class="fa fa-times"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </x-slot>
+    @elseif($tabMov === 'movimientos')
     <x-slot name="filters">
         <form method="GET" action="{{ route('movimientos-erp.index') }}" class="contents">
             <div class="form-group">
@@ -24,7 +93,11 @@
             </div>
         </form>
     </x-slot>
+    @endif
 
+    @if($tabMov === 'productividad')
+        @include('partials.productividad-movimientos')
+    @else
     <div class="index-page__table-wrap">
             <table class="index-table w-full">
                 <thead>
@@ -115,5 +188,7 @@
     <div class="index-page__dt-footer">
         {{ $solicitudes->links() }}
     </div>
+    @endif
 </x-index-page>
+</div>
 @endsection

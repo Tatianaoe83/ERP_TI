@@ -28,12 +28,42 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:ver-dashboard|ver-compras');
+        $this->middleware('permission:ver-dashboard|ver-compras|ver-presupuesto|ver-presupuestos');
+    }
+
+    public static function destinoDe($user): string
+    {
+        if (!$user) {
+            return '/login';
+        }
+
+        if ($user->can('ver-dashboard') || $user->can('ver-compras') ) {
+            return '/home';
+        }
+
+        if ($user->can('ver-presupuesto')) {
+            return '/presupuesto';
+        }
+
+        if ($user->can('ver-presupuestos')) {
+            return '/cortes';
+        }
+
+        if ($user->can('ver-soporte')) {
+            return '/tickets';
+        }
+
+        return '/home';
     }
 
     public function index(Request $request)
     {
         $user = auth()->user();
+        $destino = self::destinoDe($user);
+        if ($destino !== '/home') {
+            return redirect($destino);
+        }
+
         $tipoDashboard = $this->resolverTipoDashboard($user);
 
         try {
@@ -54,8 +84,9 @@ class HomeController extends Controller
 
             $filtrosDash = $this->filtrosDash($request);
             $catalogoDash = $this->catalogoDash();
+            $productividadMovimientos = app(\App\Services\MovimientoErpService::class)->productividad();
 
-            return view('home', compact('stats', 'statsCompras', 'tipoDashboard', 'filtrosDash', 'catalogoDash'));
+            return view('home', compact('stats', 'statsCompras', 'tipoDashboard', 'filtrosDash', 'catalogoDash', 'productividadMovimientos'));
         } catch (\Exception $e) {
             $stats = $this->statsInformaticaVacios();
             $statsCompras = $this->statsComprasVacios();
@@ -66,6 +97,7 @@ class HomeController extends Controller
                 'tipoDashboard' => $tipoDashboard,
                 'filtrosDash' => $this->filtrosDash($request),
                 'catalogoDash' => $this->catalogoDash(),
+                'productividadMovimientos' => [],
             ]);
         }
     }

@@ -24,7 +24,11 @@ use App\Http\Livewire\ReportesLista;
 use App\Models\TicketChat;
 
 Route::get('/', function () {
-    return redirect('/login');
+    if (!auth()->check()) {
+        return redirect('/login');
+    }
+
+    return redirect(\App\Http\Controllers\HomeController::destinoDe(auth()->user()));
 });
 
 Auth::routes(['register' => false]);
@@ -402,6 +406,79 @@ Route::get('/notificaciones-panel', function () {
             'timestamp' => $m->created_at->timestamp,
         ]);
 
+    $verEmpleados = $usuario && $usuario->can('ver-empleados');
+    $idsConBaja = !$verEmpleados ? collect() : \App\Models\ActualizacionCapitalHumano::query()
+        ->where('tipo', 'BAJA')
+        ->whereNotNull('empleado_ti_id')
+        ->pluck('empleado_ti_id');
+
+    $actualizacionesAltas = !$verEmpleados ? collect() : \App\Models\ActualizacionCapitalHumano::query()
+        ->with('empleado')
+        ->where('tipo', 'ALTA')
+        ->where('estado', 'aplicado')
+        ->when($idsConBaja->isNotEmpty(), function ($query) use ($idsConBaja) {
+            $query->where(function ($filtro) use ($idsConBaja) {
+                $filtro->whereNull('empleado_ti_id')->orWhereNotIn('empleado_ti_id', $idsConBaja);
+            });
+        })
+        ->orderByDesc('id')
+        ->limit(40)
+        ->get()
+        ->filter(function ($alta) {
+            return $alta->empleado
+                && (int) $alta->empleado->Estado === 1
+                && empty($alta->empleado->PresupuestoInternoID);
+        })
+        ->unique(fn ($alta) => $alta->empleado_ti_id ?: $alta->nombre)
+        ->take(10)
+        ->map(function ($alta) {
+            $cuando = $alta->fecha ? \Carbon\Carbon::parse($alta->fecha) : $alta->created_at;
+
+            return [
+                'id' => $alta->id,
+                'nombre' => $alta->empleado->NombreEmpleado ?? $alta->nombre,
+                'created_at' => $cuando ? $cuando->diffForHumans() : '',
+                'timestamp' => $cuando ? $cuando->timestamp : 0,
+            ];
+        })
+        ->values();
+
+    $actualizacionesBajas = !$verEmpleados ? collect() : \App\Models\ActualizacionCapitalHumano::query()
+        ->with('empleado')
+        ->where('tipo', 'BAJA')
+        ->where('estado', 'pendiente_inventario')
+        ->orderByDesc('fecha')
+        ->limit(40)
+        ->get()
+        ->unique(fn ($baja) => $baja->empleado_ti_id ?: $baja->nombre)
+        ->take(10)
+        ->map(function ($baja) {
+            $cuando = $baja->fecha ? \Carbon\Carbon::parse($baja->fecha) : $baja->created_at;
+
+            return [
+                'id' => $baja->id,
+                'nombre' => $baja->empleado->NombreEmpleado ?? $baja->nombre,
+                'created_at' => $cuando ? $cuando->diffForHumans() : '',
+                'timestamp' => $cuando ? $cuando->timestamp : 0,
+            ];
+        })
+        ->values();
+
+    $movimientosAplicados = !$verTI ? collect() : \App\Models\SolicitudMovimiento::query()
+        ->with('solicitante')
+        ->where('Estatus', \App\Models\SolicitudMovimiento::APLICADA)
+        ->where('aplicado_en', '>=', now()->subDays(7))
+        ->orderByDesc('aplicado_en')
+        ->limit(10)
+        ->get()
+        ->map(fn ($mov) => [
+            'id' => $mov->SolicitudMovimientoID,
+            'solicitante' => $mov->solicitante->NombreEmpleado ?? 'Sin solicitante',
+            'aplicado_por' => $mov->aplicado_por ?: 'Sin registro',
+            'created_at' => $mov->aplicado_en ? $mov->aplicado_en->diffForHumans() : '',
+            'timestamp' => $mov->aplicado_en ? $mov->aplicado_en->timestamp : 0,
+        ]);
+
     return response()->json([
         'tickets_nuevos' => $ticketsNuevos,
         'tickets_nuevos_count' => !$verTI ? 0 : \App\Models\Tickets::where('Estatus', 'Pendiente')
@@ -420,6 +497,9 @@ Route::get('/notificaciones-panel', function () {
         'solicitudes_seguimiento_ti_count' => !$verTI ? 0 : \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])->count(),
         'solicitudes_factura_pendiente' => $solicitudesFacturaPendiente,
         'solicitudes_factura_pendiente_count' => $solicitudesFacturaPendienteCount,
+        'actualizaciones_altas' => $actualizacionesAltas,
+        'actualizaciones_bajas' => $actualizacionesBajas,
+        'movimientos_aplicados' => $movimientosAplicados,
         'mensajes_nuevos' => $mensajesNuevos,
 'mensajes_nuevos_count' => !$verTI ? 0 :
 \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)

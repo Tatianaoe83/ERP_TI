@@ -389,4 +389,117 @@ class MovimientoErpService
 
         return $contenido;
     }
+
+    public function productividad(array $filtros = []): array
+    {
+        $anio = (int) ($filtros['anio'] ?? 0);
+        $mes = (int) ($filtros['mes'] ?? 0);
+        $obraId = (int) ($filtros['obra_id'] ?? 0);
+        $estatus = trim((string) ($filtros['estatus'] ?? ''));
+        $nombresMes = [1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic'];
+
+        $anios = SolicitudMovimiento::query()
+            ->whereNotNull('created_at')
+            ->selectRaw('YEAR(created_at) as anio')
+            ->distinct()
+            ->orderByDesc('anio')
+            ->pluck('anio')
+            ->map(fn ($valor) => (int) $valor)
+            ->filter()
+            ->values();
+        if (! $anios->contains((int) now()->year)) {
+            $anios->prepend((int) now()->year);
+        }
+
+        $obraIds = SolicitudMovimiento::query()->whereNotNull('ObraID')->distinct()->pluck('ObraID');
+        $obras = \App\Models\Obras::query()
+            ->whereIn('ObraID', $obraIds)
+            ->orderBy('NombreObra')
+            ->get(['ObraID', 'NombreObra']);
+
+        $filas = SolicitudMovimiento::query()
+            ->with(['obra:ObraID,NombreObra'])
+            ->when($anio > 0, fn ($q) => $q->whereYear('created_at', $anio))
+            ->when($mes >= 1 && $mes <= 12, fn ($q) => $q->whereMonth('created_at', $mes))
+            ->when($obraId > 0, fn ($q) => $q->where('ObraID', $obraId))
+            ->when($estatus !== '', fn ($q) => $q->where('Estatus', $estatus))
+            ->get([
+                'SolicitudMovimientoID',
+                'ObraID',
+                'Estatus',
+                'aplicado_por',
+                'created_at',
+                'autorizado_en',
+                'aplicado_en',
+            ]);
+
+        $contar = fn (string $valor) => $filas->where('Estatus', $valor)->count();
+        $promedio = function ($coleccion, string $desde, string $hasta) {
+            $horas = $coleccion->filter(fn ($fila) => $fila->{$desde} && $fila->{$hasta})
+                ->map(fn ($fila) => $fila->{$desde}->diffInMinutes($fila->{$hasta}) / 60);
+            if ($horas->isEmpty()) {
+                return null;
+            }
+
+            return round($horas->avg(), 1);
+        };
+
+        $meses = collect(range(1, 12))->map(function ($numero) use ($filas, $nombresMes, $anio) {
+            $delMes = $filas->filter(function ($fila) use ($numero, $anio) {
+                if (optional($fila->created_at)->month !== $numero) {
+                    return false;
+                }
+                if ($anio > 0) {
+                    return optional($fila->created_at)->year === $anio;
+                }
+
+                return true;
+            });
+
+            return [
+                'nombre' => $nombresMes[$numero],
+                'total' => $delMes->count(),
+                'aplicadas' => $delMes->where('Estatus', SolicitudMovimiento::APLICADA)->count(),
+                'rechazadas' => $delMes->where('Estatus', SolicitudMovimiento::RECHAZADA)->count(),
+            ];
+        });
+
+        $agrupar = function ($coleccion, callable $nombre) {
+            return $coleccion->groupBy($nombre)
+                ->map(fn ($grupo, $etiqueta) => ['nombre' => $etiqueta, 'total' => $grupo->count()])
+                ->sortByDesc('total')
+                ->values()
+                ->take(8);
+        };
+
+        return [
+            'total' => $filas->count(),
+            'pendientes' => $contar(SolicitudMovimiento::PENDIENTE),
+            'aprobadas' => $contar(SolicitudMovimiento::APROBADA),
+            'aplicadas' => $contar(SolicitudMovimiento::APLICADA),
+            'rechazadas' => $contar(SolicitudMovimiento::RECHAZADA),
+            'horas_firma' => $promedio($filas, 'created_at', 'autorizado_en'),
+            'horas_neodata' => $promedio($filas->where('Estatus', SolicitudMovimiento::APLICADA), 'autorizado_en', 'aplicado_en'),
+            'meses' => $meses,
+            'personas' => $agrupar($filas->where('Estatus', SolicitudMovimiento::APLICADA), fn ($fila) => $fila->aplicado_por ?: 'Sin registro'),
+            'obras' => $agrupar($filas, fn ($fila) => optional($fila->obra)->NombreObra ?: 'Sin proyecto'),
+            'estatus' => [
+                ['nombre' => SolicitudMovimiento::PENDIENTE, 'total' => $contar(SolicitudMovimiento::PENDIENTE)],
+                ['nombre' => SolicitudMovimiento::APROBADA, 'total' => $contar(SolicitudMovimiento::APROBADA)],
+                ['nombre' => SolicitudMovimiento::APLICADA, 'total' => $contar(SolicitudMovimiento::APLICADA)],
+                ['nombre' => SolicitudMovimiento::RECHAZADA, 'total' => $contar(SolicitudMovimiento::RECHAZADA)],
+            ],
+            'filtros' => [
+                'anio' => $anio,
+                'mes' => $mes,
+                'obra_id' => $obraId,
+                'estatus' => $estatus,
+            ],
+            'catalogo' => [
+                'anios' => $anios,
+                'obras' => $obras,
+                'meses' => $nombresMes,
+            ],
+        ];
+    }
 }

@@ -746,6 +746,68 @@
                         });
                     }
 
+                    if (data.actualizaciones_altas) {
+                        data.actualizaciones_altas.forEach(a => {
+                            if (!a || !a.id) return;
+                            const unread = !suprimeConteoBadge('dismissAltas', a.id, 'alta');
+                            if (unread) conteoNoLeidos++;
+                            listaNotificaciones.push({
+                                timestamp: a.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'teal',
+                                    icon: 'fa-user-plus',
+                                    titulo: a.nombre,
+                                    categoria: 'Alta',
+                                    tiempo: a.created_at,
+                                    onclick: `marcarVistoParaBadge('dismissAltas', ${a.id}, 'alta'); window.location.href='/actualizaciones'`
+                                })
+                            });
+                        });
+                    }
+
+                    if (data.actualizaciones_bajas) {
+                        data.actualizaciones_bajas.forEach(b => {
+                            if (!b || !b.id) return;
+                            const unread = !suprimeConteoBadge('dismissBajas', b.id, 'baja');
+                            if (unread) conteoNoLeidos++;
+                            listaNotificaciones.push({
+                                timestamp: b.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'rose',
+                                    icon: 'fa-user-minus',
+                                    titulo: b.nombre,
+                                    categoria: 'Baja',
+                                    tiempo: b.created_at,
+                                    onclick: `marcarVistoParaBadge('dismissBajas', ${b.id}, 'baja'); window.location.href='/actualizaciones'`
+                                })
+                            });
+                        });
+                    }
+
+                    if (data.movimientos_aplicados) {
+                        data.movimientos_aplicados.forEach(m => {
+                            if (!m || !m.id) return;
+                            const estado = m.aplicado_por || 'aplicado';
+                            const unread = !suprimeConteoBadge('dismissMovimientos', m.id, estado);
+                            if (unread) conteoNoLeidos++;
+                            const estadoJs = JSON.stringify(estado);
+                            listaNotificaciones.push({
+                                timestamp: m.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'indigo',
+                                    icon: 'fa-check-circle',
+                                    titulo: `Movimiento #${m.id} realizado`,
+                                    categoria: `Lo aplicó ${m.aplicado_por}`,
+                                    tiempo: m.created_at,
+                                    onclick: `marcarVistoParaBadge('dismissMovimientos', ${m.id}, ${estadoJs}); if (window.__abrirModalMovimiento) window.__abrirModalMovimiento(${m.id})`
+                                })
+                            });
+                        });
+                    }
+
                     if (data.mensajes_nuevos) {
                         data.mensajes_nuevos.forEach(m => {
                             if (!m || m.ticket_id === undefined || m.ticket_id === null) return;

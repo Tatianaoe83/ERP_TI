@@ -85,10 +85,21 @@ class MovimientoErpController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        $productividad = null;
+        if ($request->input('tab') === 'productividad') {
+            $productividad = app(MovimientoErpService::class)->productividad([
+                'anio' => (int) $request->input('anio', 0),
+                'mes' => (int) $request->input('mes', 0),
+                'obra_id' => (int) $request->input('obra_id', 0),
+                'estatus' => trim((string) $request->input('estatus_prod', '')),
+            ]);
+        }
+
         return view('movimientos-erp.index', [
             'solicitudes' => $solicitudes,
             'estatus' => $estatus,
             'buscar' => $buscar,
+            'productividad' => $productividad,
         ]);
     }
 

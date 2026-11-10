@@ -47,10 +47,6 @@ class LoginController extends Controller
     {
         $user = auth()->user();
 
-        if ($user && ($user->can('ver-dashboard') || $user->can('ver-compras'))) {
-            return '/home';
-        }
-
-        return RouteServiceProvider::HOME;
+        return \App\Http\Controllers\HomeController::destinoDe($user);
     }
 }

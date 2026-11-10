@@ -604,7 +604,6 @@ public function crearTickets(Request $request)
             return $solicitud;
         });
 
-        $servicio->avisar($solicitud);
         $liga = $solicitud->pasos()->where('stage', 'vobo')->first()?->token;
         $enviada = $liga ? $servicio->enviarLigaFirma($solicitud, $firmante, $liga) : false;
 
