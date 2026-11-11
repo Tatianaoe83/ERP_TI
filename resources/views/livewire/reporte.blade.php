@@ -494,6 +494,9 @@
                                         if ($columna === 'estado' || str_ends_with($columna, '_estado')) {
                                                 $columna = 'estado';
                                             }
+                                        if ($columna === 'presupuestado' || str_ends_with($columna, '_presupuestado')) {
+                                                $columna = 'presupuestado';
+                                            }
                                         $valorNormalizado = is_bool($valor)
                                             ? ($valor ? 'true' : 'false')
                                             : strtolower(trim((string) $valor));
@@ -504,7 +507,7 @@
                                         }
 
                                         // Columnas con valores compartidos.
-                                        if (in_array($columna, ['estado', 'activo', 'empleado estado'], true)) {
+                                        if (in_array($columna, ['estado', 'activo'], true)) {
                                             return match ($valorNormalizado) {
                                                 '0', 'false' => 'Inactivo',
                                                 '1', 'true' => 'Activo',
