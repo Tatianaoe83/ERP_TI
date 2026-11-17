@@ -786,6 +786,26 @@
                         });
                     }
 
+                    if (data.movimientos_pendientes) {
+                        data.movimientos_pendientes.forEach(m => {
+                            if (!m || !m.id) return;
+                            const unread = !suprimeConteoBadge('dismissMovimientosPendientes', m.id, 'pendiente');
+                            if (unread) conteoNoLeidos++;
+                            listaNotificaciones.push({
+                                timestamp: m.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'amber',
+                                    icon: 'fa-clock',
+                                    titulo: `Movimiento #${m.id} · ${m.solicitante}`,
+                                    categoria: 'Pendiente aprobación',
+                                    tiempo: m.created_at,
+                                    onclick: `marcarVistoParaBadge('dismissMovimientosPendientes', ${m.id}, 'pendiente'); if (window.__abrirModalMovimiento) window.__abrirModalMovimiento(${m.id})`
+                                })
+                            });
+                        });
+                    }
+
                     if (data.movimientos_aplicados) {
                         data.movimientos_aplicados.forEach(m => {
                             if (!m || !m.id) return;

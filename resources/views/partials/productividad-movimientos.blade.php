@@ -21,7 +21,7 @@
 @if(!empty($tituloSeccion))
 <p class="dash-section-title">{{ $tituloSeccion }}</p>
 @endif
-<div class="dash-kpi-grid dash-kpi-grid--ops">
+<div class="dash-kpi-grid prod-mov-kpis">
     <div class="dash-kpi">
         <div class="dash-kpi__top">
             <div>
@@ -86,8 +86,8 @@
 </div>
 
 <style>
-    .dash-kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin-bottom: 0.65rem; }
-    @media (min-width: 900px) { .dash-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    .prod-mov-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin-bottom: 0.65rem; }
+    @media (min-width: 900px) { .prod-mov-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     .prod-mov-tiempos { grid-template-columns: 1fr; }
     @media (min-width: 700px) { .prod-mov-tiempos { grid-template-columns: 1fr 1fr; } }
     .prod-mov-charts { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 0.55rem; }

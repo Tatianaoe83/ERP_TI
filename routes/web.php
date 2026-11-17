@@ -464,6 +464,19 @@ Route::get('/notificaciones-panel', function () {
         })
         ->values();
 
+    $movimientosPendientes = !$verTI ? collect() : \App\Models\SolicitudMovimiento::query()
+        ->with('solicitante')
+        ->where('Estatus', \App\Models\SolicitudMovimiento::PENDIENTE)
+        ->orderByDesc('created_at')
+        ->limit(10)
+        ->get()
+        ->map(fn ($mov) => [
+            'id' => $mov->SolicitudMovimientoID,
+            'solicitante' => $mov->solicitante->NombreEmpleado ?? 'Sin solicitante',
+            'created_at' => $mov->created_at ? $mov->created_at->diffForHumans() : '',
+            'timestamp' => $mov->created_at ? $mov->created_at->timestamp : 0,
+        ]);
+
     $movimientosAplicados = !$verTI ? collect() : \App\Models\SolicitudMovimiento::query()
         ->with('solicitante')
         ->where('Estatus', \App\Models\SolicitudMovimiento::APLICADA)
@@ -499,6 +512,7 @@ Route::get('/notificaciones-panel', function () {
         'solicitudes_factura_pendiente_count' => $solicitudesFacturaPendienteCount,
         'actualizaciones_altas' => $actualizacionesAltas,
         'actualizaciones_bajas' => $actualizacionesBajas,
+        'movimientos_pendientes' => $movimientosPendientes,
         'movimientos_aplicados' => $movimientosAplicados,
         'mensajes_nuevos' => $mensajesNuevos,
 'mensajes_nuevos_count' => !$verTI ? 0 :
