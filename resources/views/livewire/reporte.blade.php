@@ -484,49 +484,6 @@
                                     @endforeach
                                 </tr>
                             </thead>
-                                @php
-                                    $formatearValorPreview = function ($columna, $valor) {
-                                        if ($valor === null || (is_string($valor) && trim((string) $valor) === '')) {
-                                            return $valor;
-                                        }
-
-                                        $columna = strtolower(trim($columna));
-                                        if ($columna === 'estado' || str_ends_with($columna, '_estado')) {
-                                                $columna = 'estado';
-                                            }
-                                        if ($columna === 'presupuestado' || str_ends_with($columna, '_presupuestado')) {
-                                                $columna = 'presupuestado';
-                                            }
-                                        $valorNormalizado = is_bool($valor)
-                                            ? ($valor ? 'true' : 'false')
-                                            : strtolower(trim((string) $valor));
-
-                                        // Columnas relacionadas con presupuesto.
-                                        if (in_array($columna, ['tipoequipo', 'presupuestado'], true)) {
-                                            return \App\Helpers\PresupuestoAsignacion::etiqueta($valor);
-                                        }
-
-                                        // Columnas con valores compartidos.
-                                        if (in_array($columna, ['estado', 'activo'], true)) {
-                                            return match ($valorNormalizado) {
-                                                '0', 'false' => 'Inactivo',
-                                                '1', 'true' => 'Activo',
-                                                default => $valor,
-                                            };
-                                        }
-
-                                        // Disponibilidad.
-                                        if ($columna === 'disponible') {
-                                            return match ($valorNormalizado) {
-                                                '0' => 'Asignada',
-                                                '1' => 'Disponible',
-                                                default => $valor,
-                                            };
-                                        }
-
-                                        return $valor;
-                                    };
-                                @endphp
                             <tbody>
                                 @foreach(collect($resultado)->take(10) as $fila)
                                 <tr>
@@ -539,7 +496,7 @@
                                                 </span>
                                             @endforeach
                                         @else
-                                            {{ $formatearValorPreview($columna, $valor) }}
+                                            {{ \App\Helpers\ReporteHelper::formatearValor($columna, $valor) }}
                                         @endif
                                     </td>
                                     @endforeach

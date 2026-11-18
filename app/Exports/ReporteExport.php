@@ -68,8 +68,9 @@ class ReporteExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
             $valor = $rowArray[$clave]
                 ?? $rowArray[str_replace('`', '', $clave)]
                 ?? null;
+            $valor = \App\Helpers\ReporteHelper::formatearValor($clave, $valor);
 
-            $filaMapeada[] = ($valor !== null && trim((string) $valor) !== '')
+            $filaMapeada[]= ($valor !== null && trim((string) $valor) !== '')
                 ? $valor
                 : 'N/A';
         }

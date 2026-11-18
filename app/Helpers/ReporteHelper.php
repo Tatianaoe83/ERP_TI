@@ -10,6 +10,44 @@ class ReporteHelper
 {
     const TABLAS_INVENTARIO = ['inventarioequipo', 'inventarioinsumo', 'inventariolineas'];
 
+    // Traduce enums/tinyint a texto legible. Única fuente para preview, show, Excel y PDF.
+    public static function formatearValor($columna, $valor)
+    {
+        if ($valor === null || (is_string($valor) && trim($valor) === '')) {
+            return $valor;
+        }
+
+        $columna = strtolower(trim((string) $columna));
+        foreach (['estado', 'presupuestado'] as $base) {
+            if ($columna === $base || str_ends_with($columna, '_' . $base)) {
+                $columna = $base;
+            }
+        }
+        $normalizado = is_bool($valor) ? ($valor ? 'true' : 'false') : strtolower(trim((string) $valor));
+
+        if (in_array($columna, ['tipoequipo', 'presupuestado'], true)) {
+            return PresupuestoAsignacion::etiqueta($valor);
+        }
+
+        if (in_array($columna, ['estado', 'activo'], true)) {
+            return match ($normalizado) {
+                '0', 'false' => 'Inactivo',
+                '1', 'true' => 'Activo',
+                default => $valor,
+            };
+        }
+
+        if ($columna === 'disponible') {
+            return match ($normalizado) {
+                '0' => 'Asignada',
+                '1' => 'Disponible',
+                default => $valor,
+            };
+        }
+
+        return $valor;
+    }
+
     public static function construirQuery(array $metadata, array $relacionesUniversales)
     {
         $tabla      = $metadata['tabla_principal'];

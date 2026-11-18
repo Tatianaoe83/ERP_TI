@@ -185,6 +185,10 @@ class ReportesController extends AppBaseController
 
         $dt = DataTables::of($query);
 
+        foreach (array_keys($aliasMap) as $alias) {
+            $dt->editColumn($alias, fn($row) => ReporteHelper::formatearValor($alias, $row->$alias ?? null));
+        }
+
         if (!empty(trim($search))) {
             $dt->filter(function ($query) use ($search, $aliasMap, $esUnion) {
                 $query->where(function ($q) use ($search, $aliasMap, $esUnion) {
@@ -441,7 +445,8 @@ class ReportesController extends AppBaseController
             $bgColor = $esPar ? '#f2f4ff' : '#ffffff';
             $html .= '<tr style="background-color: ' . $bgColor . ';">';
             
-            foreach ((array) $fila as $valor) {
+            foreach ((array) $fila as $columna => $valor) {
+                $valor = ReporteHelper::formatearValor($columna, $valor);
                 if ($valor !== null && trim((string) $valor) !== '') {
                     $celda = htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                 } else {

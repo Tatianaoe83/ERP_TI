@@ -13,8 +13,8 @@
                 <tbody>
                     @foreach($resultado as $fila)
                     <tr>
-                        @foreach((array)$fila as $valor)
-                        <td class="px-3 py-2 small">{{ $valor }}</td>
+                        @foreach((array)$fila as $columna => $valor)
+                        <td class="px-3 py-2 small">{{ \App\Helpers\ReporteHelper::formatearValor($columna, $valor) }}</td>
                         @endforeach
                     </tr>
                     @endforeach
