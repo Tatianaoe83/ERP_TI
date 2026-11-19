@@ -17,7 +17,7 @@ return new class extends Migration
 
         Schema::create('unidadesdenegocio', function (Blueprint $table) {
             $table->integer('UnidadNegocioID', true);
-            $table->integer('DivisionID')->index('unidadesdenegocio_divisionid_foreign');
+            $table->integer('DivisionID')->nullable()->index('unidadesdenegocio_divisionid_foreign');
             $table->string('NombreEmpresa', 100);
             $table->string('RFC', 100);
             $table->string('Direccion', 150);
@@ -31,7 +31,7 @@ return new class extends Migration
         Schema::create('direcciones', function (Blueprint $table) {
             $table->integer('DireccionID', true);
             $table->string('NombreDireccion', 100);
-            $table->integer('UnidadNegocioID')->index('direcciones_unidadnegocioid_foreign');
+            $table->integer('UnidadNegocioID')->nullable()->index('direcciones_unidadnegocioid_foreign');
             $table->boolean('estado')->default(true);
             $table->timestamps();
             $table->softDeletes();
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->integer('GerenciaID', true);
             $table->string('NombreGerencia', 100);
             $table->integer('UnidadNegocioID')->nullable()->index('FK__Gerencia__Unidad__02FC7413');
-            $table->integer('DireccionID')->index('gerencia_direccionid_foreign');
+            $table->integer('DireccionID')->nullable()->index('gerencia_direccionid_foreign');
             $table->string('NombreGerente', 100)->nullable();
             $table->boolean('estado')->default(true);
             $table->dateTime('created_at')->nullable();
@@ -49,10 +49,18 @@ return new class extends Migration
             $table->dateTime('deleted_at')->nullable();
         });
 
+        Schema::create('direccion_unidad_negocio', function (Blueprint $table) {
+            $table->integer('DireccionID');
+            $table->integer('UnidadNegocioID');
+            $table->timestamps();
+            $table->primary(['DireccionID', 'UnidadNegocioID'], 'direccion_unidad_negocio_primary');
+        });
+
         Schema::create('departamentos', function (Blueprint $table) {
             $table->integer('DepartamentoID', true);
             $table->string('NombreDepartamento', 50)->nullable();
             $table->integer('GerenciaID')->nullable();
+            $table->integer('DireccionID')->nullable()->index('departamentos_direccionid_index');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
             $table->dateTime('deleted_at')->nullable();
@@ -154,6 +162,15 @@ return new class extends Migration
             $table->foreign(['DireccionID'])->references(['DireccionID'])->on('direcciones');
         });
 
+        Schema::table('direccion_unidad_negocio', function (Blueprint $table) {
+            $table->foreign(['DireccionID'])->references(['DireccionID'])->on('direcciones')->onDelete('cascade');
+            $table->foreign(['UnidadNegocioID'])->references(['UnidadNegocioID'])->on('unidadesdenegocio')->onDelete('cascade');
+        });
+
+        Schema::table('departamentos', function (Blueprint $table) {
+            $table->foreign(['DireccionID'])->references(['DireccionID'])->on('direcciones')->onDelete('set null');
+        });
+
         Schema::table('presupuesto_interno_usuarios', function (Blueprint $table) {
             $table->foreign(['PresupuestoInternoID'])->references(['PresupuestoInternoID'])->on('presupuestos_internos')->onDelete('CASCADE');
             $table->foreign(['users_id'])->references(['id'])->on('users')->onDelete('CASCADE');
@@ -178,6 +195,7 @@ return new class extends Migration
         Schema::dropIfExists('obras');
         Schema::dropIfExists('puestos');
         Schema::dropIfExists('departamentos');
+        Schema::dropIfExists('direccion_unidad_negocio');
         Schema::dropIfExists('gerencia');
         Schema::dropIfExists('direcciones');
         Schema::dropIfExists('unidadesdenegocio');

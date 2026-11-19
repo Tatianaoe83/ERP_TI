@@ -91,6 +91,11 @@ class UnidadesDeNegocio extends Model
 
     public function direcciones()
     {
-        return $this->hasMany(Direccion::class, 'UnidadNegocioID', 'UnidadNegocioID');
+        return $this->belongsToMany(
+            Direccion::class,
+            'direccion_unidad_negocio',
+            'UnidadNegocioID',
+            'DireccionID'
+        );
     }
 }

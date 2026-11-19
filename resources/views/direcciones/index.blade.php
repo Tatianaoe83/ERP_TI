@@ -45,7 +45,18 @@
                 @foreach ($direcciones as $direccion)
                     <tr>
                         <td>{{ $direccion->NombreDireccion }}</td>
-                        <td>{{ $direccion->unidadesdenegocio->NombreEmpresa ?? '—' }}</td>
+                        <td>
+                            @php
+                                $unidadesLigadas = $direccion->unidades->isNotEmpty()
+                                    ? $direccion->unidades
+                                    : collect([$direccion->unidadesdenegocio])->filter();
+                            @endphp
+                            @forelse ($unidadesLigadas as $unidad)
+                                {{ $unidad->NombreEmpresa }}@if (!$loop->last), @endif
+                            @empty
+                                —
+                            @endforelse
+                        </td>
                         <td>{{ $direccion->gerencias_count }}</td>
                         <td>{{ $direccion->departamentos_count }}</td>
                         <td>

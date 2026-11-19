@@ -48,7 +48,7 @@
                     @php
                         $area = $puesto->departamentos;
                         $gerencia = $area->gerencia ?? null;
-                        $direccion = $gerencia->direccion ?? null;
+                        $direccion = $puesto->direccionVisible ?? ($gerencia->direccion ?? null);
                     @endphp
                     <tr>
                         <td>{{ $puesto->NombrePuesto }}</td>

@@ -48,6 +48,16 @@ class Direccion extends Model
         return $this->belongsTo(UnidadesDeNegocio::class, 'UnidadNegocioID');
     }
 
+    public function unidades()
+    {
+        return $this->belongsToMany(
+            UnidadesDeNegocio::class,
+            'direccion_unidad_negocio',
+            'DireccionID',
+            'UnidadNegocioID'
+        );
+    }
+
     public function gerencias()
     {
         return $this->hasMany(Gerencia::class, 'DireccionID');
@@ -55,13 +65,6 @@ class Direccion extends Model
 
     public function departamentos()
     {
-        return $this->hasManyThrough(
-            Departamentos::class,
-            Gerencia::class,
-            'DireccionID',
-            'GerenciaID',
-            'DireccionID',
-            'GerenciaID'
-        );
+        return $this->hasMany(Departamentos::class, 'DireccionID', 'DireccionID');
     }
 }

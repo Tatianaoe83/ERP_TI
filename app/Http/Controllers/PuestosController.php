@@ -10,9 +10,11 @@ use App\Repositories\PuestosRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
+use App\Models\Direccion;
+use App\Models\Gerencia;
 use App\Models\Puestos;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
-use DB;
 
 class PuestosController extends AppBaseController
 {
@@ -43,6 +45,8 @@ class PuestosController extends AppBaseController
             })
             ->orderBy('NombrePuesto')
             ->get();
+
+        $this->marcarDireccionVisible($puestos);
 
         $areas = \App\Models\Departamentos::with('gerencia')->orderBy('NombreDepartamento')->get();
 
@@ -164,5 +168,72 @@ class PuestosController extends AppBaseController
         Flash::success('Puesto borrado.');
 
         return redirect(route('puestos.index'));
+    }
+
+    private function marcarDireccionVisible($puestos): void
+    {
+        $porGerencia = [];
+        foreach (Gerencia::with('direccion')->whereNotNull('DireccionID')->orderBy('GerenciaID')->get() as $gerencia) {
+            $clave = $this->claveEstructura($gerencia->NombreGerencia);
+            if (!isset($porGerencia[$clave]) && $gerencia->direccion) {
+                $porGerencia[$clave] = $gerencia->direccion;
+            }
+        }
+
+        $porNombre = Direccion::query()->get()->keyBy(function ($direccion) {
+            return $this->claveEstructura($direccion->NombreDireccion);
+        });
+
+        $alias = [
+            'DIRECCION JURIDICA' => 'JURIDICA Y DE GESTION ESTRATEGICA',
+            'VIAS TERRESTRES ESTRUCTURA' => 'VIAS TERRESTRES',
+            'VIAS TERRESTRES OBRA' => 'VIAS TERRESTRES',
+            'DESARROLLO DE NEGOCIOS' => 'DESARROLLO DE NEGOCIOS',
+            'DIRECCION ADMINISTRACION Y FINANZAS' => 'ADMINISTRACION Y FINANZAS',
+            'GASTOS COMPARTIDOS' => 'DIRECCION GENERAL',
+            'GASTOS CORPORATIVOS' => 'DIRECCION GENERAL',
+            'PROYECTOS' => 'TECNICA CORPORATIVA',
+            'EDIFICACION ESTRUCTURA' => 'CONSTRUCCION',
+            'EDIFICACION OBRA' => 'CONSTRUCCION',
+        ];
+
+        $porUnidad = DB::table('direccion_unidad_negocio')
+            ->join('direcciones', 'direcciones.DireccionID', '=', 'direccion_unidad_negocio.DireccionID')
+            ->whereNull('direcciones.deleted_at')
+            ->get(['direccion_unidad_negocio.UnidadNegocioID', 'direcciones.DireccionID', 'direcciones.NombreDireccion'])
+            ->groupBy('UnidadNegocioID');
+
+        foreach ($puestos as $puesto) {
+            $gerencia = $puesto->departamentos->gerencia ?? null;
+            if (!$gerencia) {
+                continue;
+            }
+            if ($gerencia->direccion) {
+                $puesto->direccionVisible = $gerencia->direccion;
+                continue;
+            }
+
+            $clave = $this->claveEstructura($gerencia->NombreGerencia);
+            $direccion = $porGerencia[$clave] ?? null;
+            if (!$direccion && isset($alias[$clave])) {
+                $direccion = $porNombre->get($alias[$clave]);
+            }
+            if (!$direccion) {
+                $ligadas = $porUnidad->get($gerencia->UnidadNegocioID);
+                if ($ligadas && $ligadas->count() === 1) {
+                    $direccion = $porNombre->firstWhere('DireccionID', (int) $ligadas->first()->DireccionID);
+                }
+            }
+            $puesto->direccionVisible = $direccion;
+        }
+    }
+
+    private function claveEstructura(string $nombre): string
+    {
+        $nombre = mb_strtoupper(trim($nombre));
+        $nombre = strtr($nombre, ['Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ñ' => 'N']);
+        $nombre = preg_replace('/\s+/', ' ', $nombre);
+
+        return str_replace('GERENTE DE ', 'GERENCIA DE ', $nombre);
     }
 }

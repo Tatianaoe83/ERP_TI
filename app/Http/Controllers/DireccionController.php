@@ -20,10 +20,15 @@ class DireccionController extends AppBaseController
 
     public function index()
     {
-        $direcciones = Direccion::with('unidadesdenegocio')
+        $direcciones = Direccion::with(['unidadesdenegocio', 'unidades'])
             ->withCount(['gerencias', 'departamentos'])
             ->when(request('unidad_id'), function ($query, $unidadId) {
-                $query->where('UnidadNegocioID', $unidadId);
+                $query->where(function ($filtro) use ($unidadId) {
+                    $filtro->where('UnidadNegocioID', $unidadId)
+                        ->orWhereHas('unidades', function ($unidades) use ($unidadId) {
+                            $unidades->where('unidadesdenegocio.UnidadNegocioID', $unidadId);
+                        });
+                });
             })
             ->orderBy('NombreDireccion')
             ->get();
