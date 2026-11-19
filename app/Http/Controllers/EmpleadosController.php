@@ -254,23 +254,20 @@ class EmpleadosController extends AppBaseController
             $unidad = optional($direccion)->unidadesdenegocio;
             $division = optional($unidad)->division;
 
-            if (!$area || !$gerencia || !$direccion || !$unidad || !$division) {
-                continue;
-            }
-
+            // Cadena org puede estar incompleta (gerencias sin dirección); igual se muestra el puesto.
             $orgPuestos[] = [
                 'puesto' => $puesto->PuestoID,
                 'puestoNombre' => $puesto->NombrePuesto,
-                'area' => $area->DepartamentoID,
-                'areaNombre' => $area->NombreDepartamento,
-                'gerencia' => $gerencia->GerenciaID,
-                'gerenciaNombre' => $gerencia->NombreGerencia,
-                'direccion' => $direccion->DireccionID,
-                'direccionNombre' => $direccion->NombreDireccion,
-                'unidad' => $unidad->UnidadNegocioID,
-                'unidadNombre' => $unidad->NombreEmpresa,
-                'division' => $division->DivisionID,
-                'divisionNombre' => $division->NombreDivision,
+                'area' => $area->DepartamentoID ?? null,
+                'areaNombre' => $area->NombreDepartamento ?? '',
+                'gerencia' => $gerencia->GerenciaID ?? null,
+                'gerenciaNombre' => $gerencia->NombreGerencia ?? '',
+                'direccion' => $direccion->DireccionID ?? null,
+                'direccionNombre' => $direccion->NombreDireccion ?? '',
+                'unidad' => $unidad->UnidadNegocioID ?? null,
+                'unidadNombre' => $unidad->NombreEmpresa ?? '',
+                'division' => $division->DivisionID ?? null,
+                'divisionNombre' => $division->NombreDivision ?? '',
             ];
         }
 

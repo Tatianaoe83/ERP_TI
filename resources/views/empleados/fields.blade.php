@@ -2,7 +2,7 @@
     $tipoActual = old('tipo_persona', isset($empleados) ? $empleados->tipo_persona : '');
     $puestoSel = old('PuestoID', isset($empleados) ? $empleados->PuestoID : '');
     $opcionesPuesto = collect($orgPuestos ?? [])->map(function ($puesto) {
-        $puesto['etiqueta'] = $puesto['puestoNombre'].' — '.$puesto['areaNombre'].' — '.$puesto['gerenciaNombre'].' — '.$puesto['direccionNombre'];
+        $puesto['etiqueta'] = implode(' — ', array_filter([$puesto['puestoNombre'], $puesto['areaNombre'], $puesto['gerenciaNombre'], $puesto['direccionNombre']]));
 
         return $puesto;
     })->sortBy('etiqueta', SORT_NATURAL | SORT_FLAG_CASE)->values();
