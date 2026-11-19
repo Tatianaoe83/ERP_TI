@@ -1010,11 +1010,18 @@ class PresupuestoHelper
         $esPresupuesto = $metadatosDocumento['modo'] === 'presupuesto';
         $tiposPersona = self::tiposPersona($metadatosDocumento['modo']);
 
-        $gerencia = Gerencia::find($numerogerencia);
+        if (self::esInterno()) {
+            $interno = \App\Models\PresupuestoInterno::find($numerogerencia);
+            $gerencia = new \stdClass();
+            $gerencia->NombreGerencia = $interno ? $interno->Nombre : 'Presupuesto interno';
+            $gerencia->NombreGerente = '';
+        } else {
+            $gerencia = Gerencia::find($numerogerencia);
+        }
 
-        $empleadosPorTipo = Empleados::whereHas('puestos.departamentos', function ($query) use ($numerogerencia) {
-            $query->where('GerenciaID', $numerogerencia);
-        })
+        $empleadosQuery = Empleados::query();
+        self::aplicarAlcance($empleadosQuery, $numerogerencia);
+        $empleadosPorTipo = $empleadosQuery
             ->where('Estado', 1)
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
             // Solo quien tiene algo que entra al reporte en cualquiera de las 3 tablas:
@@ -1058,6 +1065,8 @@ class PresupuestoHelper
         );
 
         $query_params = [$numerogerencia];
+        $joinOrganizacion = self::sqlJoinOrganizacion();
+        $whereAlcance = self::sqlWhereAlcance();
 
         //Sumar costos de Renta de Impresora
         if ($tipo == 'mens') {
@@ -1068,10 +1077,8 @@ class PresupuestoHelper
              ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
             FROM inventarioinsumo ii
             INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-            WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+            " . $joinOrganizacion . "
+            WHERE " . $whereAlcance . " " . $tipoPersonaFilter . $presupInsumoII . "
                 AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                 ", $query_params);
 
@@ -1081,10 +1088,8 @@ class PresupuestoHelper
          ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
         FROM inventarioinsumo ii
         INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-        INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-        INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-        INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-        WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+        " . $joinOrganizacion . "
+        WHERE " . $whereAlcance . " " . $tipoPersonaFilter . $presupInsumoII . "
             AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
             ", $query_params);
 
@@ -1483,10 +1488,8 @@ class PresupuestoHelper
             SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoMensual, ii.FrecuenciaDePago, ii.MesDePago
             FROM inventarioinsumo ii
             INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-            WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+            " . self::sqlJoinOrganizacion() . "
+            WHERE " . self::sqlWhereAlcance() . " " . $tipoPersonaFilter . $presupInsumoII . "
                 AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', $categoria) . "
         ", [$gerenciaId]);
 

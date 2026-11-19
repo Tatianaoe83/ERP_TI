@@ -124,11 +124,26 @@ class PresupuestoController extends Controller
 
     public function descargar(request $request)
     {
-        $data = PresupuestoHelper::datosReporte((int) $request->GerenciaID, (string) $request->tipo, $request->input('modo', 'presupuesto'));
+        $agrupar = PresupuestoHelper::normalizarAgrupar($request->input('agrupar'));
+        if (!$request->filled('agrupar') && $request->filled('PresupuestoInternoID')) {
+            $agrupar = 'interno';
+        }
+        PresupuestoHelper::$agrupar = $agrupar;
+
+        $alcanceId = (int) ($agrupar === 'interno'
+            ? $request->input('PresupuestoInternoID')
+            : ($request->input('GerenciaID') ?: $request->input('PresupuestoInternoID')));
+
+        if ($alcanceId < 1) {
+            return redirect()->back()->with('error', 'Selecciona un presupuesto interno.');
+        }
+
+        $tipo = (string) $request->input('tipo', 'mens');
+        $data = PresupuestoHelper::datosReporte($alcanceId, $tipo, $request->input('modo', 'presupuesto'));
 
         $nombreGerencia = $data['GerenciaTb']->NombreGerencia ?? 'Sin_Gerencia';
         $prefijoArchivo = $data['modo'] === 'inventario' ? 'Reporte_Inventario' : 'Reporte_Presupuesto';
-        $nombreArchivo = $prefijoArchivo . '_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual');
+        $nombreArchivo = $prefijoArchivo . '_' . $nombreGerencia . '_' . ($tipo === 'mens' ? 'Mensual' : 'Anual');
 
         if ($request->submitbutton == 'pdf') {
             $pdf = PDF::loadView('presupuesto.reporte', $data);
@@ -137,7 +152,7 @@ class PresupuestoController extends Controller
             return $pdf->stream($nombreArchivo . '.pdf');
         }
 
-        return Excel::download(new ReportExport($request->GerenciaID, $request->tipo, $data['modo']), $nombreArchivo . '.xlsx');
+        return Excel::download(new ReportExport($alcanceId, $tipo, $data['modo'], $agrupar), $nombreArchivo . '.xlsx');
     }
 
     public function verificarFechas(Request $request)

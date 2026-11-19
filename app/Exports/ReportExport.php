@@ -21,17 +21,19 @@ class ReportExport implements FromView, WithColumnWidths, WithStyles
     private $gerencia;
     private $tipo;
     private $modo;
+    private $agrupar;
 
     // Columnas que ocupa el reporte (la tabla más ancha); se calcula en view()
     private $totalColumnas = 13;
 
 
 
-    public function __construct(int $gerencia, string $tipo, string $modo = 'presupuesto')
+    public function __construct(int $gerencia, string $tipo, string $modo = 'presupuesto', string $agrupar = 'interno')
     {
         $this->gerencia  = $gerencia;
         $this->tipo = $tipo;
         $this->modo = $modo === 'inventario' ? 'inventario' : 'presupuesto';
+        $this->agrupar = PresupuestoHelper::normalizarAgrupar($agrupar);
     }
 
 
@@ -41,6 +43,7 @@ class ReportExport implements FromView, WithColumnWidths, WithStyles
      */
     public function view(): View
     {
+        PresupuestoHelper::$agrupar = $this->agrupar;
         $data = PresupuestoHelper::datosReporte((int) $this->gerencia, $this->tipo, $this->modo);
 
         // Empleado + Puesto + columnas de insumo + Total; el calendario usa 13
