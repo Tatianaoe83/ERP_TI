@@ -6,8 +6,8 @@
             {{ $tiempo['porcentaje'] }}%
         </span>
     </div>
-    <div class="h-1.5 rounded-full bg-black/10 dark:bg-white/15 overflow-hidden mb-1.5">
-        <div class="h-full rounded-full transition-all {{ $tiempo['estilo']['bar'] ?? 'bg-current' }}"
+    <div class="kpi-track">
+        <div class="{{ $tiempo['estilo']['bar'] ?? 'bg-current' }}"
             style="width: {{ $tiempo['porcentaje'] }}%"></div>
     </div>
     <p class="text-[11px] font-semibold flex items-center gap-1">

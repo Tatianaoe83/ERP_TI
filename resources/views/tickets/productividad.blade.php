@@ -1,6 +1,6 @@
 <div class="prod-page" id="productividad-container"
     x-data="{ activeTab: sessionStorage.getItem('prodTab') || 'general' }"
-    x-init="$watch('activeTab', val => sessionStorage.setItem('prodTab', val))">
+    x-init="$watch('activeTab', val => { sessionStorage.setItem('prodTab', val); setTimeout(function () { if (window.iniciarTablasProductividad) iniciarTablasProductividad(); if (val === 'solicitudes' && window.inicializarGraficasSolicitudes) inicializarGraficasSolicitudes(); if (val === 'tareas' && window.inicializarGraficasTareas) inicializarGraficasTareas(); if (val === 'general' && window.inicializarGraficas) { inicializarGraficas(); if (window.inicializarGraficasEmpleados) inicializarGraficasEmpleados(); } }, 80); }); setTimeout(function () { if (window.iniciarTablasProductividad) iniciarTablasProductividad(); if (activeTab === 'solicitudes' && window.inicializarGraficasSolicitudes) inicializarGraficasSolicitudes(); if (activeTab === 'tareas' && window.inicializarGraficasTareas) inicializarGraficasTareas(); }, 180);">
 <style>
     #productividad-container.prod-page {
         min-height: 0;
@@ -162,6 +162,9 @@
                                 if (typeof destruirGraficasProductividad === 'function') {
                                     destruirGraficasProductividad();
                                 }
+                                if (typeof destruirTablasProductividad === 'function') {
+                                    destruirTablasProductividad();
+                                }
                                 const container = document.getElementById('productividad-container');
                                 if (container) {
                                     container.outerHTML = data.html;
@@ -200,6 +203,9 @@
                                     });
                                     window.history.replaceState({}, '', url);
 
+                                if (typeof iniciarTablasProductividad === 'function') {
+                                    iniciarTablasProductividad();
+                                }
                                 if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
                                         if (typeof inicializarGraficas === 'function') {
                                             inicializarGraficas();
@@ -346,13 +352,13 @@
                 <i class="fas fa-chart-pie"></i> Resumen de tickets
             </button>
 
-            <button @click="activeTab = 'solicitudes'"
+            <button @click="activeTab = 'solicitudes'; setTimeout(() => { if (window.inicializarGraficasSolicitudes) inicializarGraficasSolicitudes(); }, 80);"
                 :class="activeTab === 'solicitudes' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
                 class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
                 <i class="fas fa-stopwatch"></i> Métricas de solicitudes
             </button>
 
-            <button @click="activeTab = 'tareas'"
+            <button @click="activeTab = 'tareas'; setTimeout(() => { if (window.inicializarGraficasTareas) inicializarGraficasTareas(); }, 80);"
                 :class="activeTab === 'tareas' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
                 class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
                 <i class="fas fa-tasks"></i> Rendimiento de tareas
@@ -462,48 +468,8 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                        {{-- Rapidez --}}
-                        <div
-                            class="p-3 sm:p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Rapidez</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-                                    {{ number_format($metricasProductividad['calificacion_promedio']['fastness'], 1) }}
-                                </span>
-                                <span class="text-sm text-blue-500 dark:text-blue-400">/5</span>
-                            </div>
-                        </div>
-
-                        {{-- Atención --}}
-                        <div
-                            class="p-3 sm:p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-green-700 dark:text-green-400">Atención</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
-                                    {{ number_format($metricasProductividad['calificacion_promedio']['attention'], 1) }}
-                                </span>
-                                <span class="text-sm text-green-500 dark:text-green-400">/5</span>
-                            </div>
-                        </div>
-
-                        {{-- Resolución --}}
-                        <div
-                            class="p-3 sm:p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-purple-700 dark:text-purple-400">Resolución</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
-                                    {{ number_format($metricasProductividad['calificacion_promedio']['resolution'], 1) }}
-                                </span>
-                                <span class="text-sm text-purple-500 dark:text-purple-400">/5</span>
-                            </div>
-                        </div>
+                    <div class="h-[220px]">
+                        <canvas id="chartSatisfaccion" role="img" aria-label="Calificación de satisfacción"></canvas>
                     </div>
                 </div>
             @endif
@@ -513,9 +479,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-blue-200/90 dark:hover:border-blue-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:ring-blue-400/25 focus-within:border-blue-300/80 dark:focus-within:border-blue-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Distribución por Estado</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -527,9 +490,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Tickets Creados vs Resueltos</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -548,9 +508,6 @@
                         <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de
                             respuesta, resolución y total</p>
                     </div>
-                    <span
-                        class="shrink-0 self-start text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                        aria-hidden="true">Hover</span>
                 </div>
                 <div
                     class="h-80 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/30 dark:bg-black/20 group-hover:bg-gray-50/60 dark:group-hover:bg-black/30">
@@ -564,9 +521,6 @@
                 <div class="flex items-center justify-between gap-2 mb-3">
                     <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y
                         Cerrados)</h3>
-                    <span
-                        class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                        aria-hidden="true">Hover</span>
                 </div>
                 <div
                     class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -580,9 +534,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-rose-200/80 dark:hover:border-rose-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-rose-500/20 dark:focus-within:ring-rose-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Tickets por Prioridad</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -594,9 +545,6 @@
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-violet-200/90 dark:hover:border-violet-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-violet-500/20 dark:focus-within:ring-violet-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Distribución por Tipo de Ticket (Top 12)</h3>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
@@ -605,181 +553,115 @@
                 </div>
             </div>
 
-            <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                <h3 class="text-lg font-semibold mb-4 dark:text-white">Rendimiento por Responsable TI</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+            <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
+                <h3 class="text-lg font-semibold mb-3 dark:text-white">Carga por responsable</h3>
+                <div class="h-[280px]">
+                    <canvas id="chartCargaResponsable" role="img" aria-label="Carga por responsable"></canvas>
+                </div>
+            </div>
+
+            <div class="index-page__card">
+                <div class="px-4 py-3">
+                    <h3 class="text-sm font-semibold m-0 dark:text-white">Rendimiento por responsable TI</h3>
+                </div>
+                <div class="index-page__table-wrap table-responsive">
+                    <table id="tablaRendimientoResponsable" class="table index-table index-table--sin-accion w-full js-index-table">
                         <thead>
-                            <tr class="border-b border-gray-200 dark:border-[#2A2F3A]">
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Responsable</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Total</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Cerrados</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    En Progreso</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Pendientes</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Problemas</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Servicios</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Tasa de Cierre</th>
+                            <tr>
+                                <th>Responsable</th>
+                                <th>Total</th>
+                                <th>Cerrados</th>
+                                <th>En progreso</th>
+                                <th>Pausados</th>
+                                <th>Pendientes</th>
+                                <th>Problemas</th>
+                                <th>Servicios</th>
+                                <th>Tasa de cierre</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
-                            @forelse($metricasProductividad['tickets_por_responsable'] as $responsable)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-[#1F2937]/50 transition-colors">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-gray-200">
-                                        {{ $responsable['nombre'] }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm dark:text-gray-300">
-                                        {{ $responsable['total'] }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            {{ $responsable['cerrados'] }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                            {{ $responsable['en_progreso'] }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                            {{ $responsable['pendientes'] }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                                            {{ $responsable['problemas'] ?? 0 }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span
-                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                            {{ $responsable['servicios'] ?? 0 }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <tbody>
+                            @foreach($metricasProductividad['tickets_por_responsable'] as $responsable)
+                                <tr>
+                                    <td>{{ $responsable['nombre'] }}</td>
+                                    <td>{{ $responsable['total'] }}</td>
+                                    <td><span class="erp-chip erp-chip--ok">{{ $responsable['cerrados'] }}</span></td>
+                                    <td><span class="erp-chip erp-chip--aviso">{{ $responsable['en_progreso'] }}</span></td>
+                                    <td><span class="erp-chip erp-chip--acento">{{ $responsable['pausados'] ?? 0 }}</span></td>
+                                    <td><span class="erp-chip erp-chip--alerta">{{ $responsable['pendientes'] }}</span></td>
+                                    <td><span class="erp-chip erp-chip--acento">{{ $responsable['problemas'] ?? 0 }}</span></td>
+                                    <td><span class="erp-chip erp-chip--info">{{ $responsable['servicios'] ?? 0 }}</span></td>
+                                    <td>
                                         @if($responsable['total'] > 0)
-                                            <span
-                                                class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                                {{ round(($responsable['cerrados'] / $responsable['total']) * 100, 1) }}%
-                                            </span>
+                                            <span class="erp-chip erp-chip--info">{{ round(($responsable['cerrados'] / $responsable['total']) * 100, 1) }}%</span>
                                         @else
-                                            <span class="text-gray-400">-</span>
+                                            <span class="erp-chip erp-chip--neutro">-</span>
                                         @endif
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                        No hay datos disponibles</td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
             </div>
 
             <!-- Incidencias por Gerencia del Solicitante -->
-            <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                <h3 class="text-lg font-semibold mb-4 dark:text-white">Incidencias por Gerencia del Solicitante</h3>
-                <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Distribución de tickets según la gerencia del
-                    empleado solicitante</p>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+            <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
+                <h3 class="text-lg font-semibold mb-3 dark:text-white">Tickets por gerencia del solicitante</h3>
+                <div class="h-[280px]">
+                    <canvas id="chartGerenciaSolicitante" role="img" aria-label="Tickets por gerencia del solicitante"></canvas>
+                </div>
+            </div>
+
+            <div class="index-page__card">
+                <div class="px-4 py-3">
+                    <h3 class="text-sm font-semibold m-0 dark:text-white">Incidencias por gerencia del solicitante</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-0 mt-1">Distribución de tickets según la gerencia del empleado solicitante</p>
+                </div>
+                <div class="index-page__table-wrap table-responsive">
+                    <table id="tablaGerenciaSolicitante" class="table index-table index-table--sin-accion w-full js-index-table">
                         <thead>
-                            <tr class="border-b border-gray-200 dark:border-[#2A2F3A]">
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Gerencia</th>
-                                <th
-                                    class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Total</th>
-                                <th
-                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    Tipo de Incidencia (Top 5)</th>
+                            <tr>
+                                <th>Gerencia</th>
+                                <th>Total</th>
+                                <th>Tipo de incidencia (top 5)</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
-                            @forelse($metricasProductividad['tickets_por_gerencia_solicitante'] ?? [] as $gerencia)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-[#1F2937]/50 transition-colors">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-gray-200">
-                                        {{ $gerencia['gerencia'] }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                        <span
-                                            class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                            {{ $gerencia['total'] }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm">
+                        <tbody>
+                            @foreach($metricasProductividad['tickets_por_gerencia_solicitante'] ?? [] as $gerencia)
+                                <tr>
+                                    <td>{{ $gerencia['gerencia'] }}</td>
+                                    <td><span class="erp-chip erp-chip--info">{{ $gerencia['total'] }}</span></td>
+                                    <td>
                                         @if(!empty($gerencia['tertipos']))
                                             <div class="flex flex-wrap gap-2">
                                                 @foreach($gerencia['tertipos'] as $tertipo => $cantidad)
-                                                    <span
-                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                                        {{ $tertipo }}
-                                                        <span
-                                                            class="ml-1 px-1.5 py-0.5 bg-purple-200 dark:bg-purple-800 rounded-full text-purple-900 dark:text-purple-100">{{ $cantidad }}</span>
-                                                    </span>
+                                                    <span class="erp-chip erp-chip--acento">{{ $tertipo }} {{ $cantidad }}</span>
                                                 @endforeach
                                             </div>
                                         @else
-                                            <span class="text-gray-400 dark:text-gray-500 text-xs italic">Sin clasificar</span>
+                                            <span class="erp-chip erp-chip--neutro">Sin clasificar</span>
                                         @endif
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                        No hay datos disponibles</td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
             </div>
 
             <!-- Incidencias por Responsable TI Asignado (Tabla Pivotizada) -->
-            <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                <h3 class="text-lg font-semibold mb-2 dark:text-white">Incidencias por Responsable TI Asignado</h3>
-                <p class="text-sm mb-6 text-gray-500 dark:text-gray-400">Matriz de distribución de tickets: Tipos →
-                    Subtipos vs Responsables TI Asignados</p>
-
-                <!-- Tabla Pivotizada -->
-                <div class="overflow-x-auto mb-8">
-                    <table class="w-full">
+            <div class="index-page__card">
+                <div class="px-4 py-3">
+                    <h3 class="text-sm font-semibold m-0 dark:text-white">Incidencias por responsable TI asignado</h3>
+                </div>
+                <div class="index-page__table-wrap table-responsive">
+                    <table class="table index-table index-table--sin-accion index-table--matriz w-full">
                         <thead>
-                            <tr class="border-b-2 border-gray-300 dark:border-[#2A2F3A]">
-                                <th
-                                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">
-                                    Etiquetas de Fila</th>
-                                <th
-                                    class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">
-                                    Total General</th>
+                            <tr>
+                                <th>Etiquetas de fila</th>
+                                <th>Total general</th>
                                 @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
-                                    <th
-                                        class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">
-                                        {{ $nombre }}
-                                    </th>
+                                    <th>{{ $nombre }}</th>
                                 @endforeach
                             </tr>
                         </thead>
@@ -787,46 +669,29 @@
                             @php $totalGeneral = 0; @endphp
                             @forelse($metricasProductividad['matriz_incidencias_responsable'] as $tipo => $tipoData)
                                 @php $totalGeneral += $tipoData['total']; @endphp
-
-                                <!-- Fila del TIPO (1- Hardware, 1- Comunicación, etc.) -->
-                                <tr
-                                    class="bg-blue-100 dark:bg-blue-900/30 border-t-2 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
-                                    <td class="px-4 py-3 text-sm font-bold text-blue-900 dark:text-blue-100">{{ $tipo }}
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
-                                        <span
-                                            class="px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white dark:bg-blue-700">{{ $tipoData['total'] }}</span>
-                                    </td>
+                                <tr class="index-table__grupo">
+                                    <td>{{ $tipo }}</td>
+                                    <td><span class="erp-chip erp-chip--info">{{ $tipoData['total'] }}</span></td>
                                     @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
-                                        <td class="px-4 py-3 text-center">
+                                        <td>
                                             @if(isset($tipoData['responsables'][$id]) && $tipoData['responsables'][$id] > 0)
-                                                <span
-                                                    class="px-2 py-1 text-xs font-bold rounded-full bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100">{{ $tipoData['responsables'][$id] }}</span>
+                                                <span class="erp-chip erp-chip--info">{{ $tipoData['responsables'][$id] }}</span>
                                             @else
-                                                <span class="text-gray-400 dark:text-gray-600">-</span>
+                                                <span class="erp-chip erp-chip--neutro">-</span>
                                             @endif
                                         </td>
                                     @endforeach
                                 </tr>
-
-                                <!-- Filas de SUBTIPOS (2- Computadoras, 2- Impresoras, etc.) -->
                                 @foreach($tipoData['subtipos'] as $subtipo => $subtipoData)
-                                    <tr
-                                        class="dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#1F2937]/30 transition-colors border-b border-gray-100 dark:border-[#2A2F3A]">
-                                        <td class="px-4 py-2 pl-8 text-sm text-gray-700 dark:text-gray-300">
-                                            <i class="fas fa-level-up-alt fa-rotate-90 text-gray-400 mr-2"></i>{{ $subtipo }}
-                                        </td>
-                                        <td class="px-4 py-2 text-center">
-                                            <span
-                                                class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ $subtipoData['total'] }}</span>
-                                        </td>
+                                    <tr>
+                                        <td>{{ $subtipo }}</td>
+                                        <td><span class="erp-chip erp-chip--neutro">{{ $subtipoData['total'] }}</span></td>
                                         @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
-                                            <td class="px-4 py-2 text-center">
+                                            <td>
                                                 @if(isset($subtipoData['responsables'][$id]) && $subtipoData['responsables'][$id] > 0)
-                                                    <span
-                                                        class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">{{ $subtipoData['responsables'][$id] }}</span>
+                                                    <span class="erp-chip erp-chip--ok">{{ $subtipoData['responsables'][$id] }}</span>
                                                 @else
-                                                    <span class="text-gray-300 dark:text-gray-600">-</span>
+                                                    <span class="erp-chip erp-chip--neutro">-</span>
                                                 @endif
                                             </td>
                                         @endforeach
@@ -834,25 +699,14 @@
                                 @endforeach
                             @empty
                                 <tr>
-                                    <td colspan="{{ count($metricasProductividad['responsables_ti_list']) + 2 }}"
-                                        class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No hay datos
-                                        disponibles</td>
+                                    <td colspan="{{ count($metricasProductividad['responsables_ti_list']) + 2 }}">No hay datos disponibles</td>
                                 </tr>
                             @endforelse
-
-                            <!-- Fila de Totales -->
-                            <tr
-                                class="bg-gray-200 dark:bg-[#1F2937] font-bold border-t-2 border-gray-400 dark:border-[#2A2F3A]">
-                                <td class="px-4 py-3 text-sm dark:text-white">TOTAL GENERAL</td>
-                                <td class="px-4 py-3 text-center">
-                                    <span
-                                        class="px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white">{{ $totalGeneral }}</span>
-                                </td>
+                            <tr class="index-table__total">
+                                <td>Total general</td>
+                                <td><span class="erp-chip erp-chip--info">{{ $totalGeneral }}</span></td>
                                 @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
-                                    <td class="px-4 py-3 text-center">
-                                        <span
-                                            class="px-2 py-1 text-xs font-bold rounded-full bg-blue-600 text-white">{{ $metricasProductividad['totales_por_responsable'][$id] ?? 0 }}</span>
-                                    </td>
+                                    <td><span class="erp-chip erp-chip--info">{{ $metricasProductividad['totales_por_responsable'][$id] ?? 0 }}</span></td>
                                 @endforeach
                             </tr>
                         </tbody>
@@ -865,9 +719,6 @@
                     <div class="flex items-center justify-between gap-2 mb-4">
                         <h4 class="text-sm font-semibold dark:text-white">Visualización: Incidencias por Tipo y
                             Responsable</h4>
-                        <span
-                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                            aria-hidden="true">Hover</span>
                     </div>
                     <div
                         class="h-[700px] rounded-lg overflow-hidden transition-[background] duration-300 bg-white/40 dark:bg-black/20 group-hover:bg-white/60 dark:group-hover:bg-black/30">
@@ -1181,9 +1032,9 @@
                                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                                                 @php
                                                     $prioridades = [
-                                                        'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
-                                                        'Media' => ['color' => '#FBBF24', 'bg' => '#FBBF24', 'icon' => 'fa-exclamation-circle'],
-                                                        'Baja' => ['color' => '#4ADE80', 'bg' => '#4ADE80', 'icon' => 'fa-info-circle']
+                                                        'Alta' => ['color' => '#FF5630', 'bg' => '#FF5630', 'icon' => 'fa-exclamation-triangle'],
+                                                        'Media' => ['color' => '#FFAB00', 'bg' => '#FFAB00', 'icon' => 'fa-exclamation-circle'],
+                                                        'Baja' => ['color' => '#36B37E', 'bg' => '#36B37E', 'icon' => 'fa-info-circle']
                                                     ];
                                                 @endphp
                                                 @foreach($prioridades as $prioridad => $config)
@@ -1216,9 +1067,6 @@
                                                 <h5 class="text-sm font-semibold flex items-center gap-2 dark:text-white">
                                                     <i class="fas fa-chart-bar text-[#3B82F6]"></i> Total vs cerrados por mes
                                                 </h5>
-                                                <span
-                                                    class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
-                                                    aria-hidden="true">Hover</span>
                                             </div>
                                             <div
                                                 class="relative h-64 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/50 dark:bg-black/25 group-hover:bg-gray-50/80 dark:group-hover:bg-black/35">
@@ -1275,29 +1123,83 @@
                 </div>
             </div>
 
-            <div
-                class="rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm overflow-hidden bg-gray-50 dark:bg-transparent">
-                <div class="px-4 py-2.5 border-b border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-transparent">
-                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white"><i
-                            class="fas fa-list-ul mr-2 text-gray-400"></i> Desglose de tiempos por solicitud</h3>
+            @php
+                $filasSol = collect($metricasSolicitudes['desglose'] ?? []);
+                $chartSolicitudes = [
+                    'estatus' => $filasSol->countBy(fn ($s) => $s['estatus'] ?: 'Sin estatus')->all(),
+                    'configuracion' => $filasSol->countBy(fn ($s) => $s['estado_configuracion'] ?: 'Sin dato')->all(),
+                    'facturas' => [
+                        'Completas' => $filasSol->filter(fn ($s) => ($s['facturas_necesarias'] ?? 0) > 0 && ($s['facturas_subidas'] ?? 0) >= $s['facturas_necesarias'])->count(),
+                        'Parciales' => $filasSol->filter(fn ($s) => ($s['facturas_necesarias'] ?? 0) > 0 && ($s['facturas_subidas'] ?? 0) > 0 && $s['facturas_subidas'] < $s['facturas_necesarias'])->count(),
+                        'Sin subir' => $filasSol->filter(fn ($s) => ($s['facturas_necesarias'] ?? 0) > 0 && ($s['facturas_subidas'] ?? 0) === 0)->count(),
+                        'No aplica' => $filasSol->filter(fn ($s) => ($s['facturas_necesarias'] ?? 0) === 0)->count(),
+                    ],
+                    'tiempos' => $filasSol
+                        ->filter(fn ($s) => $s['tiempo_total_dias'] !== null)
+                        ->sortByDesc('tiempo_total_dias')
+                        ->take(8)
+                        ->map(fn ($s) => ['nombre' => '#'.$s['id'], 'horas' => (float) $s['tiempo_total_dias']])
+                        ->values()
+                        ->all(),
+                ];
+            @endphp
+            <script id="productividad-solicitudes-json" type="application/json">{!! json_encode($chartSolicitudes, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) !!}</script>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Solicitudes por estatus</h3>
+                    <div class="relative h-[240px]"><canvas id="chartSolEstatus" role="img" aria-label="Solicitudes por estatus"></canvas></div>
+                </div>
+                <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Estado de configuración</h3>
+                    <div class="relative h-[240px]"><canvas id="chartSolConfig" role="img" aria-label="Estado de configuración"></canvas></div>
+                </div>
+                <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Facturas</h3>
+                    <div class="relative h-[240px]"><canvas id="chartSolFacturas" role="img" aria-label="Facturas de las solicitudes"></canvas></div>
+                </div>
+            </div>
+            <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+                <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-1">Tiempo total de las solicitudes más largas</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Pasa el cursor para ver días, horas y minutos.</p>
+                <div class="relative h-[260px]"><canvas id="chartSolTiempos" role="img" aria-label="Tiempo total por solicitud"></canvas></div>
+            </div>
+
+            <div id="tabla-desglose-solicitudes" class="index-page__card">
+                <div class="px-4 py-3">
+                    <h3 class="text-sm font-semibold m-0 text-gray-800 dark:text-white">Desglose de tiempos por solicitud</h3>
+                    <p id="filtro-solicitudes-nota" hidden class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-0">
+                        Mostrando: <span class="font-semibold text-gray-800 dark:text-white"></span>
+                        <button type="button" class="ml-2 underline cursor-pointer" onclick="window.filtrarFilasSolicitudes('', '')">Quitar filtro</button>
+                    </p>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm whitespace-nowrap">
-                        <thead
-                            class="uppercase tracking-wider border-b-2 border-gray-200 dark:border-[#2A2F3A] bg-gray-100 dark:bg-[#1F2937]/30 text-gray-500 dark:text-[#9CA3AF]">
+                <div class="index-page__table-wrap table-responsive">
+                    <table id="tablaSolicitudesDesglose" class="table index-table index-table--sin-accion w-full js-index-table">
+                        <thead>
                             <tr>
-                                <th scope="col" class="px-6 py-4 font-semibold">ID Sol.</th>
-                                <th scope="col" class="px-6 py-4 font-semibold">Vo.Bo Supervisor</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-center">T. Cotización TI</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-center">T. Config.</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-right">Tiempo Total Avance</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-center">Facturas</th>
+                                <th>ID sol.</th>
+                                <th>Vo.Bo supervisor</th>
+                                <th>T. cotización TI</th>
+                                <th>T. config.</th>
+                                <th>Tiempo total avance</th>
+                                <th>Facturas</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A] bg-gray-50 dark:bg-transparent">
+                        <tbody>
                             @forelse($metricasSolicitudes['desglose'] ?? [] as $sol)
                                 @php
+                                    $necesarias = (int) ($sol['facturas_necesarias'] ?? 0);
+                                    $subidas = (int) ($sol['facturas_subidas'] ?? 0);
+                                    if ($necesarias > 0 && $subidas >= $necesarias) {
+                                        $etiquetaFactura = 'Completas';
+                                    } elseif ($necesarias > 0 && $subidas > 0) {
+                                        $etiquetaFactura = 'Parciales';
+                                    } elseif ($necesarias > 0) {
+                                        $etiquetaFactura = 'Sin subir';
+                                    } else {
+                                        $etiquetaFactura = 'No aplica';
+                                    }
                                     $solModal = [
                                         'id' => (string) ($sol['id'] ?? ''),
                                         'empleado' => (string) ($sol['empleado'] ?? ''),
@@ -1315,78 +1217,57 @@
                                     ];
                                 @endphp
                                 <tr data-sol="{{ e(json_encode($solModal, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)) }}"
+                                    data-estatus="{{ $sol['estatus'] ?: 'Sin estatus' }}"
+                                    data-config="{{ $sol['estado_configuracion'] ?: 'Sin dato' }}"
+                                    data-factura="{{ $etiquetaFactura }}"
+                                    data-sol-id="{{ $sol['id'] }}"
                                     @click="abrirInfoSolicitud($el)"
                                     class="hover:bg-gray-100 dark:hover:bg-[#1F2937]/50 transition-colors cursor-pointer">
 
-                                    <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">#{{ $sol['id'] }}</td>
-                                    <td class="px-6 py-4 text-gray-500 dark:text-[#9CA3AF]">{{ $sol['fecha_vobo_supervisor'] ?: 'Pendiente' }}
+                                    <td>#{{ $sol['id'] }}</td>
+                                    <td>
+                                        @if($sol['fecha_vobo_supervisor'])
+                                            {{ $sol['fecha_vobo_supervisor'] }}
+                                        @else
+                                            <span class="erp-chip erp-chip--aviso">Pendiente</span>
+                                        @endif
                                     </td>
-
-                                    <td class="px-6 py-4 text-center">
+                                    <td>
                                         @if($sol['tiempo_cotizacion_horas'] !== null)
-                                            <span
-                                                class="inline-flex px-2 py-1 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-medium text-xs">
-                                                {{ \App\Models\Tickets::formatearDuracion($sol['tiempo_cotizacion_horas']) }}
-                                            </span>
+                                            <span class="erp-chip erp-chip--info">{{ \App\Models\Tickets::formatearDuracion($sol['tiempo_cotizacion_horas']) }}</span>
                                         @else
-                                            <span class="text-gray-400 dark:text-gray-600">-</span>
+                                            <span class="erp-chip erp-chip--neutro">-</span>
                                         @endif
                                     </td>
-
-                                    <td class="px-6 py-4 text-center">
+                                    <td>
                                         @if($sol['tiempo_configuracion_dias'] !== null)
-                                            <span
-                                                class="inline-flex px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium text-xs">
-                                                {{ \App\Models\Tickets::formatearDuracion($sol['tiempo_configuracion_dias']) }}
-                                            </span>
+                                            <span class="erp-chip erp-chip--ok">{{ \App\Models\Tickets::formatearDuracion($sol['tiempo_configuracion_dias']) }}</span>
                                         @elseif(($sol['estado_configuracion'] ?? '') === 'Sin configuración')
-                                            <span class="inline-flex px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 font-medium text-xs">
-                                                Sin configuración
-                                            </span>
+                                            <span class="erp-chip erp-chip--neutro">Sin configuración</span>
                                         @else
-                                            <span class="text-gray-400 dark:text-gray-500 text-xs italic">Pendiente</span>
+                                            <span class="erp-chip erp-chip--aviso">Pendiente</span>
                                         @endif
                                     </td>
-
-                                    <td class="px-6 py-4 text-right font-bold text-gray-700 dark:text-gray-300">
-                                        {{ $sol['tiempo_total_dias'] !== null ? \App\Models\Tickets::formatearDuracion($sol['tiempo_total_dias']) : '-' }}
-                                    </td>
-
-                                    <td class="px-6 py-4 text-center">
+                                    <td>{{ $sol['tiempo_total_dias'] !== null ? \App\Models\Tickets::formatearDuracion($sol['tiempo_total_dias']) : '-' }}</td>
+                                    <td>
                                         @php
                                             $fSub = $sol['facturas_subidas'] ?? 0;
                                             $fNec = $sol['facturas_necesarias'] ?? 0;
                                         @endphp
                                         @if($fNec > 0)
                                             @if($fSub >= $fNec)
-                                                <span
-                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
-                                                    <i class="fas fa-check-circle"></i> {{ $fSub }}/{{ $fNec }} Completas
-                                                </span>
+                                                <span class="erp-chip erp-chip--ok">{{ $fSub }}/{{ $fNec }} completas</span>
                                             @elseif($fSub > 0)
-                                                <span
-                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
-                                                    <i class="fas fa-exclamation-triangle"></i> Faltan {{ max(0, $fNec - $fSub) }} ({{ $fSub }}/{{ $fNec }})
-                                                </span>
+                                                <span class="erp-chip erp-chip--aviso">Faltan {{ max(0, $fNec - $fSub) }} ({{ $fSub }}/{{ $fNec }})</span>
                                             @else
-                                                <span
-                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                                                    <i class="fas fa-times-circle"></i> Faltan {{ $fNec }} (0/{{ $fNec }})
-                                                </span>
+                                                <span class="erp-chip erp-chip--alerta">Faltan {{ $fNec }} (0/{{ $fNec }})</span>
                                             @endif
                                         @else
-                                            <span
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-                                                N/A
-                                            </span>
+                                            <span class="erp-chip erp-chip--neutro">N/A</span>
                                         @endif
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay
-                                        solicitudes procesadas en este periodo.</td>
-                                </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -1630,8 +1511,8 @@
                 {{-- Tabla de Tickets --}}
                 <div x-show="!cargandoDetalle && !errorDetalle && ticketsDetalle.length > 0"
                     class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-600/60">
-                    <table class="w-full">
-                        <thead class="bg-gray-100 dark:bg-slate-800 sticky top-0 z-10">
+                    <table class="table index-table index-table--sin-accion w-full">
+                        <thead class="sticky top-0 z-10">
                             <tr class="border-b border-gray-200 dark:border-slate-700">
                                 <th
                                     class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
@@ -1681,20 +1562,20 @@
                                     <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap"
                                         x-text="ticket.Gerencia"></td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                                        <span class="erp-chip"
                                             :class="{
-                                            'bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-600/20 dark:text-red-400 dark:ring-red-600/40':         ticket.Prioridad === 'Alta',
-                                            'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:ring-yellow-500/40': ticket.Prioridad === 'Media',
-                                            'bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-600/20 dark:text-green-400 dark:ring-green-600/40':   ticket.Prioridad === 'Baja'
+                                            'erp-chip--alerta': ticket.Prioridad === 'Alta',
+                                            'erp-chip--aviso': ticket.Prioridad === 'Media',
+                                            'erp-chip--ok': ticket.Prioridad === 'Baja'
                                         }" x-text="ticket.Prioridad">
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                                        <span class="erp-chip"
                                             :class="{
-                                            'bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-slate-600/40 dark:text-slate-300 dark:ring-slate-500/40':  ticket.Estatus === 'Pendiente',
-                                            'bg-blue-100 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-600/20 dark:text-blue-400 dark:ring-blue-500/40':     ticket.Estatus === 'En progreso',
-                                            'bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-600/20 dark:text-green-400 dark:ring-green-500/40':  ticket.Estatus === 'Cerrado'
+                                            'erp-chip--aviso': ticket.Estatus === 'Pendiente',
+                                            'erp-chip--info': ticket.Estatus === 'En progreso',
+                                            'erp-chip--ok': ticket.Estatus === 'Cerrado'
                                         }" x-text="ticket.Estatus">
                                         </span>
                                     </td>
@@ -1741,6 +1622,7 @@
 
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
 <script src="{{ asset('assets/js/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>
@@ -1883,61 +1765,35 @@
 
     /** Colores y bordes por tema (solo presentación; los datos no cambian). */
     function crearPaletaProductividad(esOscuro) {
-        if (esOscuro) {
-            return {
-                donaBorde: 'rgba(15,23,42,0.94)',
-                estado: ['#FB7185', '#FACC15', '#4ADE80'],
-                clasificacion: ['#FB7185', '#93C5FD'],
-                clasBorde: ['#FB7185', '#93C5FD'],
-                prioridad: ['#FB7185', '#FACC15', '#4ADE80'],
-                prioridadHover: ['#FDA4AF', '#FDE047', '#86EFAC'],
-                prioridadBorde: 'rgba(255,255,255,0.12)',
-                tipoBar: 'rgba(167,139,250,0.92)',
-                tipoHover: '#DDD6FE',
-                tipoBorde: '#A78BFA',
-                lineCreadosStroke: '#93C5FD',
-                lineCreadosFill: 'rgba(96,165,250,0.22)',
-                lineResStroke: '#6EE7B7',
-                lineResFill: 'rgba(52,211,153,0.22)',
-                puntoCreados: { fill: '#0f172a', stroke: '#93C5FD', hFill: '#F8FAFC', hStroke: '#60A5FA' },
-                puntoRes: { fill: '#0f172a', stroke: '#6EE7B7', hFill: '#F8FAFC', hStroke: '#34D399' },
-                comp: [
-                    { bg: 'rgba(59,130,246,0.9)', h: '#BFDBFE', b: '#60A5FA' },
-                    { bg: 'rgba(16,185,129,0.88)', h: '#A7F3D0', b: '#34D399' },
-                    { bg: 'rgba(245,158,11,0.85)', h: '#FDE68A', b: '#FBBF24' }
-                ],
-                matriz: ['#60A5FA', '#34D399', '#FBBF24', '#FB7185', '#C4B5FD', '#F472B6', '#22D3EE', '#BEF264', '#FB923C', '#A5B4FC'],
-                matrizH: ['#93C5FD', '#6EE7B7', '#FDE68A', '#FDA4AF', '#E9D5FF', '#FBCFE8', '#67E8F9', '#D9F99D', '#FDBA74', '#C7D2FE'],
-                empTot: { bg: 'rgba(59,130,246,0.88)', h: '#93C5FD', b: '#60A5FA' },
-                empCer: { bg: 'rgba(52,211,153,0.88)', h: '#6EE7B7', b: '#4ADE80' }
-            };
-        }
+        var serie = ['#0052CC', '#6554C0', '#FFAB00', '#36B37E', '#4C9AFF', '#00875A', '#A3B3C9', '#0066FF', '#8777D9', '#6B7D99'];
+        var serieHover = ['#0066FF', '#8777D9', '#FFD60A', '#57D9A3', '#79B8FF', '#36B37E', '#C5D0DE', '#4C9AFF', '#B8A9E8', '#A3B3C9'];
+        var borde = esOscuro ? '#0F172A' : '#ffffff';
         return {
-            donaBorde: '#ffffff',
-            estado: ['#DC2626', '#CA8A04', '#15803D'],
-            clasificacion: ['#EF4444', '#2563EB'],
-            clasBorde: ['#DC2626', '#1D4ED8'],
-            prioridad: ['#EF4444', '#D97706', '#16A34A'],
-            prioridadHover: ['#FB7185', '#F59E0B', '#4ADE80'],
-            prioridadBorde: '#ffffff',
-            tipoBar: '#7C3AED',
-            tipoHover: '#A78BFA',
-            tipoBorde: '#5B21B6',
-            lineCreadosStroke: '#2563EB',
-            lineCreadosFill: 'rgba(37,99,235,0.14)',
-            lineResStroke: '#059669',
-            lineResFill: 'rgba(5,150,105,0.14)',
-            puntoCreados: { fill: '#ffffff', stroke: '#2563EB', hFill: '#2563EB', hStroke: '#ffffff' },
-            puntoRes: { fill: '#ffffff', stroke: '#059669', hFill: '#059669', hStroke: '#ffffff' },
+            donaBorde: borde,
+            estado: ['#FF5630', '#4C9AFF', '#FFAB00', '#36B37E'],
+            clasificacion: ['#FF5630', '#0052CC'],
+            clasBorde: [borde, borde],
+            prioridad: ['#FF5630', '#FFAB00', '#36B37E'],
+            prioridadHover: ['#FF7452', '#FFC400', '#57D9A3'],
+            prioridadBorde: borde,
+            tipoBar: '#0052CC',
+            tipoHover: '#0066FF',
+            tipoBorde: borde,
+            lineCreadosStroke: '#6554C0',
+            lineCreadosFill: 'rgba(101,84,192,0.18)',
+            lineResStroke: '#0052CC',
+            lineResFill: 'rgba(0,82,204,0.18)',
+            puntoCreados: { fill: borde, stroke: '#6554C0', hFill: '#F8FAFC', hStroke: '#8777D9' },
+            puntoRes: { fill: borde, stroke: '#0052CC', hFill: '#F8FAFC', hStroke: '#0066FF' },
             comp: [
-                { bg: '#3B82F6', h: '#60A5FA', b: '#1D4ED8' },
-                { bg: '#10B981', h: '#34D399', b: '#047857' },
-                { bg: '#F59E0B', h: '#FBBF24', b: '#B45309' }
+                { bg: '#6554C0', h: '#8777D9', b: borde },
+                { bg: '#0052CC', h: '#0066FF', b: borde },
+                { bg: '#A3B3C9', h: '#C5D0DE', b: borde }
             ],
-            matriz: ['#2563EB', '#047857', '#B45309', '#B91C1C', '#6D28D9', '#BE185D', '#0E7490', '#4D7C0F', '#C2410C', '#4338CA'],
-            matrizH: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'],
-            empTot: { bg: 'rgba(59,130,246,0.82)', h: '#3B82F6', b: '#1D4ED8' },
-            empCer: { bg: 'rgba(22,163,74,0.82)', h: '#22C55E', b: '#15803D' }
+            matriz: serie,
+            matrizH: serieHover,
+            empTot: { bg: '#4C9AFF', h: '#79B8FF', b: borde },
+            empCer: { bg: '#36B37E', h: '#57D9A3', b: borde }
         };
     }
 
@@ -1968,14 +1824,14 @@
 
     function tooltipEstiloBase(colores, extra) {
         return Object.assign({
-            cornerRadius: 10,
+            cornerRadius: 12,
             titleMarginBottom: 6,
             caretSize: 6,
             bodySpacing: 5,
-            padding: 14,
-            backgroundColor: colores.tooltipBg,
-            titleColor: colores.tooltipTexto,
-            bodyColor: colores.tooltipTexto,
+            padding: 12,
+            backgroundColor: 'rgba(15, 23, 42, 0.94)',
+            titleColor: '#4C9AFF',
+            bodyColor: '#F8FAFC',
             borderColor: colores.tooltipBorder,
             borderWidth: 1
         }, extra || {});
@@ -2110,6 +1966,12 @@
                 } catch (e) { }
             }
         }
+        if (window.__chartsExtra) {
+            Object.keys(window.__chartsExtra).forEach(function (clave) {
+                destruir(window.__chartsExtra[clave]);
+                window.__chartsExtra[clave] = null;
+            });
+        }
         destruir(C.estado);
         destruir(C.resueltos);
         destruir(C.tendencias);
@@ -2118,6 +1980,9 @@
         destruir(C.tipoTicket);
         destruir(C.comparacionTiempos6Meses);
         destruir(C.incidenciasMatriz);
+        destruir(C.satisfaccion);
+        destruir(C.cargaResponsable);
+        destruir(C.gerenciaSolicitante);
         C.estado = null;
         C.resueltos = null;
         C.tendencias = null;
@@ -2126,6 +1991,9 @@
         C.tipoTicket = null;
         C.comparacionTiempos6Meses = null;
         C.incidenciasMatriz = null;
+        C.satisfaccion = null;
+        C.cargaResponsable = null;
+        C.gerenciaSolicitante = null;
 
         var md = null;
         try {
@@ -2173,6 +2041,311 @@
         return false;
     }
 
+    window.__chartsExtra = window.__chartsExtra || {};
+
+    function leerJsonGrafica(id) {
+        var el = document.getElementById(id);
+        if (!el) return null;
+        try {
+            return JSON.parse(el.textContent || '{}');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function avisoGraficaVacia(canvas, mostrar) {
+        var caja = canvas && canvas.parentElement;
+        if (!caja) return;
+        var aviso = caja.querySelector('.chart-vacio');
+        if (!mostrar) {
+            if (aviso) aviso.remove();
+            return;
+        }
+        if (!aviso) {
+            aviso = document.createElement('p');
+            aviso.className = 'chart-vacio absolute inset-0 flex items-center justify-center text-sm text-gray-400 m-0';
+            aviso.textContent = 'Sin datos en este periodo';
+            caja.appendChild(aviso);
+        }
+    }
+
+    function montarGraficaExtra(id, config) {
+        var canvas = document.getElementById(id);
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (typeof isElementVisible === 'function' && !isElementVisible(canvas)) return;
+        if (window.__chartsExtra[id]) {
+            try { window.__chartsExtra[id].destroy(); } catch (e) {}
+            window.__chartsExtra[id] = null;
+        }
+        if (window.UxCharts) UxCharts.aplicar(Chart);
+        window.__chartsExtra[id] = new Chart(canvas.getContext('2d'), config);
+    }
+
+    window.filtrarFilasSolicitudes = function (atributo, valor) {
+        window.__filtroSolicitudes = valor ? { atributo: atributo, valor: valor } : null;
+        var nota = document.getElementById('filtro-solicitudes-nota');
+        if (nota) {
+            nota.hidden = !valor;
+            var texto = nota.querySelector('span');
+            if (texto) texto.textContent = valor || '';
+        }
+        if (window.iniciarTablasProductividad) iniciarTablasProductividad();
+        var tabla = document.getElementById('tablaSolicitudesDesglose');
+        if (tabla && window.jQuery && jQuery.fn.dataTable && jQuery.fn.dataTable.isDataTable(tabla)) {
+            jQuery(tabla).DataTable().draw();
+        }
+        if (valor) {
+            var caja = document.getElementById('tabla-desglose-solicitudes');
+            if (caja) caja.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    };
+
+    function engancharFiltroSolicitudes() {
+        if (window.__filtroSolicitudesHook || !window.jQuery || !jQuery.fn.dataTable || !jQuery.fn.dataTable.ext) return;
+        window.__filtroSolicitudesHook = true;
+        jQuery.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (!settings.nTable || settings.nTable.id !== 'tablaSolicitudesDesglose') return true;
+            var filtro = window.__filtroSolicitudes;
+            if (!filtro || !filtro.valor) return true;
+            var nodo = settings.aoData[dataIndex] && settings.aoData[dataIndex].nTr;
+            if (!nodo) return true;
+            return nodo.getAttribute(filtro.atributo) === filtro.valor;
+        });
+    }
+
+    window.destruirTablasProductividad = function () {
+        if (!window.jQuery || !jQuery.fn.dataTable) return;
+        jQuery('#productividad-container table.js-index-table').each(function () {
+            if (jQuery.fn.dataTable.isDataTable(this)) {
+                jQuery(this).DataTable().destroy();
+            }
+        });
+    };
+
+    window.iniciarTablasProductividad = function () {
+        if (!window.jQuery || !jQuery.fn.DataTable) return;
+        engancharFiltroSolicitudes();
+        jQuery('#productividad-container table.js-index-table').each(function () {
+            var tabla = this;
+            if (typeof isElementVisible === 'function' && !isElementVisible(tabla)) return;
+            if (jQuery.fn.dataTable.isDataTable(tabla)) {
+                jQuery(tabla).DataTable().columns.adjust();
+                return;
+            }
+            jQuery(tabla).DataTable({
+                retrieve: true,
+                responsive: true,
+                autoWidth: false,
+                paging: true,
+                pagingType: 'simple_numbers',
+                pageLength: 10,
+                lengthChange: true,
+                lengthMenu: [[10, 15, 25, 50], [10, 15, 25, 50]],
+                searching: true,
+                ordering: true,
+                info: true,
+                order: [],
+                dom: "<'index-page__dt-toolbar'Bf>t<'index-page__dt-footer'<'index-page__dt-meta'li>p>",
+                buttons: [{
+                    extend: 'colvis',
+                    className: 'index-page__colvis',
+                    text: '<i class="fas fa-columns"></i> Columnas'
+                }],
+                language: {
+                    sProcessing: 'Procesando...',
+                    sLengthMenu: 'Mostrar _MENU_',
+                    sZeroRecords: 'No se encontraron resultados',
+                    sEmptyTable: 'Ningún dato disponible en esta tabla',
+                    sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
+                    sInfoEmpty: 'Mostrando 0 a 0 de 0',
+                    sInfoFiltered: '(filtrado de _MAX_ registros)',
+                    sSearch: '',
+                    searchPlaceholder: 'Buscar...',
+                    oPaginate: {
+                        sFirst: 'Primero',
+                        sLast: 'Último',
+                        sNext: 'Siguiente',
+                        sPrevious: 'Anterior'
+                    }
+                }
+            });
+        });
+    };
+
+    function clicFiltraSolicitudes(atributo) {
+        return function (evt, elementos) {
+            if (!elementos || !elementos.length) return;
+            var etiqueta = this.data.labels[elementos[0].index];
+            if (!etiqueta || etiqueta.charAt(0) === '#') {
+                window.filtrarFilasSolicitudes('data-sol-id', String(etiqueta || '').replace('#', ''));
+                return;
+            }
+            window.filtrarFilasSolicitudes(atributo, etiqueta);
+        };
+    }
+
+    function graficaAnillo(id, mapa, atributoFiltro) {
+        var canvas = document.getElementById(id);
+        if (!canvas) return;
+        var etiquetas = [];
+        var valores = [];
+        Object.keys(mapa || {}).forEach(function (nombre) {
+            var total = Number(mapa[nombre]) || 0;
+            if (total > 0) {
+                etiquetas.push(nombre);
+                valores.push(total);
+            }
+        });
+        if (!etiquetas.length) {
+            avisoGraficaVacia(canvas, true);
+            if (window.__chartsExtra[id]) {
+                try { window.__chartsExtra[id].destroy(); } catch (e) {}
+                window.__chartsExtra[id] = null;
+            }
+            return;
+        }
+        avisoGraficaVacia(canvas, false);
+        var opciones = window.UxCharts ? UxCharts.anillo() : { responsive: true, maintainAspectRatio: false, cutout: '72%' };
+        if (atributoFiltro) {
+            opciones.onClick = clicFiltraSolicitudes(atributoFiltro);
+            opciones.onHover = function (evt, elementos) {
+                evt.native.target.style.cursor = elementos && elementos.length ? 'pointer' : 'default';
+            };
+        }
+        montarGraficaExtra(id, {
+            type: 'doughnut',
+            plugins: window.UxCharts ? [UxCharts.centro] : [],
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    data: valores,
+                    backgroundColor: window.UxCharts ? UxCharts.tonos(etiquetas.length) : '#0052CC',
+                    borderWidth: 0
+                }]
+            },
+            options: opciones
+        });
+    }
+
+    window.inicializarGraficasSolicitudes = function () {
+        var datos = leerJsonGrafica('productividad-solicitudes-json');
+        if (!datos || typeof Chart === 'undefined') return;
+        graficaAnillo('chartSolEstatus', datos.estatus, 'data-estatus');
+        graficaAnillo('chartSolConfig', datos.configuracion, 'data-config');
+        graficaAnillo('chartSolFacturas', datos.facturas, 'data-factura');
+
+        var canvas = document.getElementById('chartSolTiempos');
+        if (!canvas) return;
+        var filas = Array.isArray(datos.tiempos) ? datos.tiempos : [];
+        if (!filas.length) {
+            avisoGraficaVacia(canvas, true);
+            return;
+        }
+        avisoGraficaVacia(canvas, false);
+        var opciones = window.UxCharts ? UxCharts.barras(true) : { indexAxis: 'y', responsive: true, maintainAspectRatio: false };
+        opciones.plugins = opciones.plugins || {};
+        opciones.plugins.tooltip = opciones.plugins.tooltip || {};
+        opciones.plugins.tooltip.callbacks = {
+            label: function (ctx) {
+                var horas = ctx.parsed && ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.parsed;
+                return ' ' + formatearDuracionHoras(horas);
+            }
+        };
+        opciones.onClick = clicFiltraSolicitudes('data-sol-id');
+        opciones.onHover = function (evt, elementos) {
+            evt.native.target.style.cursor = elementos && elementos.length ? 'pointer' : 'default';
+        };
+        montarGraficaExtra('chartSolTiempos', {
+            type: 'bar',
+            data: {
+                labels: filas.map(function (fila) { return fila.nombre; }),
+                datasets: [{
+                    data: filas.map(function (fila) { return fila.horas; }),
+                    backgroundColor: '#0052CC',
+                    borderRadius: 8,
+                    maxBarThickness: 22
+                }]
+            },
+            options: opciones
+        });
+    };
+
+    window.inicializarGraficasTareas = function () {
+        var datos = leerJsonGrafica('productividad-tareas-json');
+        if (!datos || typeof Chart === 'undefined') return;
+        var carga = Array.isArray(datos.carga) ? datos.carga : [];
+        var canvasCarga = document.getElementById('chartTareasCarga');
+        if (canvasCarga) {
+            var conValor = carga.filter(function (fila) { return Number(fila.total) > 0; });
+            if (!conValor.length) {
+                avisoGraficaVacia(canvasCarga, true);
+            } else {
+                avisoGraficaVacia(canvasCarga, false);
+                var opcionesCarga = window.UxCharts ? UxCharts.barras(false) : { responsive: true, maintainAspectRatio: false };
+                montarGraficaExtra('chartTareasCarga', {
+                    type: 'bar',
+                    data: {
+                        labels: conValor.map(function (fila) { return fila.nombre; }),
+                        datasets: [{
+                            data: conValor.map(function (fila) { return fila.total; }),
+                            backgroundColor: window.UxCharts ? UxCharts.tonos(conValor.length) : '#0052CC',
+                            borderRadius: 8,
+                            maxBarThickness: 36
+                        }]
+                    },
+                    options: opcionesCarga
+                });
+            }
+        }
+        graficaAnillo('chartTareasMetricas', datos.metricas);
+
+        var canvasPersonal = document.getElementById('chartTareasPersonal');
+        var personal = Array.isArray(datos.personal) ? datos.personal : [];
+        if (!canvasPersonal) return;
+        if (!personal.length) {
+            avisoGraficaVacia(canvasPersonal, true);
+            return;
+        }
+        avisoGraficaVacia(canvasPersonal, false);
+        canvasPersonal.parentElement.style.height = Math.max(280, personal.length * 42) + 'px';
+        var opcionesPersonal = window.UxCharts ? UxCharts.barras(true) : { indexAxis: 'y', responsive: true, maintainAspectRatio: false };
+        opcionesPersonal.plugins = Object.assign({}, opcionesPersonal.plugins, { legend: { display: true, position: 'bottom' } });
+        if (opcionesPersonal.scales && opcionesPersonal.scales.y && opcionesPersonal.scales.y.ticks) {
+            opcionesPersonal.scales.y.ticks.autoSkip = false;
+        }
+        opcionesPersonal.plugins.tooltip = opcionesPersonal.plugins.tooltip || {};
+        opcionesPersonal.plugins.tooltip.callbacks = {
+            title: function (items) {
+                var indice = items && items[0] ? items[0].dataIndex : 0;
+                return personal[indice] ? personal[indice].nombre : '';
+            }
+        };
+        montarGraficaExtra('chartTareasPersonal', {
+            type: 'bar',
+            data: {
+                labels: personal.map(function (fila) { return fila.nombre; }),
+                datasets: [
+                    { label: 'Pendientes', data: personal.map(function (fila) { return fila.pendientes; }), backgroundColor: '#FFAB00', borderRadius: 6, maxBarThickness: 14 },
+                    { label: 'Críticas', data: personal.map(function (fila) { return fila.criticas; }), backgroundColor: '#DE350B', borderRadius: 6, maxBarThickness: 14 },
+                    { label: 'Completadas', data: personal.map(function (fila) { return fila.completadas; }), backgroundColor: '#36B37E', borderRadius: 6, maxBarThickness: 14 }
+                ]
+            },
+            options: opcionesPersonal
+        });
+    };
+
+    function engancharGraficasTareas() {
+        if (!window.livewire || engancharGraficasTareas.listo) return;
+        engancharGraficasTareas.listo = true;
+        livewire.hook('message.processed', function (message, component) {
+            var nombre = component && component.fingerprint ? component.fingerprint.name : '';
+            if (nombre !== 'productividad-tareas') return;
+            setTimeout(function () { window.inicializarGraficasTareas(); }, 80);
+        });
+    }
+    document.addEventListener('livewire:load', engancharGraficasTareas);
+    if (window.livewire) engancharGraficasTareas();
+
     function inicializarGraficas() {
         if (typeof Chart === 'undefined') {
             return;
@@ -2186,6 +2359,9 @@
         if (!metricasData) return; // Si no hay datos, no intentamos dibujar
 
         const dark = isDarkMode();
+        if (window.UxCharts) {
+            UxCharts.aplicar(Chart);
+        }
 
         const colores = {
             texto: dark ? '#F3F4F6' : '#111827',
@@ -2200,7 +2376,7 @@
         const p = crearPaletaProductividad(dark);
 
         const animacionGraficas = {
-            duration: 720,
+            duration: 560,
             easing: 'easeOutQuart'
         };
 
@@ -2213,6 +2389,9 @@
         if (C.tipoTicket) C.tipoTicket.destroy();
         if (C.comparacionTiempos6Meses) C.comparacionTiempos6Meses.destroy();
         if (C.incidenciasMatriz) C.incidenciasMatriz.destroy();
+        if (C.satisfaccion) C.satisfaccion.destroy();
+        if (C.cargaResponsable) C.cargaResponsable.destroy();
+        if (C.gerenciaSolicitante) C.gerenciaSolicitante.destroy();
 
         // Datos para las gráficas extraídos dinámicamente
         const distribucionEstado = metricasData.distribucion_estado || {};
@@ -2252,6 +2431,7 @@
 
         C.estado = new Chart(ctxEstado, {
             type: 'doughnut',
+            plugins: window.UxCharts ? [UxCharts.centro] : [],
             data: {
                 labels: sumaEstados > 0 ? Object.keys(distribucionEstado) : ['Sin tickets este mes'],
                 datasets: [{
@@ -2259,14 +2439,14 @@
                     backgroundColor: sumaEstados > 0 ? p.estado : [colores.emptyDoughnut],
                     borderColor: sumaEstados > 0 ? p.donaBorde : colores.tooltipBorder,
                     borderWidth: sumaEstados > 0 ? (dark ? 3 : 2) : 0,
-                    hoverOffset: sumaEstados > 0 ? 16 : 0
+                    hoverOffset: sumaEstados > 0 ? 6 : 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: animacionGraficas,
-                cutout: '62%',
+                cutout: '68%',
                 onHover: cursorSobreGrafica,
                 onClick: function (event, elements, chart) {
                     handleChartClick(event, elements, chart, 'estado');
@@ -2322,7 +2502,7 @@
                     fill: true,
                     tension: 0.35,
                     pointRadius: dark ? 2.5 : 3,
-                    pointHoverRadius: 9,
+                    pointHoverRadius: 5,
                     pointHitRadius: 18,
                     pointBackgroundColor: p.puntoCreados.fill,
                     pointBorderColor: p.puntoCreados.stroke,
@@ -2340,7 +2520,7 @@
                     fill: true,
                     tension: 0.35,
                     pointRadius: dark ? 2.5 : 3,
-                    pointHoverRadius: 9,
+                    pointHoverRadius: 5,
                     pointHitRadius: 18,
                     pointBackgroundColor: p.puntoRes.fill,
                     pointBorderColor: p.puntoRes.stroke,
@@ -2525,14 +2705,21 @@
         if (ctxClasificacion) {
             const valoresClasificacion = Object.values(ticketsPorClasificacion);
             const sumaClasificacion = valoresClasificacion.reduce((a, b) => a + b, 0);
+            const colorClasificacion = function (nombre) {
+                const n = String(nombre || '').toLowerCase();
+                if (n.indexOf('problem') !== -1) return '#FF5630';
+                if (n.indexOf('servic') !== -1) return '#0052CC';
+                return '#6554C0';
+            };
 
             C.clasificacion = new Chart(ctxClasificacion.getContext('2d'), {
                 type: 'doughnut',
+                plugins: window.UxCharts ? [UxCharts.centro] : [],
                 data: {
                     labels: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion) : ['Sin tickets este mes'],
                     datasets: [{
                         data: sumaClasificacion > 0 ? valoresClasificacion : [1],
-                        backgroundColor: sumaClasificacion > 0 ? p.clasificacion : [colores.emptyDoughnut],
+                        backgroundColor: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion).map(colorClasificacion) : [colores.emptyDoughnut],
                         borderColor: sumaClasificacion > 0 ? p.clasBorde : [colores.tooltipBorder],
                         borderWidth: sumaClasificacion > 0 ? (dark ? 3 : 2) : 0,
                         hoverOffset: sumaClasificacion > 0 ? 16 : 0
@@ -2542,7 +2729,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: animacionGraficas,
-                    cutout: '62%',
+                    cutout: '68%',
                     onHover: cursorSobreGrafica,
                     onClick: function (event, elements, chart) {
                         handleChartClick(event, elements, chart, 'clasificacion');
@@ -2965,6 +3152,71 @@
                         datalabels: datalabelsMatrizApilada()
                     }
                 }
+            });
+        }
+
+        const optsBarras = function (horizontal) {
+            if (window.UxCharts) return UxCharts.barras(horizontal);
+            return { responsive: true, maintainAspectRatio: false, indexAxis: horizontal ? 'y' : 'x' };
+        };
+
+        const canvasSat = document.getElementById('chartSatisfaccion');
+        if (canvasSat) {
+            const cal = metricasData.calificacion_promedio || {};
+            const optsSat = optsBarras(false);
+            if (optsSat.scales && optsSat.scales.y) optsSat.scales.y.max = 5;
+            C.satisfaccion = new Chart(canvasSat, {
+                type: 'bar',
+                data: {
+                    labels: ['Rapidez', 'Atención', 'Resolución'],
+                    datasets: [{
+                        label: 'Promedio sobre 5',
+                        data: [Number(cal.fastness) || 0, Number(cal.attention) || 0, Number(cal.resolution) || 0],
+                        backgroundColor: ['#4C9AFF', '#36B37E', '#6554C0'],
+                        borderRadius: 8,
+                        maxBarThickness: 42
+                    }]
+                },
+                options: optsSat
+            });
+        }
+
+        const canvasCarga = document.getElementById('chartCargaResponsable');
+        if (canvasCarga) {
+            const filas = metricasData.tickets_por_responsable || [];
+            const lista = filas.length ? filas : [{ nombre: 'Sin datos', cerrados: 0, en_progreso: 0, pendientes: 0 }];
+            C.cargaResponsable = new Chart(canvasCarga, {
+                type: 'bar',
+                data: {
+                    labels: lista.map(function (f) { return f.nombre; }),
+                    datasets: [
+                        { label: 'Cerrados', data: lista.map(function (f) { return f.cerrados || 0; }), backgroundColor: '#36B37E', borderRadius: 6, maxBarThickness: 16 },
+                        { label: 'En progreso', data: lista.map(function (f) { return f.en_progreso || 0; }), backgroundColor: '#4C9AFF', borderRadius: 6, maxBarThickness: 16 },
+                        { label: 'Pausados', data: lista.map(function (f) { return f.pausados || 0; }), backgroundColor: '#FFAB00', borderRadius: 6, maxBarThickness: 16 },
+                        { label: 'Pendientes', data: lista.map(function (f) { return f.pendientes || 0; }), backgroundColor: '#FF5630', borderRadius: 6, maxBarThickness: 16 }
+                    ]
+                },
+                options: optsBarras(true)
+            });
+        }
+
+        const canvasGerencia = document.getElementById('chartGerenciaSolicitante');
+        if (canvasGerencia) {
+            const filasG = (metricasData.tickets_por_gerencia_solicitante || []).slice(0, 10);
+            const listaG = filasG.length ? filasG : [{ gerencia: 'Sin datos', total: 0 }];
+            C.gerenciaSolicitante = new Chart(canvasGerencia, {
+                type: 'bar',
+                data: {
+                    labels: listaG.map(function (f) { return f.gerencia; }),
+                    datasets: [{
+                        label: 'Tickets',
+                        data: listaG.map(function (f) { return f.total || 0; }),
+                        backgroundColor: window.UxCharts ? UxCharts.tonos(listaG.length) : '#0052CC',
+                        borderRadius: 8,
+                        maxBarThickness: 22
+                    }]
+                },
+                options: optsBarras(true)
             });
         }
     }
@@ -3407,3 +3659,20 @@
         attributeFilter: ['class']
     });
 </script>
+
+@push('third_party_stylesheets')
+    @include('layouts.datatables_css')
+@endpush
+
+@once
+    @push('third_party_scripts')
+        @include('layouts.datatables_js')
+        <script>
+            jQuery(function () {
+                if (window.iniciarTablasProductividad) {
+                    window.iniciarTablasProductividad();
+                }
+            });
+        </script>
+    @endpush
+@endonce

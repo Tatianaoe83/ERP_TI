@@ -44,7 +44,8 @@ class PlanesDataTable extends DataTable
                 'planes.ID',
                 'companiaslineastelefonicas.Compania as nombre_compania',
                 'planes.NombrePlan',
-                'planes.PrecioPlan'
+                'planes.PrecioPlan',
+                \DB::raw('(SELECT COUNT(*) FROM lineastelefonicas WHERE lineastelefonicas.PlanID = planes.ID AND lineastelefonicas.deleted_at IS NULL) as lineas_vinculadas'),
             ]);
     }
 
@@ -88,6 +89,13 @@ class PlanesDataTable extends DataTable
                 'title' => 'Precio Plan',
                 'data' => 'PrecioPlan',
                 'name' => 'PrecioPlan',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'lineas_vinculadas' => [
+                'title' => 'Líneas vinculadas',
+                'data' => 'lineas_vinculadas',
+                'name' => 'lineas_vinculadas',
+                'searchable' => false,
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')

@@ -40,7 +40,7 @@ class TicketsKanbanUpdater extends Component
     private function fetchActivos()
     {
         return Tickets::with(['empleado', 'responsableTI', 'tipoticket'])
-            ->whereIn('Estatus', ['Pendiente', 'En progreso'])
+            ->whereIn('Estatus', ['Pendiente', 'En progreso', 'Pausado'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -62,7 +62,7 @@ class TicketsKanbanUpdater extends Component
     private function estructuraVacia(): array
     {
         return [
-            'ticketsStatus'    => ['nuevos' => [], 'proceso' => [], 'resueltos' => []],
+            'ticketsStatus'    => ['nuevos' => [], 'proceso' => [], 'pausado' => [], 'resueltos' => []],
             'cerrados'         => null,
             'ticketsExcedidos' => [],
             'tiemposProgreso'  => [],
@@ -94,6 +94,11 @@ class TicketsKanbanUpdater extends Component
             ),
             'proceso' => $this->formatearTickets(
                 $activos->where('Estatus', 'En progreso')->values(),
+                $tiempos['tiemposProgreso'],
+                $notificacionesMap
+            ),
+            'pausado' => $this->formatearTickets(
+                $activos->where('Estatus', 'Pausado')->values(),
                 $tiempos['tiemposProgreso'],
                 $notificacionesMap
             ),

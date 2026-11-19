@@ -35,10 +35,44 @@ class UpdateEmpleadosRequest extends FormRequest
     {
         if ($this->input('Estado') === null || $this->input('Estado') === '') {
             $empleado = Empleados::find($this->route('empleado'));
-            $this->merge(['Estado' => $empleado ? (int) ($empleado->getAttributes()['Estado'] ?? ($empleado->Estado ? 1 : 0)) : 1]);
+            $estado = $empleado ? (int) ($empleado->getAttributes()['Estado'] ?? ($empleado->Estado ? 1 : 0)) : 1;
         } else {
-            $this->merge(['Estado' => (int) $this->input('Estado')]);
+            $estado = (int) $this->input('Estado');
         }
+
+        $this->merge($this->datosEmpleado($estado));
+    }
+
+    private function datosEmpleado($estado)
+    {
+        $tipo = strtoupper(trim((string) $this->input('tipo_persona')));
+        $soloNombre = in_array($tipo, ['EXTRAORDINARIO', 'REFERENCIADO'], true);
+        $datos = [
+            'Estado' => $estado,
+            'tipo_persona' => $tipo !== '' ? $tipo : null,
+        ];
+
+        if ($soloNombre) {
+            $datos['PuestoID'] = null;
+            $datos['ObraID'] = null;
+            $datos['CentroCostoID'] = null;
+            $datos['JefeDirectoID'] = null;
+            $datos['NumTelefono'] = null;
+            $datos['Correo'] = null;
+
+            return $datos;
+        }
+
+        $jefe = $this->input('JefeDirectoID');
+        $telefono = $this->input('NumTelefono');
+        $correo = $this->input('Correo');
+        $centro = $this->input('CentroCostoID');
+        $datos['CentroCostoID'] = ($centro === null || $centro === '') ? null : $centro;
+        $datos['JefeDirectoID'] = ($jefe === null || $jefe === '') ? null : $jefe;
+        $datos['NumTelefono'] = ($telefono === null || $telefono === '') ? null : $telefono;
+        $datos['Correo'] = ($correo === null || $correo === '') ? null : $correo;
+
+        return $datos;
     }
 
     public function messages()

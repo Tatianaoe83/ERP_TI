@@ -618,14 +618,14 @@
             text-transform: uppercase;
             white-space: nowrap;
         }
-        .inv-chip-stock  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
-        .inv-chip-extra  { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
-        .inv-chip-share  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-        .inv-chip-propio { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
-        .dark .inv-chip-stock  { background: rgba(16,185,129,.14); color: #6ee7b7; border-color: rgba(16,185,129,.35); }
-        .dark .inv-chip-extra  { background: rgba(249,115,22,.14); color: #fdba74; border-color: rgba(249,115,22,.35); }
-        .dark .inv-chip-share  { background: rgba(59,130,246,.14); color: #93c5fd; border-color: rgba(59,130,246,.35); }
-        .dark .inv-chip-propio { background: rgba(139,92,246,.16); color: #c4b5fd; border-color: rgba(139,92,246,.35); }
+        .inv-chip-stock  { background: rgba(54, 179, 126, 0.14); color: #00875a; border: 1px solid rgba(54, 179, 126, 0.4); }
+        .inv-chip-extra  { background: rgba(255, 171, 0, 0.16); color: #9a6700; border: 1px solid rgba(255, 171, 0, 0.5); }
+        .inv-chip-share  { background: rgba(0, 82, 204, 0.1); color: #0052cc; border: 1px solid rgba(0, 82, 204, 0.32); }
+        .inv-chip-propio { background: rgba(101, 84, 192, 0.12); color: #403294; border: 1px solid rgba(101, 84, 192, 0.38); }
+        .dark .inv-chip-stock  { background: rgba(54, 179, 126, 0.16); color: #57d9a3; border-color: rgba(54, 179, 126, 0.45); }
+        .dark .inv-chip-extra  { background: rgba(255, 171, 0, 0.16); color: #ffc400; border-color: rgba(255, 171, 0, 0.5); }
+        .dark .inv-chip-share  { background: rgba(76, 154, 255, 0.16); color: #4c9aff; border-color: rgba(76, 154, 255, 0.45); }
+        .dark .inv-chip-propio { background: rgba(101, 84, 192, 0.2); color: #c0b6ff; border-color: rgba(101, 84, 192, 0.48); }
 
         .inv-meses-pills {
             display: inline-flex;
@@ -636,14 +636,17 @@
         }
         .inv-mes-pill {
             display: inline-flex;
-            padding: 0.1rem 0.42rem;
+            padding: 0.22rem 0.72rem;
             border-radius: 999px;
-            background: #f1f5f9;
-            color: #475569;
-            font-size: 0.66rem;
-            font-weight: 700;
+            background: rgba(255, 171, 0, 0.16);
+            color: #9a6700;
+            border: 1px solid rgba(255, 171, 0, 0.5);
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
-        .dark .inv-mes-pill { background: #1e293b; color: #cbd5e1; }
+        .dark .inv-mes-pill { background: rgba(255, 171, 0, 0.16); color: #ffc400; border-color: rgba(255, 171, 0, 0.5); }
 
         @media (prefers-reduced-motion: reduce) {
             .crud-page * { transition: none !important; }
@@ -655,6 +658,31 @@
     @include('layouts.datatables_js')
     @include('layouts.partials.index-page-js')
     <script>
+        (function () {
+            if (!window.Swal || Swal.__erpAviso) return;
+            var original = Swal.fire.bind(Swal);
+            Swal.fire = function (opts) {
+                if (!opts || typeof opts !== 'object' || opts.showCancelButton || opts.showDenyButton || opts.input) {
+                    return original.apply(Swal, arguments);
+                }
+                var titulo = opts.title || '';
+                var texto = opts.text || '';
+                if (!texto && opts.html) {
+                    var tmp = document.createElement('div');
+                    tmp.innerHTML = opts.html;
+                    texto = (tmp.textContent || '').trim();
+                }
+                var icon = opts.icon || 'info';
+                if (window.AppAlert) {
+                    if (icon === 'success') AppAlert.ok(texto || titulo, texto ? titulo : undefined);
+                    else if (icon === 'warning') AppAlert.cuidado(texto || titulo, texto ? titulo : undefined);
+                    else if (icon === 'error') AppAlert.fallo(texto || titulo, texto ? titulo : undefined);
+                    else AppAlert.aviso(texto || titulo, texto ? titulo : undefined);
+                }
+                return Promise.resolve({ isConfirmed: true, isDenied: false, isDismissed: false });
+            };
+            Swal.__erpAviso = true;
+        })();
         $(document).ready(function () {
             var dtLanguage = {
                 sProcessing: 'Procesando...',

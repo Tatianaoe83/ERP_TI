@@ -18,6 +18,7 @@ class MantenimientosTable extends Component
     public string $search = '';
     public string $anio = '';
     public int $perPage = 15;
+    public array $columnasOcultas = [];
     public bool $modalReprogramarAbierto = false;
     public bool $modalDetalleAbierto = false;
     public ?int $mantenimientoSeleccionadoId = null;
@@ -55,9 +56,33 @@ class MantenimientosTable extends Component
         $this->resetPage();
     }
 
+    public function toggleColumna(string $columna): void
+    {
+        $permitidas = ['empleado', 'gerencia', 'folio', 'estatus', 'tipo', 'fecha'];
+        if (!in_array($columna, $permitidas, true)) {
+            return;
+        }
+
+        if (in_array($columna, $this->columnasOcultas, true)) {
+            $this->columnasOcultas = array_values(array_diff($this->columnasOcultas, [$columna]));
+            return;
+        }
+
+        $this->columnasOcultas[] = $columna;
+    }
+
     public function limpiarBusqueda(): void
     {
         $this->search = '';
+        $this->resetPage();
+    }
+
+    public function limpiarFiltros(): void
+    {
+        $this->search = '';
+        $this->estatus = 'pendiente';
+        $this->anio = (string) now()->year;
+        $this->perPage = 15;
         $this->resetPage();
     }
 

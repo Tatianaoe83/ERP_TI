@@ -1,28 +1,21 @@
-{{--
-    Paginador del tablero de mantenimientos.
-    $pagina / $ultima: posición actual y total de páginas.
-    $wireAnterior / $wireSiguiente: llamadas Livewire que mueven la página.
---}}
 @if (($ultima ?? 1) > 1)
-<div class="flex items-center justify-center gap-2 px-3 py-2 border-t border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-    <button type="button"
-        wire:click="{{ $wireAnterior }}"
-        @if ($pagina <= 1) disabled @endif
-        class="px-2 py-1 rounded-md text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2A2F3A] disabled:opacity-30 disabled:cursor-default transition-colors"
-        aria-label="Página anterior">
-        <i class="fas fa-chevron-left text-xs"></i>
-    </button>
+<nav class="erp-page" aria-label="Paginación">
+    @if ($pagina <= 1)
+        <span class="erp-page__btn is-disabled" aria-hidden="true"><i class="fas fa-chevron-left"></i></span>
+    @else
+        <button type="button" wire:click="{{ $wireAnterior }}" class="erp-page__btn" aria-label="Página anterior">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    @endif
 
-    <span class="text-[11px] font-medium text-gray-500 dark:text-gray-400 tabular-nums">
-        {{ $pagina }} / {{ $ultima }}
-    </span>
+    <span class="erp-page__gap">{{ $pagina }} / {{ $ultima }}</span>
 
-    <button type="button"
-        wire:click="{{ $wireSiguiente }}"
-        @if ($pagina >= $ultima) disabled @endif
-        class="px-2 py-1 rounded-md text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#2A2F3A] disabled:opacity-30 disabled:cursor-default transition-colors"
-        aria-label="Página siguiente">
-        <i class="fas fa-chevron-right text-xs"></i>
-    </button>
-</div>
+    @if ($pagina >= $ultima)
+        <span class="erp-page__btn is-disabled" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
+    @else
+        <button type="button" wire:click="{{ $wireSiguiente }}" class="erp-page__btn" aria-label="Página siguiente">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    @endif
+</nav>
 @endif

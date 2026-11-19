@@ -44,7 +44,10 @@ class Empleados extends Model implements Auditable
     public $fillable = [
         'NombreEmpleado',
         'PuestoID',
+        'JefeDirectoID',
         'ObraID',
+        'CentroCostoID',
+        'PresupuestoInternoID',
         'NumTelefono',
         'Correo',
         'Estado',
@@ -60,7 +63,10 @@ class Empleados extends Model implements Auditable
         'EmpleadoID' => 'integer',
         'NombreEmpleado' => 'string',
         'PuestoID' => 'integer',
+        'JefeDirectoID' => 'integer',
         'ObraID' => 'integer',
+        'CentroCostoID' => 'integer',
+        'PresupuestoInternoID' => 'integer',
         'NumTelefono' => 'string',
         'Correo' => 'string',
         'Estado' => 'boolean',
@@ -86,15 +92,29 @@ class Empleados extends Model implements Auditable
     // Reglas de validación dinámicas para creación y actualización
     public static function rulesFor($tipoPersona = null, $empleadoId = null, $estado = null)
     {
+        $soloNombre = in_array($tipoPersona, ['EXTRAORDINARIO', 'REFERENCIADO'], true);
+
         $rules = [
             'NombreEmpleado' => 'required|string|max:100',
-            'PuestoID' => 'required|integer|exists:puestos,PuestoID',
-            'ObraID' => 'required|integer|exists:obras,ObraID',
+            'PuestoID' => $soloNombre ? 'nullable' : 'required|integer|exists:puestos,PuestoID',
+            'JefeDirectoID' => $soloNombre ? 'nullable' : array_filter([
+                'nullable',
+                'integer',
+                'exists:empleados,EmpleadoID',
+                $empleadoId ? Rule::notIn([(int) $empleadoId]) : null,
+            ]),
+            'ObraID' => $soloNombre ? 'nullable' : 'required|integer|exists:obras,ObraID',
+            'CentroCostoID' => 'nullable|integer|exists:centrosdecostos,CentroCostoID',
+            'PresupuestoInternoID' => 'nullable|integer|exists:presupuestos_internos,PresupuestoInternoID',
             'NumTelefono' => 'nullable|string|max:50',
             'Correo' => 'nullable|string|max:150|email',
             'Estado' => 'required|boolean',
             'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO',
         ];
+
+        if ($soloNombre) {
+            return $rules;
+        }
 
         // Validación de correo único solo para empleados activos
         if ($estado == 1 || $estado === true) {
@@ -135,6 +155,11 @@ class Empleados extends Model implements Auditable
         return [true, ''];
     }
 
+    public function scopeFisicosActivos($query)
+    {
+        return $query->where('tipo_persona', 'FISICA')->where('Estado', 1);
+    }
+
     public function scopeTiActivos($query)
     {
         return $query->where('ObraID', 46)
@@ -150,12 +175,27 @@ class Empleados extends Model implements Auditable
         return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
+    public function centroCosto()
+    {
+        return $this->belongsTo(CentroCosto::class, 'CentroCostoID', 'CentroCostoID');
+    }
+
+    public function presupuestoInterno()
+    {
+        return $this->belongsTo(PresupuestoInterno::class, 'PresupuestoInternoID', 'PresupuestoInternoID');
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
     public function puestos()
     {
         return $this->belongsTo(Puestos::class, 'PuestoID');
+    }
+
+    public function jefeDirecto()
+    {
+        return $this->belongsTo(self::class, 'JefeDirectoID', 'EmpleadoID');
     }
 
     public function inventarioequipo()
@@ -207,5 +247,35 @@ class Empleados extends Model implements Auditable
             'GerenciaID',
             'UnidadNegocioID',
         );
+    }
+
+    public function datosContacto(): array
+    {
+        $puesto = $this->puestos;
+        $departamento = $puesto?->departamentos;
+        $gerencia = $departamento?->gerencia;
+        $direccion = $gerencia?->direccion;
+        $unidad = $gerencia?->unidadesdenegocio;
+        $division = $unidad?->division;
+        $tipos = [
+            'FISICA' => 'Física',
+            'REFERENCIADO' => 'Referenciado',
+            'EXTRAORDINARIO' => 'Extraordinario',
+        ];
+
+        return [
+            'telefono' => (string) ($this->NumTelefono ?? ''),
+            'tipo_persona' => $tipos[$this->tipo_persona] ?? (string) ($this->tipo_persona ?? ''),
+            'estado_empleado' => $this->Estado ? 'Activo' : 'Inactivo',
+            'puesto' => (string) ($puesto->NombrePuesto ?? ''),
+            'departamento' => (string) ($departamento->NombreDepartamento ?? ''),
+            'gerencia' => (string) ($gerencia->NombreGerencia ?? ''),
+            'direccion' => (string) ($direccion->NombreDireccion ?? ''),
+            'unidad' => (string) ($unidad->NombreEmpresa ?? ''),
+            'division' => (string) ($division->NombreDivision ?? ''),
+            'obra' => (string) ($this->obras->NombreObra ?? ''),
+            'centro_costo' => (string) ($this->centroCosto->NombreCentro ?? ''),
+            'jefe' => (string) ($this->jefeDirecto->NombreEmpleado ?? ''),
+        ];
     }
 }

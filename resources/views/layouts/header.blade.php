@@ -1,4 +1,4 @@
-<div class="px-3 md:px-4 py-2 md:py-3 flex justify-between items-center dark:bg-[#101010]">
+<div class="px-3 md:px-4 py-2 md:py-3 flex justify-between items-center bg-transparent">
     <div class="flex items-center gap-2 md:gap-4">
         <!-- Botón hamburguesa para móvil -->
         <button id="mobile-menu-button" 
@@ -33,6 +33,15 @@
     @endphp
     <div class="relative inline-block text-left">
         <div class="flex items-center gap-1.5 md:gap-2">
+            <div class="header-theme-switch" role="group" aria-label="Modo de color">
+                <button type="button" id="theme-btn-light" class="header-theme-btn" onclick="setTheme('light')" title="Modo claro" aria-label="Modo claro">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button type="button" id="theme-btn-dark" class="header-theme-btn" onclick="setTheme('dark')" title="Modo oscuro" aria-label="Modo oscuro">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+
             @can('tickets.notificaciones')
             <button type="button" id="btnNotif"
                 class="relative inline-flex items-center justify-center w-9 h-9 rounded-lg
@@ -81,14 +90,6 @@
             @if(session('sistema_activo'))
             <p class="header-user-menu__hint px-3 pt-2.5 pb-1 text-[11px] truncate">{{ ucfirst(session('sistema_activo')) }}</p>
             @endif
-            <div class="header-theme-switch">
-                <button type="button" id="theme-btn-light" class="header-theme-btn" onclick="setTheme('light')" title="Modo claro" aria-label="Modo claro">
-                    <i class="fas fa-sun"></i>
-                </button>
-                <button type="button" id="theme-btn-dark" class="header-theme-btn" onclick="setTheme('dark')" title="Modo oscuro" aria-label="Modo oscuro">
-                    <i class="fas fa-moon"></i>
-                </button>
-            </div>
 
             <a href="{{ route('logout') }}"
                 data-full-load="1"
@@ -125,17 +126,19 @@
     .header-theme-switch {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 0.85rem;
-        padding: 0.7rem 1rem 0.8rem;
-        border-bottom: 1px solid #e2e8f0;
+        gap: 0.1rem;
+        height: 2.25rem;
+        padding: 0.15rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.65rem;
+        background: #f8fafc;
     }
 
     .header-theme-btn {
         appearance: none;
         -webkit-appearance: none;
-        width: 2.4rem;
-        height: 2.4rem;
+        width: 1.9rem;
+        height: 1.9rem;
         margin: 0;
         padding: 0;
         border: 1px solid transparent;
@@ -159,9 +162,9 @@
     }
 
     .header-theme-btn.is-active {
-        background: #eef2ff;
-        border-color: #c7d2fe;
-        color: #101D49;
+        background: #ffffff;
+        border-color: #bfdbfe;
+        color: #0052cc;
     }
 
     .header-user-menu__logout {
@@ -183,9 +186,9 @@
     }
 
     .dark .header-user-menu {
-        background: #1C1F26;
-        border-color: #2A2F3A;
-        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+        background: rgba(15, 29, 50, 0.96);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
     }
 
     .dark .header-user-menu__hint {
@@ -193,7 +196,8 @@
     }
 
     .dark .header-theme-switch {
-        border-bottom-color: #2A2F3A;
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.1);
     }
 
     .dark .header-theme-btn {
@@ -206,9 +210,9 @@
     }
 
     .dark .header-theme-btn.is-active {
-        background: rgba(255, 255, 255, 0.12);
-        border-color: #3d4654;
-        color: #ffffff;
+        background: rgba(0, 82, 204, 0.28);
+        border-color: rgba(76, 154, 255, 0.45);
+        color: #4c9aff;
     }
 
     .dark .header-user-menu__logout {
@@ -272,6 +276,9 @@
             localStorage.setItem('theme', 'light');
         }
         syncThemeButtons();
+        if (window.UxCharts && typeof window.UxCharts.refrescar === 'function') {
+            window.UxCharts.refrescar();
+        }
     }
 
     function syncThemeButtons() {

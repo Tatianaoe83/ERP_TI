@@ -152,31 +152,18 @@
 
     .dark .inv-money { color: #e2e8f0; }
 
-    .inv-mes-pill {
-        display: inline-flex;
-        padding: 0.12rem 0.45rem;
-        border-radius: 999px;
-        background: #fff7ed;
-        color: #c2410c;
-        font-size: 0.68rem;
-        font-weight: 700;
-    }
-
     .inv-modal-content {
-        border: none;
-        border-radius: 0.85rem;
-        overflow: hidden;
+        border-radius: 16px;
+        overflow: visible;
     }
 
     .inv-modal-header {
-        border-bottom: 1px solid var(--index-border, #e5e7eb);
         padding: 0.85rem 1.1rem;
     }
 
     .inv-modal-title {
         font-weight: 700;
         font-size: 1rem;
-        color: var(--index-navy, #101d49);
     }
 
     /* Tres modalidades sólo en equipos (stock / presupuestado / propio). */
@@ -193,34 +180,12 @@
 
     .inv-locked-tag,
     .inv-opt-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
         margin-left: 0.35rem;
-        padding: 0.08rem 0.4rem;
-        border-radius: 999px;
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
         vertical-align: middle;
-    }
-
-    .inv-locked-tag {
-        background: #e5e7eb;
-        color: #374151;
-    }
-
-    .dark .inv-locked-tag {
-        background: #374151;
-        color: #e5e7eb;
     }
 
     .inv-opt-tag {
         display: none;
-        background: #fff7ed;
-        color: #9a3412;
-        border: 1px solid #fed7aa;
     }
 
     .is-modo-extra .inv-opt-tag {

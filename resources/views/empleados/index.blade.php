@@ -15,6 +15,12 @@
             <input type="text" id="filtro_nombre" class="form-control" placeholder="Buscar por nombre...">
         </div>
         <div class="form-group">
+            <label for="filtro_presupuesto">Presupuesto interno</label>
+            <select id="filtro_presupuesto" class="jz1 form-control">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="form-group">
             <label for="filtro_tipo_persona">Tipo de persona</label>
             <select id="filtro_tipo_persona" class="jz1 form-control">
                 <option value="">Todos los tipos</option>
@@ -38,7 +44,7 @@
             </select>
         </div>
         <div class="form-group">
-            <label for="filtro_departamento">Departamento</label>
+            <label for="filtro_departamento">Área</label>
             <select id="filtro_departamento" class="jz1 form-control">
                 <option value="">Todos los departamentos</option>
             </select>
@@ -50,13 +56,13 @@
             </select>
         </div>
         <div class="form-group">
-            <label for="filtro_obra">Obra</label>
+            <label for="filtro_obra">Ubicación</label>
             <select id="filtro_obra" class="jz1 form-control">
-                <option value="">Todas las obras</option>
+                <option value="">Todas las ubicaciones</option>
             </select>
         </div>
         <div class="form-group d-flex align-items-end">
-            <button id="limpiarFiltros" type="button" class="index-page__btn-primary" style="background:#6b7280;">
+            <button id="limpiarFiltros" type="button" class="index-page__btn-primary">
                 <i class="fa fa-times"></i> Limpiar filtros
             </button>
         </div>

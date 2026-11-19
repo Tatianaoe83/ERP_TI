@@ -45,7 +45,7 @@
     }
 
     .swal2-container {
-        z-index: 20000 !important;
+        z-index: 300000 !important;
     }
 
     /* =========================================
@@ -377,11 +377,21 @@
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
+            class="relative flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
            bg-gray-50 dark:bg-[#1A1D24] 
            border border-transparent dark:border-gray-700
            max-h-[calc(100vh-1.5rem)] md:max-h-[95vh] mt-0 min-h-0"
             @click.stop>
+            <div x-show="cargandoTicket" x-cloak
+                class="absolute inset-0 z-30 flex items-center justify-center bg-gray-900/60">
+                <div class="erp-modal-card flex flex-col items-center gap-3 rounded-xl px-6 py-5 shadow-xl">
+                    <svg class="animate-spin w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="text-sm">Cargando datos del ticket...</span>
+                </div>
+            </div>
 
             <!-- Header fijo: Propiedades del Ticket + botón cerrar -->
             <div class="flex justify-between items-center p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1A1D24] flex-shrink-0">
@@ -441,15 +451,15 @@
                                         </div>
 
                                         <div class="flex items-center gap-2 flex-shrink-0">
-                                            <a :href="obtenerUrlArchivo(adjunto)"
-                                                target="_blank"
-                                                class="p-1.5 rounded transition text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-600"
+                                            <button type="button"
+                                                @click="verArchivoEnPantalla(obtenerUrlArchivo(adjunto), obtenerNombreArchivo(adjunto))"
+                                                class="p-1.5 rounded transition text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-600 cursor-pointer"
                                                 title="Ver archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                                 </svg>
-                                            </a>
+                                            </button>
                                             <a :href="obtenerUrlArchivo(adjunto)"
                                                 download
                                                 class="p-1.5 rounded transition hover:bg-green-50 dark:hover:bg-green-900/30"
@@ -529,11 +539,11 @@
                 <i class="fas fa-map-marker-alt"></i>
             </div>
             <div class="text-sm text-gray-700 dark:text-gray-300">
-                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Obra:</span>
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Ubicación:</span>
                 <span x-text="selected.obra" class="font-mono"></span>
             </div>
         </div>
-         
+        @include('partials.empleado-contacto-extra')
 
         <div class="flex items-center gap-3" x-show="selected.anydesk">
             <div class="text-red-500 dark:text-red-400 flex-shrink-0 w-4 text-center">
@@ -546,7 +556,7 @@
             </div>
         </div>
 
-        <div x-show="!selected.numero && !selected.anydesk" class="pt-2 pl-7">
+        <div x-show="!selected.numero && !selected.anydesk && !selected.puesto && !selected.telefono && !selected.obra" class="pt-2 pl-7">
             <p class="text-xs italic text-gray-400 dark:text-gray-600">
                 Sin datos de contacto adicionales.
             </p>
@@ -559,20 +569,12 @@
                                 Detalles del Ticket
                             </h3>
 
-                            <div x-show="cargandoTicket" class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                </svg>
-                                <span>Cargando datos del ticket...</span>
-                            </div>
-
                             <div>
                                 <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad</label>
                                 <select
                                     x-model="ticketPrioridad"
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400
@@ -590,16 +592,37 @@
                                     x-model="ticketEstatus" 
                                     @change="verificarCambioEstatus($event.target.value)" 
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
                    dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="Pendiente">Pendiente</option>
-                                    <option value="En progreso">En progreso</option>
-                                    <option value="Cerrado">Cerrado</option>
+                                    <option value="Pendiente" :disabled="selected.estatus && selected.estatus !== 'Pendiente'">Pendiente</option>
+                                    <option value="En progreso" :disabled="selected.estatus === 'Cerrado'">En progreso</option>
+                                    @can('tickets.pausar')
+                                    <option value="Pausado" :disabled="selected.estatus && selected.estatus !== 'En progreso' && selected.estatus !== 'Pausado'">Pausado</option>
+                                    @else
+                                    <option value="Pausado" x-show="selected.estatus === 'Pausado'" disabled>Pausado</option>
+                                    @endcan
+                                    <option value="Cerrado" :disabled="selected.estatus === 'Pendiente'">Cerrado</option>
                                 </select>
+                                <p x-show="ticketEstatus === 'Pausado'" class="mt-1 text-xs text-orange-600 dark:text-orange-300">El tiempo en pausa no cuenta para métricas ni producción.</p>
+                                <div x-show="pidiendoResolucion" x-cloak class="mt-2 rounded-md border border-gray-600 p-3" style="background:#111827;">
+                                    <p class="text-sm text-gray-100 mb-2">Describe la resolución del problema</p>
+                                    <textarea
+                                        data-resolucion-cierre
+                                        data-sin-mayusculas
+                                        x-model="resolucionBorrador"
+                                        rows="4"
+                                        class="sin-mayusculas w-full rounded-md text-sm border border-gray-600 p-2"
+                                        style="background:#0f1116; color:#f8fafc;"
+                                        placeholder="Escribe aquí cómo se solucionó..."></textarea>
+                                    <div class="mt-2 flex gap-2">
+                                        <button type="button" @click="confirmarCierre()" class="px-3 py-2 rounded-md text-sm text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">Cerrar ticket</button>
+                                        <button type="button" @click="cancelarCierre()" class="px-3 py-2 rounded-md text-sm border border-gray-500 cursor-pointer" style="color:#f8fafc; background:transparent;">Cancelar</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -609,7 +632,7 @@
                                 <select
                                     x-model="ticketClasificacion"
                                     :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -621,12 +644,12 @@
                                 </select>
                             </div>
 
-                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'"
+                            <div x-show="(selected.estatus === 'En progreso' || selected.estatus === 'Pausado') && ticketEstatus !== 'Cerrado'"
                                 class="p-2 rounded-md text-xs border flex items-center gap-2
                 bg-blue-50 text-blue-700 border-blue-200
                 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
                                 <i class="fas fa-info-circle"></i>
-                                <span>El Responsable no se puede modificar cuando el ticket está en "En progreso"</span>
+                                <span>El Responsable no se puede modificar mientras el ticket está en progreso o en pausa</span>
                             </div>
 
                             <div>
@@ -635,8 +658,8 @@
                                 </label>
                                 <select
                                     x-model="ticketResponsableTI"
-                                    :disabled="selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
+                                    :disabled="selected.estatus === 'Cerrado' || ((selected.estatus === 'En progreso' || selected.estatus === 'Pausado') && ticketEstatus !== 'Cerrado')"
+                                    class="sin-select2 w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
                    border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
@@ -764,7 +787,7 @@
                                 </div>
                             </div>
 
-                            <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                            <div x-show="!pidiendoResolucion && (selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado')"
                                  x-transition:enter="transition ease-out duration-300"
                                  x-transition:enter-start="opacity-0 -translate-y-2"
                                  x-transition:enter-end="opacity-100 translate-y-0"
@@ -847,15 +870,15 @@
                                             <div class="text-xs mb-2 font-semibold text-gray-500 dark:text-gray-400">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
-                                                    <a :href="obtenerUrlArchivo(adjunto)" 
-                                                    target="_blank" 
+                                                    <button type="button"
+                                                    @click="verArchivoEnPantalla(obtenerUrlArchivo(adjunto), adjunto.name)"
                                                     class="text-xs px-3 py-1.5 rounded flex items-center gap-2 transition-colors bg-GRAY-50 border border-gray-300 text-blue-600 hover:bg-blue-50 dark:bg-[#2A2F3A] dark:border-gray-600 dark:text-blue-400 dark:hover:bg-gray-700 cursor-pointer shadow-sm">
                                                         
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                                                         </svg>
                                                         <span x-text="adjunto.name" class="font-medium hover:underline"></span>
-                                                    </a>
+                                                    </button>
                                                 </template>
                                             </div>
                                         </div>
@@ -897,7 +920,7 @@
                             <div class="p-3 transition-opacity duration-200"
                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
 
-                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                <div x-show="!pidiendoResolucion && (selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado')"
                                     class="mb-2 p-2 rounded-lg border transition-colors
                 bg-yellow-50 border-yellow-200 text-yellow-800
                 dark:bg-yellow-900/20 dark:border-yellow-700/50 dark:text-yellow-200">
@@ -1437,6 +1460,9 @@
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
+            pidiendoResolucion: false,
+            resolucionBorrador: '',
+            estatusPrevioCierre: '',
             ticketClasificacion: '',
             ticketResponsableTI: '',
             ticketTipoID: '',
@@ -1448,6 +1474,7 @@
             paginaLista: {
                 'nuevos': 1,
                 'proceso': 1,
+                'pausado': 1,
                 'resueltos': 1
             },
             paginaTabla: 1,
@@ -1456,14 +1483,16 @@
             ordenColumna: 'fecha',
             ordenDireccion: 'desc',
             ticketsLista: {
-                'nuevos': {{ count($ticketsStatus['nuevos']) }},
-                'proceso': {{ count($ticketsStatus['proceso']) }},
-                'resueltos': {{ count($ticketsStatus['resueltos']) }}
+                'nuevos': {{ count($ticketsStatus['nuevos'] ?? []) }},
+                'proceso': {{ count($ticketsStatus['proceso'] ?? []) }},
+                'pausado': {{ count($ticketsStatus['pausado'] ?? []) }},
+                'resueltos': {{ count($ticketsStatus['resueltos'] ?? []) }}
             },
             ultimaActualizacionTickets: {
-                'nuevos': {{ count($ticketsStatus['nuevos']) }},
-                'proceso': {{ count($ticketsStatus['proceso']) }},
-                'resueltos': {{ count($ticketsStatus['resueltos']) }}
+                'nuevos': {{ count($ticketsStatus['nuevos'] ?? []) }},
+                'proceso': {{ count($ticketsStatus['proceso'] ?? []) }},
+                'pausado': {{ count($ticketsStatus['pausado'] ?? []) }},
+                'resueltos': {{ count($ticketsStatus['resueltos'] ?? []) }}
             },
             ticketsTabla: [],
             // Variable para rastrear tickets que se están moviendo manualmente
@@ -1545,6 +1574,7 @@
                             // Actualizar solo estado externo. Livewire repinta las columnas; no mutar su DOM manualmente.
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
                             const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
+                            const pausadoCount = datos.ticketsStatus.pausado ? datos.ticketsStatus.pausado.length : 0;
                             // Resueltos está paginado: el header muestra el total real, no el largo de la página.
                             const resueltosCount = (datos.totalCerrados !== undefined && datos.totalCerrados !== null)
                                 ? datos.totalCerrados
@@ -1553,20 +1583,22 @@
                             this.ticketsLista = {
                                 nuevos: nuevosCount,
                                 proceso: procesoCount,
+                                pausado: pausadoCount,
                                 resueltos: resueltosCount
                             };
                             
-                            this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
+                            this.actualizarContadoresTickets(nuevosCount, procesoCount, pausadoCount, resueltosCount);
                             
                         }
                     }
                 };
                 
                 // Función para actualizar los contadores de tickets en los headers
-                this.actualizarContadoresTickets = (nuevos, proceso, resueltos) => {
+                this.actualizarContadoresTickets = (nuevos, proceso, pausado, resueltos) => {
                     const contadores = {
                         'nuevos': nuevos,
                         'proceso': proceso,
+                        'pausado': pausado,
                         'resueltos': resueltos
                     };
                     
@@ -1605,18 +1637,19 @@
                     const estadoACategoria = {
                         'Pendiente': 'nuevos',
                         'En progreso': 'proceso',
+                        'Pausado': 'pausado',
                         'Cerrado': 'resueltos'
                     };
                     
                     // Primero, identificar qué tickets han cambiado de estado
                     const ticketsPorId = {};
-                    ['nuevos', 'proceso', 'resueltos'].forEach(categoria => {
+                    ['nuevos', 'proceso', 'pausado', 'resueltos'].forEach(categoria => {
                         const tickets = ticketsStatus[categoria] || [];
                         tickets.forEach(ticket => {
                             ticketsPorId[ticket.id] = {
                                 ...ticket,
                                 categoriaActual: categoria,
-                                estado: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado')
+                                estado: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : (categoria === 'pausado' ? 'Pausado' : 'Cerrado'))
                             };
                         });
                     });
@@ -1685,8 +1718,9 @@
                                     elemento.setAttribute('data-categoria', categoriaNueva);
                                     
                                     // Actualizar wire:key con el nuevo estatus para que Livewire lo rastree correctamente
-                                    const nuevoEstatus = categoriaNueva === 'nuevos' ? 'Pendiente' : 
-                                                         (categoriaNueva === 'proceso' ? 'En progreso' : 'Cerrado');
+                                    const nuevoEstatus = categoriaNueva === 'nuevos' ? 'Pendiente' :
+                                                         (categoriaNueva === 'proceso' ? 'En progreso' :
+                                                         (categoriaNueva === 'pausado' ? 'Pausado' : 'Cerrado'));
                                     elemento.setAttribute('wire:key', `ticket-${ticket.id}-${nuevoEstatus}`);
                                     
                                     this.actualizarAtributosTicket(elemento, ticket);
@@ -1880,7 +1914,7 @@
                             let seccionActual = null;
                             
                             if (this.vista === 'kanban') {
-                                const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                                const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                                 const columnasNuevas = doc.querySelectorAll('.kanban-root .grid > div');
                                 const columnasActuales = document.querySelectorAll('.kanban-root .grid > div');
                                 
@@ -1919,7 +1953,7 @@
                         const grid = document.querySelector('.kanban-root .grid');
                         if (grid) {
                             const columnas = Array.from(grid.children);
-                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                             const columna = columnas[indices[categoria]];
                             if (columna) return columna.querySelector('.flex-1.overflow-y-auto');
                         }
@@ -1937,14 +1971,14 @@
                                     el.querySelector && el.querySelector('.divide-y')
                                 );
                                 if (seccionesAlternativas.length > 0) {
-                                    const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                                    const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                                     const seccion = seccionesAlternativas[indices[categoria]];
                                     return seccion ? seccion.querySelector('.divide-y') : null;
                                 }
                             }
                             
                             // Mapeo de categorías a índices de sección (orden: nuevos, proceso, resueltos)
-                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'pausado': 2, 'resueltos': 3 };
                             const indiceNueva = indices[categoria];
                             const seccion = todasLasSecciones[indiceNueva];
                             
@@ -2030,10 +2064,10 @@
                         if (prioridadElement && ticket.prioridad) {
                             prioridadElement.textContent = ticket.prioridad;
                             // Actualizar clases según prioridad
-                            prioridadElement.className = `text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                                ticket.prioridad === 'Baja' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                ticket.prioridad === 'Media' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            prioridadElement.className = `erp-chip shrink-0 ${
+                                ticket.prioridad === 'Baja' ? 'erp-chip--ok' :
+                                ticket.prioridad === 'Media' ? 'erp-chip--aviso' :
+                                'erp-chip--alerta'
                             }`;
                         }
                         
@@ -2471,9 +2505,9 @@
                         const badgeEstado = tiempoContainer.querySelector('.badge-estado');
                         if (badgeEstado) {
                             const estado = tiempoInfo.estado;
-                            badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                estado === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
+                            badgeEstado.className = `badge-estado erp-chip ${
+                                estado === 'agotado' ? 'erp-chip--alerta' :
+                                (estado === 'por_vencer' ? 'erp-chip--aviso' : 'erp-chip--ok')
                             }`;
                             badgeEstado.innerHTML = estado === 'agotado' 
                                 ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
@@ -2753,7 +2787,7 @@
 
                     elementos.forEach(el => {
                         const categoria = el.getAttribute('data-categoria');
-                        if (!['nuevos', 'proceso', 'resueltos'].includes(categoria)) return;
+                        if (!['nuevos', 'proceso', 'pausado', 'resueltos'].includes(categoria)) return;
 
                         // Usar getAttribute para obtener los valores incluso si el elemento está oculto
                         const ticketId = el.getAttribute('data-ticket-id') || el.dataset.ticketId;
@@ -2789,7 +2823,7 @@
                                 departamento: ticketDepartamento || '',
                                 obra: ticketObra || '',
                                 fecha: ticketFecha || '',
-                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
+                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : (categoria === 'pausado' ? 'Pausado' : 'Cerrado')),
                                 responsable: ticketResponsable ? ticketResponsable.trim() : '',
                                 tiempoTranscurrido: ticketTiempoTranscurrido ? ticketTiempoTranscurrido.trim() : '',
                                 tiempoEstimado: ticketTiempoEstimado ? ticketTiempoEstimado.trim() : '',
@@ -2950,6 +2984,8 @@
                 this.limpiarCascada();
                 this.ticketPrioridad = '';
                 this.ticketEstatus = '';
+                this.pidiendoResolucion = false;
+                this.resolucionBorrador = '';
                 this.ticketClasificacion = '';
                 this.ticketResponsableTI = '';
                 this.mensajes = [];
@@ -2961,40 +2997,42 @@
                     card.querySelectorAll('.ticket-notificacion-badge').forEach(badge => badge.remove());
                 });
 
-                fetch(`/tickets/${datos.id}/mark-notifications-read`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                }).catch(() => {});
                 this.asuntoCorreo = `Re: Ticket #${datos.id}`;
                 this.mostrarCc = false;
                 this.mostrarBcc = false;
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
-                // Limpiar archivos adjuntos al abrir un nuevo modal
                 this.archivosAdjuntos = [];
                 const adjuntosInput = document.getElementById('adjuntos');
                 if (adjuntosInput) {
                     adjuntosInput.value = '';
                 }
-                // Cargar datos del ticket para el formulario
+                // Primero el ticket. El editor y el resto de llamadas no deben tapar el modal.
                 this.cargarDatosTicket(datos.id);
-                this.cargarMensajes();
-                // Iniciar verificación automática de mensajes nuevos
-                this.iniciarVerificacionMensajes();
-                // Inicializar TinyMCE si no está inicializado
-                this.$nextTick(() => {
+                const ticketAbierto = datos.id;
+                setTimeout(() => {
+                    if (!this.mostrar || this.selected.id !== ticketAbierto) return;
+                    fetch(`/tickets/${ticketAbierto}/mark-notifications-read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    }).catch(() => {});
+                    this.cargarMensajes();
+                    this.iniciarVerificacionMensajes();
                     if (!this.tinyMCEInstance) {
                         this.inicializarTinyMCE();
                     } else {
-                        // Si ya está inicializado, actualizar su estado
                         this.actualizarEstadoEditor();
                     }
-                });
+                }, 200);
+            },
+
+            refrescarSelectsFormulario() {
+                if (window.iniciarSelects && this.$el) window.iniciarSelects(this.$el);
             },
 
             async cargarDatosTicket(ticketId) {
@@ -3026,11 +3064,16 @@
                                 this.selected.gerencia = data.ticket.gerencia || '';
                                 this.selected.departamento = data.ticket.departamento || '';
                                 this.selected.obra = data.ticket.obra || '';
+                                this.selected.direccion = data.ticket.direccion || '';
+                                this.selected.unidad = data.ticket.unidad || '';
+                                this.selected.division = data.ticket.division || '';
+                                this.selected.centro_costo = data.ticket.centro_costo || '';
+                                this.selected.jefe = data.ticket.jefe || '';
+                                this.selected.telefono = data.ticket.telefono || '';
+                                this.selected.tipo_persona = data.ticket.tipo_persona || '';
+                                this.selected.estado_empleado = data.ticket.estado_empleado || '';
                             }
                             
-                            this.$nextTick(() => { this.actualizarEstadoEditor(); });
-
-                            // Reasienta los <select> ya que x-for renderizó y libera la cascada.
                             this.restaurarCascada();
                         }
                     }
@@ -3103,6 +3146,9 @@
                             } else if (data.ticket.Estatus === 'En progreso' || data.ticket.Estatus === 'Proceso') {
                                 nuevaCategoria = 'proceso';
                                 nuevoEstatusTexto = 'En progreso';
+                            } else if (data.ticket.Estatus === 'Pausado') {
+                                nuevaCategoria = 'pausado';
+                                nuevoEstatusTexto = 'Pausado';
                             } else if (data.ticket.Estatus === 'Cerrado' || data.ticket.Estatus === 'Resuelto') {
                                 nuevaCategoria = 'resueltos';
                                 nuevoEstatusTexto = 'Cerrado';
@@ -3137,6 +3183,8 @@
                     categoriaAnterior = 'nuevos';
                 } else if (estatusAnterior === 'En progreso' || estatusAnterior === 'Proceso') {
                     categoriaAnterior = 'proceso';
+                } else if (estatusAnterior === 'Pausado') {
+                    categoriaAnterior = 'pausado';
                 } else if (estatusAnterior === 'Cerrado' || estatusAnterior === 'Resuelto') {
                     categoriaAnterior = 'resueltos';
                 }
@@ -3301,15 +3349,15 @@
                                 (badge.classList.contains('rounded-full') && !badge.textContent.includes('Ticket'))) {
                                 badge.textContent = ticketData.Prioridad;
                                             // Actualizar clases de color según prioridad
-                                            const clasesBase = badge.className.split(' ').filter(c => 
-                                                !c.startsWith('bg-') && !c.startsWith('text-')
+                                            const clasesBase = badge.className.split(' ').filter(c =>
+                                                !c.startsWith('bg-') && !c.startsWith('text-') && !c.startsWith('ring-') && !c.startsWith('dark:') && !c.startsWith('erp-chip')
                                             ).join(' ');
-                                const clasesColor = ticketData.Prioridad === 'Baja' 
-                                                ? 'bg-green-200 text-green-600' 
-                                    : ticketData.Prioridad === 'Media' 
-                                                ? 'bg-yellow-200 text-yellow-600' 
-                                                : 'bg-red-200 text-red-600';
-                                            badge.className = clasesBase + ' ' + clasesColor;
+                                const clasesColor = ticketData.Prioridad === 'Baja'
+                                                ? 'erp-chip--ok'
+                                    : ticketData.Prioridad === 'Media'
+                                                ? 'erp-chip--aviso'
+                                                : 'erp-chip--alerta';
+                                            badge.className = (clasesBase + ' erp-chip ' + clasesColor).replace(/\s+/g, ' ').trim();
                                         }
                                     });
                                 });
@@ -3478,37 +3526,39 @@
             },
 
                             verificarCambioEstatus(nuevoEstatus) {
-                if (nuevoEstatus === 'Cerrado') {
-                    Swal.fire({
-                        title: 'Cerrar Ticket',
-                        text: 'Por favor, describe la resolución del problema:',
-                        input: 'textarea',
-                        inputPlaceholder: 'Escribe aquí cómo se solucionó...',
-                        showCancelButton: true,
-                        confirmButtonText: 'Cerrar Ticket',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#10b981',
-                        cancelButtonColor: '#ef4444',
-                        inputValidator: (value) => {
-                            if (!value) return 'Debes escribir una resolución';
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // 1. Guardar en temporal para enviar al backend
-                            this.selected.resolucion_temporal = result.value;
-                            
-                            // 2. CORRECCIÓN IMPORTANTE: Actualizar la vista inmediatamente
-                            this.selected.resolucion = result.value; 
-                            
-                            this.ticketEstatus = 'Cerrado';
-                            // Forzamos actualización de Alpine para que detecte el cambio de estatus
-                            this.selected.estatus = 'Cerrado'; 
-                        } else {
-                            // Si cancela, regresamos el select al estado anterior
-                            this.ticketEstatus = this.selected.estatus; 
-                        }
-                    });
+                if (nuevoEstatus !== 'Cerrado') {
+                    this.pidiendoResolucion = false;
+                    return;
                 }
+                if (this.selected.estatus === 'Cerrado') return;
+                this.estatusPrevioCierre = this.selected.estatus || 'En progreso';
+                this.resolucionBorrador = '';
+                this.pidiendoResolucion = true;
+                this.$nextTick(() => {
+                    const campo = this.$el.querySelector('[data-resolucion-cierre]');
+                    if (campo) campo.focus();
+                });
+            },
+
+            cancelarCierre() {
+                this.pidiendoResolucion = false;
+                this.resolucionBorrador = '';
+                this.ticketEstatus = this.estatusPrevioCierre || this.selected.estatus || 'En progreso';
+            },
+
+            confirmarCierre() {
+                if (this.guardandoTicket) return;
+                const texto = (this.resolucionBorrador || '').trim();
+                if (!texto) {
+                    this.mostrarNotificacion('Debes escribir una resolución', 'warning');
+                    return;
+                }
+                this.selected.resolucion_temporal = texto;
+                this.selected.resolucion = texto;
+                this.ticketEstatus = 'Cerrado';
+                this.pidiendoResolucion = false;
+                this.$nextTick(() => this.actualizarEstadoEditor());
+                this.guardarCambiosTicket();
             },
 
             manejarArchivosSeleccionados(event) {
@@ -3881,70 +3931,11 @@
             },
 
             mostrarNotificacion(mensaje, tipo) {
-                // Remover notificaciones anteriores si existen
-                const notificacionesAnteriores = document.querySelectorAll('.ticket-notification');
-                notificacionesAnteriores.forEach(n => n.remove());
-                
-                let bgColor = 'bg-red-500';
-                if (tipo === 'success') bgColor = 'bg-green-500';
-                else if (tipo === 'info') bgColor = 'bg-blue-500';
-                
-                const notification = document.createElement('div');
-                notification.className = `ticket-notification p-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px] max-w-md ${bgColor} text-white`;
-                
-                // Establecer estilos inline para asegurar que aparezca por encima del modal (z-50)
-                // Usar un z-index muy alto y position fixed
-                notification.style.position = 'fixed';
-                notification.style.top = '1rem';
-                notification.style.right = '1rem';
-                notification.style.zIndex = '999999'; // Mucho más alto que el modal (z-50)
-                notification.style.pointerEvents = 'auto';
-                
-                // Estilos iniciales para animación
-                notification.style.transform = 'translateX(400px)';
-                notification.style.opacity = '0';
-                notification.style.transition = 'all 0.3s ease-in-out';
-                
-                // Icono según el tipo
-                let icono = '';
-                if (tipo === 'success') {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                } else if (tipo === 'info') {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                } else {
-                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-                }
-                
-                notification.innerHTML = `
-                    ${icono}
-                    <span class="flex-1 font-medium">${mensaje}</span>
-                `;
-                
-                // Agregar directamente al body para evitar problemas de contexto de apilamiento
-                // Asegurarse de que esté fuera de cualquier contenedor del modal
-                document.body.appendChild(notification);
-                
-                // Forzar el z-index después de agregar al DOM para asegurar que se aplique
-                requestAnimationFrame(() => {
-                    notification.style.zIndex = '999999';
-                });
-                
-                // Animación de entrada
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(0)';
-                    notification.style.opacity = '1';
-                }, 10);
-                
-                // Remover después de 4 segundos con animación
-                setTimeout(() => {
-                    notification.style.transform = 'translateX(400px)';
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 300);
-                }, 4000);
+                if (!window.AppAlert) return;
+                if (tipo === 'success') window.AppAlert.ok(mensaje);
+                else if (tipo === 'info') window.AppAlert.aviso(mensaje);
+                else if (tipo === 'warning') window.AppAlert.cuidado(mensaje);
+                else window.AppAlert.fallo(mensaje);
             },
 
             formatearFecha(fecha) {

@@ -93,7 +93,7 @@
             @endcan
 
             <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-gray-100 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] rounded-lg p-1">
+            <div class="vista-switch">
                 <button type="button"
                     data-vista-btn="kanban"
                     class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">

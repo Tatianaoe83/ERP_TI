@@ -5,72 +5,69 @@
         <p class="text-sm">Cargando solicitudes...</p>
     </div>
     @else
-    <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
-
-        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Total: {{ $total }} solicitudes
-            </div>
-        </div>
-
-        <div class="px-4 py-3 bg-gray-50 dark:bg-[#1C1F26] border-b border-gray-200 dark:border-[#2A2F3A] grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <input type="text"
+    <div class="index-page__filters">
+        <div class="form-group">
+            <label for="mant-ticket-buscar">Buscar</label>
+            <input id="mant-ticket-buscar" type="text"
                 wire:model.debounce.500ms="search"
                 placeholder="Buscar solicitud..."
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
-
-            <select wire:model="filtroPrioridad"
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+                class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="mant-ticket-prioridad">Prioridad</label>
+            <select id="mant-ticket-prioridad" wire:model="filtroPrioridad" class="form-control">
                 <option value="">Todas las prioridades</option>
                 <option value="sin">Sin prioridad</option>
                 @foreach(\App\Models\TicketMantenimiento::PRIORIDADES as $prioridad)
                 <option value="{{ $prioridad }}">{{ $prioridad }}</option>
                 @endforeach
             </select>
-
-            <select wire:model="filtroEstado"
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+        </div>
+        <div class="form-group">
+            <label for="mant-ticket-estado">Estado</label>
+            <select id="mant-ticket-estado" wire:model="filtroEstado" class="form-control">
                 <option value="">Todos los estados</option>
                 @foreach(\App\Models\TicketMantenimiento::ESTATUS as $estatus)
                 <option value="{{ $estatus }}">{{ $estatus }}</option>
                 @endforeach
             </select>
-
-            <select wire:model="filtroCategoria"
-                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+        </div>
+        <div class="form-group">
+            <label for="mant-ticket-categoria">Categoría</label>
+            <select id="mant-ticket-categoria" wire:model="filtroCategoria" class="form-control">
                 <option value="">Todas las categorías</option>
                 <option value="sin">Sin categoría</option>
                 @foreach(\App\Models\TicketMantenimiento::CATEGORIAS as $categoria)
                 <option value="{{ $categoria }}">{{ $categoria }}</option>
                 @endforeach
             </select>
-
-            <button wire:click="limpiarFiltros"
-                type="button"
-                class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
-                Limpiar filtros
+        </div>
+        <div class="form-group d-flex align-items-end">
+            <button wire:click="limpiarFiltros" type="button" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
             </button>
         </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full border-collapse">
-                <thead class="bg-gray-100 dark:bg-[#242933]">
+    </div>
+    <div class="index-page__card">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table index-table--sin-accion w-full">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Asunto</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Solicitante</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Categoría</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Prioridad</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Estado</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase min-w-[180px]">SLA</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Responsable</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Fecha</th>
+                        <th>ID</th>
+                        <th>Asunto</th>
+                        <th>Solicitante</th>
+                        <th>Categoría</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>SLA</th>
+                        <th>Responsable</th>
+                        <th>Fecha</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
+                <tbody>
                     @forelse($tickets as $ticket)
                     <tr wire:key="mantenimiento-tabla-{{ $ticket['id'] }}"
-                        class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
+                        class="cursor-pointer"
                         data-ticket-id="{{ $ticket['id'] }}"
                         {{-- Sin htmlspecialchars: Blade ya escapa con {{ }}; escapar dos veces deja &quot; literal en el dataset --}}
                         data-ticket-asunto="{{ $ticket['asunto'] ?? '' }}"
@@ -85,57 +82,68 @@
                         data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i:s') }}"
                         data-ticket-imagen="{{ is_array($ticket['imagen'] ?? null) ? json_encode($ticket['imagen'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : ($ticket['imagen'] ?? '') }}"
                         @click="abrirModalDesdeElemento($el)">
-                        <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">#{{ $ticket['id'] }}</td>
-                        <td class="px-4 py-3 max-w-xs truncate text-gray-600 dark:text-gray-300">{{ $ticket['asunto'] }}</td>
-                        <td class="px-4 py-3 text-gray-900 dark:text-gray-200" title="{{ $ticket['solicitante'] ?? '' }}">{{ $ticket['solicitante_corto'] ?: '-' }}</td>
-                        <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ $ticket['categoria'] ?? '-' }}</td>
-                        <td class="px-4 py-3">
+                        <td><strong>#{{ $ticket['id'] }}</strong></td>
+                        <td>{{ $ticket['asunto'] }}</td>
+                        <td>{{ $ticket['solicitante'] ?: '-' }}</td>
+                        <td>{{ $ticket['categoria'] ?? '-' }}</td>
+                        <td>
                             @if(!empty($ticket['prioridad']))
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                @if($ticket['prioridad'] == 'Baja') text-green-700 bg-green-100
-                                @elseif($ticket['prioridad'] == 'Media') text-yellow-700 bg-yellow-100
-                                @elseif($ticket['prioridad'] == 'Alta') text-red-700 bg-red-100
-                                @else text-red-800 bg-red-200
+                            <span class="erp-chip
+                                @if($ticket['prioridad'] == 'Baja') erp-chip--ok
+                                @elseif($ticket['prioridad'] == 'Media') erp-chip--aviso
+                                @elseif($ticket['prioridad'] == 'Alta') erp-chip--alerta
+                                @else erp-chip--neutro
                                 @endif">{{ $ticket['prioridad'] }}</span>
                             @else
-                            <span class="text-xs text-gray-400">Sin prioridad</span>
+                            <span class="erp-chip erp-chip--neutro">Sin prioridad</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3">
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                @if($ticket['estatus'] == 'Pendiente') text-yellow-700 bg-yellow-100
-                                @elseif($ticket['estatus'] == 'En proceso') text-blue-700 bg-blue-100
-                                @elseif($ticket['estatus'] == 'Atendido') text-green-700 bg-green-100
-                                @elseif($ticket['estatus'] == 'Pausado') text-orange-700 bg-orange-100
-                                @elseif($ticket['estatus'] == 'Cancelado') text-gray-700 bg-gray-200
-                                @else text-gray-700 bg-gray-100
+                        <td>
+                            <span class="erp-chip
+                                @if($ticket['estatus'] == 'Pendiente') erp-chip--aviso
+                                @elseif($ticket['estatus'] == 'En proceso') erp-chip--info
+                                @elseif($ticket['estatus'] == 'Atendido') erp-chip--ok
+                                @elseif($ticket['estatus'] == 'Pausado') erp-chip--acento
+                                @elseif($ticket['estatus'] == 'Cancelado') erp-chip--alerta
+                                @else erp-chip--neutro
                                 @endif">{{ $ticket['estatus'] }}</span>
                         </td>
-                        <td class="px-4 py-3 min-w-[180px]">
+                        <td>
                             @if(!empty($ticket['sla']))
                                 @include('tickets-mantenimiento.partials.sla-tarjeta', ['sla' => $ticket['sla']])
                             @else
-                                <span class="text-xs text-gray-400">—</span>
+                                —
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $ticket['responsable_nombre'] ?: '-' }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i') }}</td>
+                        <td>{{ $ticket['responsable_nombre'] ?: '-' }}</td>
+                        <td>{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="px-6 py-12 text-center text-sm text-gray-500">No hay solicitudes disponibles.</td>
+                        <td colspan="9">No hay solicitudes disponibles.</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        @include('tickets-mantenimiento.partials.paginador', [
-            'pagina' => $pagina,
-            'ultima' => $this->ultimaPagina(),
-            'wireAnterior' => 'irAPagina(' . ($pagina - 1) . ')',
-            'wireSiguiente' => 'irAPagina(' . ($pagina + 1) . ')',
-        ])
+        @php
+            $porPaginaMant = \App\Http\Livewire\MantenimientoTicketsTablaUpdater::POR_PAGINA;
+            $desdeMant = $total > 0 ? (($pagina - 1) * $porPaginaMant) + 1 : 0;
+            $hastaMant = $total > 0 ? min($total, $pagina * $porPaginaMant) : 0;
+            $infoMant = $total > 0
+                ? 'Mostrando ' . $desdeMant . ' a ' . $hastaMant . ' de ' . $total
+                : 'Mostrando 0 a 0 de 0';
+        @endphp
+        <div class="index-page__dt-footer">
+            <div class="dataTables_info" role="status">{{ $infoMant }}</div>
+            @include('tickets-mantenimiento.partials.paginador', [
+                'pagina' => $pagina,
+                'ultima' => $this->ultimaPagina(),
+                'wireAnterior' => 'irAPagina(' . ($pagina - 1) . ')',
+                'wireSiguiente' => 'irAPagina(' . ($pagina + 1) . ')',
+            ])
+        </div>
     </div>
     @endif
 </div>

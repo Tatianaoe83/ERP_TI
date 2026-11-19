@@ -24,6 +24,9 @@ class EstatusLicenciasDataTable extends DataTable
         $dataTable = new QueryDataTable($query);
 
         return $dataTable
+            ->editColumn('presupuesto_nombre', function ($row) {
+                return $row->presupuesto_nombre ?: '—';
+            })
             ->setRowId('InventarioID');
     }
 
@@ -35,19 +38,24 @@ class EstatusLicenciasDataTable extends DataTable
      */
     public function query(InventarioInsumo $model)
     {
-        $filtros = request()->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago']);
+        $filtros = request()->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago', 'presupuesto_id']);
         
         try {
            
             
             $query = DB::table('inventarioinsumo')
-                ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID');
+                ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+                ->leftJoin('presupuestos_internos', function ($join) {
+                    $join->on('empleados.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                        ->whereNull('presupuestos_internos.deleted_at');
+                });
 
             PresupuestoConfiguracion::aplicarWhereIn($query, 'inventarioinsumo.CateogoriaInsumo', 'licencias');
 
             $query->select([
                 'inventarioinsumo.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+                'presupuestos_internos.Nombre as presupuesto_nombre',
                 'inventarioinsumo.NombreInsumo as insumo_nombre',
                 'inventarioinsumo.CateogoriaInsumo as insumo_tipo',
                 'inventarioinsumo.FechaAsignacion',
@@ -80,6 +88,10 @@ class EstatusLicenciasDataTable extends DataTable
 
             if (!empty($filtros['inventarioinsumo_mes_pago'])) {
                 $query->where('inventarioinsumo.MesDePago', $filtros['inventarioinsumo_mes_pago']);
+            }
+
+            if (!empty($filtros['presupuesto_id'])) {
+                $query->where('empleados.PresupuestoInternoID', $filtros['presupuesto_id']);
             }
 
             return $query->orderBy('inventarioinsumo.InventarioID', 'desc');
@@ -116,6 +128,12 @@ class EstatusLicenciasDataTable extends DataTable
                     'title' => 'Empleado',
                     'data' => 'empleado_nombre',
                     'name' => 'empleados.NombreEmpleado',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'presupuesto_nombre' => [
+                    'title' => 'Presupuesto interno',
+                    'data' => 'presupuesto_nombre',
+                    'name' => 'presupuestos_internos.Nombre',
                     'class' => 'dark:bg-[#101010] dark:text-white'
                 ],
                 'insumo_nombre' => [

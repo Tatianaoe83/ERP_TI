@@ -10,7 +10,10 @@ use App\Repositories\EmpleadosRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
+use App\Models\CentroCosto;
 use App\Models\Empleados;
+use App\Models\Obras;
+use App\Models\Puestos;
 use Yajra\DataTables\DataTables;
 
 class EmpleadosController extends AppBaseController
@@ -46,7 +49,7 @@ class EmpleadosController extends AppBaseController
      */
     public function create()
     {
-        return view('empleados.create');
+        return view('empleados.create', $this->datosFormularioEmpleado());
     }
 
     /**
@@ -62,7 +65,7 @@ class EmpleadosController extends AppBaseController
 
         $empleados = $this->empleadosRepository->create($input);
 
-        Flash::success('Empleados saved successfully.');
+        Flash::success('Empleado guardado.');
 
         return redirect(route('empleados.index'));
     }
@@ -79,7 +82,7 @@ class EmpleadosController extends AppBaseController
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            Flash::error('Empleado no encontrado');
 
             return redirect(route('empleados.index'));
         }
@@ -99,12 +102,15 @@ class EmpleadosController extends AppBaseController
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            Flash::error('Empleado no encontrado');
 
             return redirect(route('empleados.index'));
         }
 
-        return view('empleados.edit')->with('empleados', $empleados);
+        return view('empleados.edit', array_merge(
+            ['empleados' => $empleados],
+            $this->datosFormularioEmpleado($empleados)
+        ));
     }
 
     /**
@@ -120,14 +126,14 @@ class EmpleadosController extends AppBaseController
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            Flash::error('Empleado no encontrado');
 
             return redirect(route('empleados.index'));
         }
 
         $empleados = $this->empleadosRepository->update($request->all(), $id);
 
-        Flash::success('Empleados updated successfully.');
+        Flash::success('Empleado actualizado.');
 
         return redirect(route('empleados.index'));
     }
@@ -175,11 +181,18 @@ class EmpleadosController extends AppBaseController
                 ->pluck('gerencia.NombreGerencia')
                 ->toArray();
 
+            $presupuestos = \DB::table('presupuestos_internos')
+                ->whereNull('deleted_at')
+                ->orderBy('Nombre')
+                ->pluck('Nombre')
+                ->toArray();
+
             return response()->json([
                 'puestos' => $puestos,
                 'departamentos' => $departamentos,
                 'obras' => $obras,
-                'gerencias' => $gerencias
+                'gerencias' => $gerencias,
+                'presupuestos' => $presupuestos,
             ]);
 
         } catch (\Exception $e) {
@@ -222,5 +235,94 @@ class EmpleadosController extends AppBaseController
         $empleados->update(['Estado' => 0]);
 
         return redirect(route('empleados.index'))->with('sweetalert_success', 'Empleado dado de baja exitosamente.');
+    }
+
+    private function datosFormularioEmpleado($empleado = null)
+    {
+        $puestos = Puestos::query()
+            ->with([
+                'departamentos.gerencia.direccion.unidadesdenegocio.division',
+            ])
+            ->orderBy('NombrePuesto')
+            ->get();
+
+        $orgPuestos = [];
+        foreach ($puestos as $puesto) {
+            $area = $puesto->departamentos;
+            $gerencia = optional($area)->gerencia;
+            $direccion = optional($gerencia)->direccion;
+            $unidad = optional($direccion)->unidadesdenegocio;
+            $division = optional($unidad)->division;
+
+            if (!$area || !$gerencia || !$direccion || !$unidad || !$division) {
+                continue;
+            }
+
+            $orgPuestos[] = [
+                'puesto' => $puesto->PuestoID,
+                'puestoNombre' => $puesto->NombrePuesto,
+                'area' => $area->DepartamentoID,
+                'areaNombre' => $area->NombreDepartamento,
+                'gerencia' => $gerencia->GerenciaID,
+                'gerenciaNombre' => $gerencia->NombreGerencia,
+                'direccion' => $direccion->DireccionID,
+                'direccionNombre' => $direccion->NombreDireccion,
+                'unidad' => $unidad->UnidadNegocioID,
+                'unidadNombre' => $unidad->NombreEmpresa,
+                'division' => $division->DivisionID,
+                'divisionNombre' => $division->NombreDivision,
+            ];
+        }
+
+        $cadena = [
+            'division' => '',
+            'unidad' => '',
+            'direccion' => '',
+            'gerencia' => '',
+            'area' => '',
+            'puesto' => '',
+        ];
+
+        if ($empleado && $empleado->PuestoID) {
+            $empleado->loadMissing('puestos.departamentos.gerencia.direccion.unidadesdenegocio.division');
+            $puesto = $empleado->puestos;
+            if (!$puesto) {
+                return $this->catalogosEmpleado($orgPuestos, $cadena, $empleado);
+            }
+            $area = $puesto->departamentos;
+            $gerencia = optional($area)->gerencia;
+            $direccion = optional($gerencia)->direccion;
+            $unidad = optional($direccion)->unidadesdenegocio;
+            $division = optional($unidad)->division;
+            $cadena = [
+                'division' => $division->DivisionID ?? '',
+                'unidad' => $unidad->UnidadNegocioID ?? '',
+                'direccion' => $direccion->DireccionID ?? '',
+                'gerencia' => $gerencia->GerenciaID ?? '',
+                'area' => $area->DepartamentoID ?? '',
+                'puesto' => $puesto->PuestoID ?? '',
+            ];
+        }
+
+        return $this->catalogosEmpleado($orgPuestos, $cadena, $empleado);
+    }
+
+    private function catalogosEmpleado(array $orgPuestos, array $cadena, $empleado = null)
+    {
+        $jefes = Empleados::query()
+            ->when($empleado, function ($query) use ($empleado) {
+                $query->where('EmpleadoID', '!=', $empleado->EmpleadoID);
+            })
+            ->orderBy('NombreEmpleado')
+            ->get(['EmpleadoID', 'NombreEmpleado']);
+
+        return [
+            'orgPuestos' => $orgPuestos,
+            'obrasCatalogo' => Obras::query()->orderBy('NombreObra')->get(['ObraID', 'NombreObra']),
+            'centrosCatalogo' => CentroCosto::query()->orderBy('NombreCentro')->get(['CentroCostoID', 'NombreCentro']),
+            'presupuestosInternos' => \App\Models\PresupuestoInterno::query()->orderBy('Nombre')->get(['PresupuestoInternoID', 'Nombre']),
+            'jefesCatalogo' => $jefes,
+            'cadenaEmpleado' => $cadena,
+        ];
     }
 }

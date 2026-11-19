@@ -4,7 +4,7 @@
 @include('flash::message')
 
 <x-index-page
-    title="Obras"
+    title="Ubicación"
     icon="fa-hard-hat"
     :create-url="route('obras.create')"
     create-permission="crear-obras"

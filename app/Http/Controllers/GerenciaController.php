@@ -10,6 +10,7 @@ use App\Repositories\GerenciaRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
+use App\Models\Direccion;
 use App\Models\Gerencia;
 use Yajra\DataTables\DataTables;
 
@@ -35,35 +36,14 @@ class GerenciaController extends AppBaseController
      *
      * @return Response
      */
-    public function index(GerenciaDataTable $gerenciaDataTable)
+    public function index()
     {
-        if (request()->ajax()) {
-            $unidades = Gerencia::join('unidadesdenegocio', 'gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
-            ->select([
-                'gerencia.GerenciaID',
-                'gerencia.NombreGerencia',
-                'gerencia.NombreGerente',
-                'unidadesdenegocio.NombreEmpresa as nombre_empresa',
-                'gerencia.estado'
-            ]);
-            
-            return DataTables::of($unidades)
-                ->addColumn('estado_formatted', function ($row) {
-                    if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
-                        return '<span class="badge badge-success">Si</span>';
-                    } else {
-                        return '<span class="badge badge-danger">No</span>';
-                    }
-                })
-                ->addColumn('action', function($row){
-                    return view('gerencias.datatables_actions', ['id' => $row->GerenciaID])->render();
-                })
-                ->rawColumns(['action', 'estado_formatted'])
-                ->make(true);
-        }
+        $gerencias = Gerencia::with('direccion')
+            ->withCount('departamentos')
+            ->orderBy('NombreGerencia')
+            ->get();
 
-    
-        return $gerenciaDataTable->render('gerencias.index');
+        return view('gerencias.index', compact('gerencias'));
     }
 
     /**
@@ -85,11 +65,11 @@ class GerenciaController extends AppBaseController
      */
     public function store(CreateGerenciaRequest $request)
     {
-        $input = $request->all();
+        $input = $this->cadenaDesdeDireccion($request->all());
 
         $gerencia = $this->gerenciaRepository->create($input);
 
-        Flash::success('Gerencia saved successfully.');
+        Flash::success('Gerencia guardada.');
 
         return redirect(route('gerencias.index'));
     }
@@ -106,7 +86,7 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
@@ -126,7 +106,7 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
@@ -147,14 +127,14 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
 
-        $gerencia = $this->gerenciaRepository->update($request->all(), $id);
+        $gerencia = $this->gerenciaRepository->update($this->cadenaDesdeDireccion($request->all()), $id);
 
-        Flash::success('Gerencia updated successfully.');
+        Flash::success('Gerencia actualizada.');
 
         return redirect(route('gerencias.index'));
     }
@@ -171,15 +151,27 @@ class GerenciaController extends AppBaseController
         $gerencia = $this->gerenciaRepository->find($id);
 
         if (empty($gerencia)) {
-            Flash::error('Gerencia not found');
+            Flash::error('Gerencia no encontrada');
 
             return redirect(route('gerencias.index'));
         }
 
         $this->gerenciaRepository->delete($id);
 
-        Flash::success('Gerencia deleted successfully.');
+        Flash::success('Gerencia borrada.');
 
         return redirect(route('gerencias.index'));
+    }
+
+    /** La unidad de la gerencia sale de su dirección, para que la cadena no se parta. */
+    private function cadenaDesdeDireccion(array $input): array
+    {
+        $direccion = Direccion::find($input['DireccionID'] ?? null);
+
+        if ($direccion) {
+            $input['UnidadNegocioID'] = $direccion->UnidadNegocioID;
+        }
+
+        return $input;
     }
 }

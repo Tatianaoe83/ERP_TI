@@ -25,8 +25,10 @@
             <input type="text" id="new_values" class="form-control" placeholder="Buscar valores..." autocomplete="off">
         </div>
         @can('buscar-informe')
-        <div class="index-page__filters-actions">
-            <button id="clearInformesBtn" type="button" class="index-page__btn-secondary">Limpiar filtros</button>
+        <div class="form-group d-flex align-items-end">
+            <button id="clearInformesBtn" type="button" class="index-page__btn-primary">
+                <i class="fa fa-times"></i> Limpiar filtros
+            </button>
         </div>
         @endcan
     </x-slot>

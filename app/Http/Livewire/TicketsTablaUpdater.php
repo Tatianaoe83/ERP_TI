@@ -164,6 +164,11 @@ class TicketsTablaUpdater extends Component
                 $tiempos['tiemposProgreso'],
                 $notificacionesMap
             ),
+            'pausado' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Pausado')->values(),
+                $tiempos['tiemposProgreso'],
+                $notificacionesMap
+            ),
             'resueltos' => $this->formatearTickets(
                 $tickets->where('Estatus', 'Cerrado')->values(),
                 $tiempos['tiemposProgreso'],

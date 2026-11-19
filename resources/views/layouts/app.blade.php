@@ -18,6 +18,7 @@
     <title>ERP TI Proser</title>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     <!-- Bootstrap 4.1.1 -->
     <link href="{{ mix('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
@@ -67,7 +68,7 @@
         }
 
         /* SweetAlert siempre por encima de los modales (z-[9999]) */
-        .swal2-container { z-index: 100000 !important; }
+        .swal2-container { z-index: 300000 !important; }
 
         /* Labels de formularios: Stisla usa #34395e y no se ve en modo oscuro */
         html.dark .form-group > label,
@@ -129,8 +130,8 @@
         html.dark .select2-container--default .select2-results__option--highlighted[aria-selected],
         html.dark .select2-container--default .select2-results__option--highlighted,
         html.dark .select2-results__option--highlighted {
-            background-color: #2563eb !important;
-            color: #fff !important;
+            background-color: #15803d !important;
+            color: #f8fafc !important;
         }
         html.dark .select2-results__message {
             color: #9ca3af !important;
@@ -430,7 +431,7 @@
         }
 
         .dark #sidebar .sidebar-section-label {
-            color: #6b7280;
+            color: #a3b3c9;
         }
 
         #sidebar .sidebar-link,
@@ -730,24 +731,26 @@
             }
         }
 
-        /* Kanban dark: tarjetas oscuras, chips de tiempo sin tocar */
+        /* Kanban: misma superficie marino que el resto del sistema. */
         .dark .kanban-root {
-            background-color: #0F1116 !important;
+            background-color: transparent !important;
         }
 
         html.dark .kanban-root .bg-gray-100\/80,
         html.dark .kanban-root .bg-gray-100 {
-            background-color: #161920 !important;
+            background-color: #0f1d32 !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
         }
 
         html.dark .kanban-root .bg-white\/70 {
-            background-color: #1C1F26 !important;
+            background-color: #13233b !important;
+            color: #f8fafc !important;
         }
 
         html.dark .kanban-root .ticket-kanban-card,
         html.dark .kanban-root .group.bg-white {
-            background-color: #1C1F26 !important;
-            border-color: #2A2F3A !important;
+            background-color: #13233b !important;
+            color: #f8fafc !important;
         }
 
         html.dark .kanban-root .ticket-kanban-card > p,
@@ -792,6 +795,11 @@
             color: #1d4ed8;
             border-color: #bfdbfe;
         }
+        .kpi-chip--pausado {
+            background: #fff7ed;
+            color: #c2410c;
+            border-color: #fed7aa;
+        }
         html.dark .kpi-chip--normal,
         html.dark .kpi-chip--cumplido {
             background: rgba(22, 163, 74, 0.18) !important;
@@ -832,49 +840,13 @@
         html.dark .kpi-chip--en_tiempo * {
             color: #93c5fd !important;
         }
-        html.dark .sol-status.bg-white {
-            background: rgba(88, 28, 135, 0.4) !important;
-            color: #e9d5ff !important;
-            border-color: rgba(168, 85, 247, 0.45) !important;
+        html.dark .kpi-chip--pausado {
+            background: rgba(234, 88, 12, 0.18) !important;
+            border-color: rgba(251, 146, 60, 0.4) !important;
+            color: #fdba74 !important;
         }
-
-        .sol-status {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            line-height: 1.2;
-            border: 1px solid transparent;
-            white-space: nowrap;
-        }
-        html.dark .sol-status--revision {
-            background: rgba(88, 28, 135, 0.4) !important;
-            color: #e9d5ff !important;
-            border-color: rgba(168, 85, 247, 0.45) !important;
-        }
-        html.dark .sol-status--cancelada,
-        html.dark .sol-status--rechazada {
-            background: rgba(127, 29, 29, 0.45) !important;
-            color: #fecaca !important;
-            border-color: rgba(248, 113, 113, 0.4) !important;
-        }
-        html.dark .sol-status--pendiente,
-        html.dark .sol-status--default {
-            background: rgba(55, 65, 81, 0.7) !important;
-            color: #e5e7eb !important;
-            border-color: rgba(156, 163, 175, 0.35) !important;
-        }
-        html.dark .sol-status--aprobada {
-            background: rgba(6, 95, 70, 0.4) !important;
-            color: #6ee7b7 !important;
-            border-color: rgba(52, 211, 153, 0.35) !important;
-        }
-        html.dark .sol-status--enviadas {
-            background: rgba(30, 64, 175, 0.4) !important;
-            color: #93c5fd !important;
-            border-color: rgba(96, 165, 250, 0.4) !important;
+        html.dark .kpi-chip--pausado * {
+            color: #fdba74 !important;
         }
         .sol-approvals {
             display: flex;
@@ -997,6 +969,100 @@
     <!-- Template CSS -->
     <link rel="stylesheet" href="{{ asset('web/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('web/css/components.css')}}">
+    <style>
+        body .alert:not(.alert-exceso):not(.insight-bar) {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.7rem;
+            margin-bottom: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid transparent;
+            font-size: 0.92rem;
+            font-weight: 500;
+            line-height: 1.45;
+            box-shadow: 0 1px 2px rgba(16, 29, 73, 0.05);
+        }
+        body .alert:not(.alert-exceso):not(.insight-bar) > i {
+            margin-top: 0.12rem;
+            font-size: 1.05rem;
+            flex: 0 0 auto;
+        }
+        body .alert .app-alert__body,
+        body .alert p {
+            flex: 1;
+            min-width: 0;
+        }
+        body .alert p { margin: 0; }
+        body .alert .close,
+        body .alert .btn-close {
+            position: static;
+            float: none;
+            margin: 0 0 0 auto;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            color: inherit;
+            font-size: 1.25rem;
+            line-height: 1;
+            opacity: 0.65;
+            cursor: pointer;
+            text-shadow: none;
+        }
+        body .alert .close:hover,
+        body .alert .btn-close:hover { opacity: 1; }
+        body .alert:not(.alert-light) a { color: inherit; text-decoration: underline; }
+
+        body .alert.alert-success { background: #ecfdf3; border-color: #86efac; color: #14532d; }
+        body .alert.alert-success > i { color: #15803d; }
+        body .alert.alert-danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+        body .alert.alert-danger > i { color: #dc2626; }
+        body .alert.alert-warning { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+        body .alert.alert-warning > i { color: #d97706; }
+        body .alert.alert-info { background: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
+        body .alert.alert-info > i { color: #2563eb; }
+        body .alert.alert-primary { background: #eef2ff; border-color: #c7d2fe; color: #1e1b4b; }
+        body .alert.alert-primary > i { color: #3730a3; }
+        body .alert.alert-secondary,
+        body .alert.alert-dark,
+        body .alert.alert-light { background: #f8fafc; border-color: #e5e7eb; color: #1f2937; }
+
+        html.dark body .alert.alert-success { background: rgba(22, 101, 52, 0.35); border-color: #166534; color: #d1fae5; }
+        html.dark body .alert.alert-success > i { color: #4ade80; }
+        html.dark body .alert.alert-danger { background: rgba(127, 29, 29, 0.4); border-color: #991b1b; color: #fee2e2; }
+        html.dark body .alert.alert-danger > i { color: #f87171; }
+        html.dark body .alert.alert-warning { background: rgba(120, 53, 15, 0.4); border-color: #92400e; color: #fef3c7; }
+        html.dark body .alert.alert-warning > i { color: #fbbf24; }
+        html.dark body .alert.alert-info { background: rgba(30, 58, 138, 0.4); border-color: #1e40af; color: #dbeafe; }
+        html.dark body .alert.alert-info > i { color: #60a5fa; }
+        html.dark body .alert.alert-primary { background: rgba(49, 46, 129, 0.4); border-color: #3730a3; color: #e0e7ff; }
+        html.dark body .alert.alert-primary > i { color: #a5b4fc; }
+        html.dark body .alert.alert-secondary,
+        html.dark body .alert.alert-dark,
+        html.dark body .alert.alert-light { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+
+        .iziToast-wrapper-topRight {
+            top: 68px !important;
+            right: 14px !important;
+        }
+        .iziToast {
+            border-radius: 0.75rem !important;
+            font-family: inherit !important;
+        }
+        html.dark .iziToast {
+            background: #1f2937 !important;
+            border: 1px solid #374151 !important;
+            color: #e5e7eb !important;
+        }
+        html.dark .iziToast > .iziToast-body .iziToast-title,
+        html.dark .iziToast > .iziToast-body .iziToast-message {
+            color: #e5e7eb !important;
+        }
+        html.dark .iziToast > .iziToast-close {
+            background: transparent !important;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261110b">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1010,6 +1076,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261110b">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1020,7 +1087,7 @@
     </div>
     @livewireScripts
     <div id="app" class="h-screen flex flex-col overflow-hidden">
-        <nav class="shrink-0 bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
+        <nav class="erp-banner shrink-0 h-[60px] md:h-[60px] transition-colors">            @include('layouts.header')
         </nav>
         <div class="flex flex-1 min-h-0 overflow-hidden">
             <!-- Overlay para m?vil -->
@@ -1044,9 +1111,11 @@
     </div>
 
     <div id="app-shell-extras">
+    @include('partials.modal-vista-archivo')
     @include('profile.change_password')
     @include('profile.edit_profile')
     @include('partials.modal-detalle-solicitud')
+    @include('partials.modal-detalle-movimiento')
     @livewire('tabla-solicitudes', ['soloModal' => true], key('tabla-solicitudes-asignacion-global'))
 
     {{-- Panel de ticket global: solo fuera de /tickets (ahí el tablero ya lo monta) --}}
@@ -1072,6 +1141,79 @@
 <script src="{{ mix('assets/js/bootstrap.min.js') }}"></script>
 <script src="{{ mix('assets/js/sweetalert.min.js') }}"></script>
 <script src="{{ mix('assets/js/iziToast.min.js') }}"></script>
+<script>
+    window.AppAlert = (function () {
+        ['success', 'error', 'warning', 'info'].forEach(function (method) {
+            if (!window.iziToast || typeof iziToast[method] !== 'function' || iziToast[method].__appAlert) return;
+            var original = iziToast[method].bind(iziToast);
+            var wrapped = function (opts) {
+                opts = opts || {};
+                opts.position = 'topRight';
+                if (opts.timeout == null) opts.timeout = 4200;
+                opts.transitionIn = opts.transitionIn || 'fadeInDown';
+                opts.transitionOut = opts.transitionOut || 'fadeOutUp';
+                opts.pauseOnHover = true;
+                opts.progressBar = opts.progressBar !== false;
+                opts.close = true;
+                return original(opts);
+            };
+            wrapped.__appAlert = true;
+            iziToast[method] = wrapped;
+        });
+
+        function mostrar(root) {
+            if (!window.iziToast) return;
+            var scope = root && root.querySelectorAll ? root : document;
+            Array.prototype.forEach.call(scope.querySelectorAll('.app-flash'), function (node) {
+                if (node.getAttribute('data-shown') === '1') return;
+                node.setAttribute('data-shown', '1');
+                var level = node.getAttribute('data-level') || 'success';
+                var method = (level === 'danger' || level === 'error') ? 'error' : level;
+                if (typeof iziToast[method] !== 'function') method = 'info';
+                var titulo = method === 'error' ? 'No se pudo' : (method === 'warning' ? 'Atención' : (method === 'info' ? 'Aviso' : 'Listo'));
+                iziToast[method]({
+                    title: titulo,
+                    message: node.innerHTML
+                });
+                node.remove();
+            });
+        }
+
+        function cerrarListas() {
+            if (window.jQuery && jQuery.fn && typeof jQuery.fn.select2 === 'function') {
+                jQuery('select.select2-hidden-accessible').each(function () {
+                    try { jQuery(this).select2('close'); } catch (e) {}
+                });
+            }
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+        }
+
+        function avisar(tipo, titulo, mensaje) {
+            cerrarListas();
+            if (!window.iziToast || typeof iziToast[tipo] !== 'function') {
+                window.alert((titulo ? titulo + '. ' : '') + (mensaje || ''));
+                return;
+            }
+            iziToast[tipo]({ title: titulo, message: mensaje || '' });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { mostrar(document); });
+        } else {
+            mostrar(document);
+        }
+
+        return {
+            mostrar: mostrar,
+            ok: function (mensaje, titulo) { avisar('success', titulo || 'Listo', mensaje); },
+            fallo: function (mensaje, titulo) { avisar('error', titulo || 'No se pudo', mensaje); },
+            aviso: function (mensaje, titulo) { avisar('info', titulo || 'Aviso', mensaje); },
+            cuidado: function (mensaje, titulo) { avisar('warning', titulo || 'Atención', mensaje); }
+        };
+    })();
+</script>
 <script src="{{ mix('assets/js/select2.min.js') }}"></script>
 <script src="{{ asset('web/js/stisla.js') }}"></script>
 <script src="{{ asset('web/js/scripts.js') }}"></script>
@@ -1088,9 +1230,8 @@
 
 <script type="text/javascript">
     $(function() {
-        // .text-uppercase = mayúsculas solo por CSS; tocar value desincroniza Livewire
-        $('input, textarea').not('.text-uppercase').keyup(function() {
-
+        $('input, textarea').keyup(function() {
+            if (this.hasAttribute('data-sin-mayusculas')) return;
             this.value = this.value.toUpperCase();
         });
     });
@@ -1121,23 +1262,102 @@
             }
         });
 
-        // Asegurar que Select2 tambi?n se inicialice correctamente
-        $(document).ready(function() {
-            $('.jz').each(function () {
-                var $el = $(this);
-                if ($el.hasClass('select2-hidden-accessible')) return;
-                $el.select2();
-            });
-            $('.jz1').each(function () {
-                var $el = $(this);
-                if ($el.hasClass('select2-hidden-accessible')) return;
-                var opts = { width: '100%' };
-                if ($('#editModal').length) {
-                    opts.dropdownParent = $('#editModal');
+        function selectOculto(el) {
+            var nodo = el;
+            while (nodo && nodo !== document.documentElement) {
+                if (nodo.nodeType === 1) {
+                    var estilo = window.getComputedStyle(nodo);
+                    if (estilo.display === 'none' || estilo.visibility === 'hidden') return true;
                 }
-                $el.select2(opts);
+                nodo = nodo.parentElement;
+            }
+            return false;
+        }
+
+        window.iniciarSelects = function (root) {
+            if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.select2 !== 'function') return;
+            var $scope = root ? jQuery(root) : jQuery(document);
+            $scope.find('select').addBack('select').each(function () {
+                var $el = jQuery(this);
+                if ($el.hasClass('sin-select2')) {
+                    if ($el.hasClass('select2-hidden-accessible')) {
+                        try { $el.select2('destroy'); } catch (e) {}
+                    }
+                    return;
+                }
+                if ($el.closest('template').length || $el.children('template').length || $el.closest('.dataTables_length').length) return;
+                var size = parseInt($el.attr('size') || '0', 10);
+                if (size > 1) return;
+                if ($el.hasClass('select2-hidden-accessible')) {
+                    var $caja = $el.next('.select2-container');
+                    if (selectOculto(this) || !$caja.length || $caja.outerWidth() >= 8 || $el.data('erpSelectReintento')) return;
+                    $el.data('erpSelectReintento', 1);
+                    try { $el.select2('destroy'); } catch (e) { return; }
+                }
+                if (selectOculto(this)) return;
+                var full = $el.hasClass('form-control') || $el.hasClass('jz1') || $el.hasClass('w-full') || $el.hasClass('jz');
+                var compact = !full && ($el.hasClass('border-0') || $el.hasClass('bg-transparent'));
+                var opts = {
+                    width: full ? '100%' : (compact ? (Math.max($el.outerWidth() || 0, 88) + 'px') : 'resolve'),
+                    minimumResultsForSearch: 0,
+                    dropdownAutoWidth: compact,
+                    dropdownParent: jQuery(document.body)
+                };
+                try {
+                    $el.select2(opts);
+                } catch (e) {
+                    return;
+                }
+                if (compact) $el.next('.select2-container').addClass('select2-compact');
+                $el.off('select2:select.erp select2:clear.erp').on('select2:select.erp select2:clear.erp', function () {
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                });
             });
+        };
+
+        document.addEventListener('focusin', function (e) {
+            var destino = e.target;
+            if (destino && destino.closest && destino.closest('.select2-container, .select2-dropdown, .select2-search')) {
+                e.stopImmediatePropagation();
+            }
+        }, true);
+
+        $(document).on('select2:open', function () {
+            window.setTimeout(function () {
+                var campo = document.querySelector('.select2-container--open .select2-search__field');
+                if (campo) campo.focus();
+            }, 0);
         });
+
+        $(document).on('shown.bs.modal', function (e) {
+            window.iniciarSelects(e.target);
+        });
+
+        $(document).ready(function () {
+            window.iniciarSelects(document);
+        });
+
+        var selectsTimer = null;
+        var selectsObs = new MutationObserver(function (cambios) {
+            var haySelect = false;
+            cambios.forEach(function (cambio) {
+                if (cambio.type === 'attributes') {
+                    var nodoAttr = cambio.target;
+                    if (nodoAttr && nodoAttr.querySelector && nodoAttr.querySelector('select')) haySelect = true;
+                    return;
+                }
+                Array.prototype.forEach.call(cambio.addedNodes || [], function (nodo) {
+                    if (!haySelect && nodo.nodeType === 1 && nodo.tagName !== 'SPAN' && (nodo.tagName === 'SELECT' || nodo.tagName === 'OPTION' || (nodo.querySelector && nodo.querySelector('select:not(.select2-hidden-accessible)')))) {
+                        haySelect = true;
+                    }
+                });
+            });
+            if (!haySelect) return;
+            clearTimeout(selectsTimer);
+            selectsTimer = setTimeout(function () { window.iniciarSelects(document); }, 80);
+        });
+        selectsObs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
 
         $('#myTab a').on('click', function(e) {
             e.preventDefault();
@@ -1310,6 +1530,7 @@
             root.querySelectorAll('[data-app-panel]').forEach(function (panel) {
                 panel.hidden = panel.getAttribute('data-app-panel') !== id;
             });
+            if (window.iniciarSelects) window.iniciarSelects(root);
             root.dispatchEvent(new CustomEvent('app-tab-change', { bubbles: true, detail: { tab: id } }));
         }
     };
@@ -1336,6 +1557,7 @@
             root.querySelectorAll('[data-vista-panel]').forEach(function (panel) {
                 panel.hidden = panel.getAttribute('data-vista-panel') !== vista;
             });
+            if (window.iniciarSelects) window.iniciarSelects(root);
             var key = root.getAttribute('data-vista-storage');
             if (key && !options.skipStorage) {
                 try { localStorage.setItem(key, vista); } catch (e) {}
@@ -1708,26 +1930,11 @@
                     });
                 });
             }
-            if (window.jQuery && jQuery.fn && typeof jQuery.fn.select2 === 'function') {
-                try {
-                    window.jQuery('.jz').each(function () {
-                        var $el = window.jQuery(this);
-                        if (!$el.hasClass('select2-hidden-accessible')) {
-                            $el.select2();
-                        }
-                    });
-                    window.jQuery('.jz1').each(function () {
-                        var $el = window.jQuery(this);
-                        if ($el.hasClass('select2-hidden-accessible')) return;
-                        var opts = { width: '100%' };
-                        if (window.jQuery('#editModal').length) {
-                            opts.dropdownParent = window.jQuery('#editModal');
-                        }
-                        $el.select2(opts);
-                    });
-                } catch (e) {}
+            if (typeof window.iniciarSelects === 'function') {
+                try { window.iniciarSelects(document); } catch (e) {}
             }
             restoreSidebarCollapsed();
+            if (window.AppAlert) window.AppAlert.mostrar(document.getElementById('app-main'));
             setTimeout(function () {
                 if (typeof inicializarGraficas === 'function') inicializarGraficas();
                 if (typeof inicializarGraficasEmpleados === 'function') inicializarGraficasEmpleados();

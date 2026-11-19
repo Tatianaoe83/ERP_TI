@@ -10,6 +10,67 @@ use App\Helpers\PagoMeses;
 
 class PresupuestoHelper
 {
+    /** gerencia | centro | interno */
+    public static string $agrupar = 'gerencia';
+
+    public static function normalizarAgrupar(?string $agrupar): string
+    {
+        if ($agrupar === 'centro' || $agrupar === 'interno') {
+            return $agrupar;
+        }
+
+        return 'gerencia';
+    }
+
+    public static function esCentro(): bool
+    {
+        return self::$agrupar === 'centro';
+    }
+
+    public static function esInterno(): bool
+    {
+        return self::$agrupar === 'interno';
+    }
+
+    public static function aplicarAlcance($query, int $id): void
+    {
+        if (self::esInterno()) {
+            $query->where('PresupuestoInternoID', $id);
+
+            return;
+        }
+
+        if (self::esCentro()) {
+            $query->where('CentroCostoID', $id);
+
+            return;
+        }
+
+        $query->whereHas('puestos.departamentos.gerencia', function ($q) use ($id) {
+            $q->where('gerencia.GerenciaID', $id);
+        });
+    }
+
+    public static function sqlWhereAlcance(): string
+    {
+        if (self::esInterno()) {
+            return 'e.PresupuestoInternoID = ?';
+        }
+
+        return self::esCentro() ? 'e.CentroCostoID = ?' : 'g.GerenciaID = ?';
+    }
+
+    public static function sqlJoinOrganizacion(): string
+    {
+        if (self::esInterno()) {
+            return '';
+        }
+
+        return 'INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+                INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID';
+    }
+
     private static function costoCeldaInsumo($insumo): float
     {
         return (float) ($insumo->CostoMensual ?? 0);
@@ -124,8 +185,8 @@ class PresupuestoHelper
 
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
-                $query->where('gerencia.GerenciaID', $gerenciaId);
+            ->where(function ($query) use ($gerenciaId) {
+                self::aplicarAlcance($query, $gerenciaId);
             })
             // Solo empleados con insumos de estas categorías
             ->whereHas('inventarioinsumo', function($query) use ($modo) {
@@ -177,8 +238,8 @@ class PresupuestoHelper
 
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
-                $query->where('gerencia.GerenciaID', $gerenciaId);
+            ->where(function ($query) use ($gerenciaId) {
+                self::aplicarAlcance($query, $gerenciaId);
             })
             ->where(function ($q) use ($modo) {
                 $q->whereHas('inventarioequipo', function($query) use ($modo) {
@@ -250,8 +311,8 @@ class PresupuestoHelper
 
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
-                $query->where('gerencia.GerenciaID', $gerenciaId);
+            ->where(function ($query) use ($gerenciaId) {
+                self::aplicarAlcance($query, $gerenciaId);
             })
             ->whereHas('inventarioinsumo', function($query) use ($modo) {
                 PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'licencias');
@@ -315,8 +376,8 @@ class PresupuestoHelper
         
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
-                $query->where('gerencia.GerenciaID', $gerenciaId);
+            ->where(function ($query) use ($gerenciaId) {
+                self::aplicarAlcance($query, $gerenciaId);
             })
             ->whereHas('inventariolineas', function($query) use ($modo) {
                 PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_datos');
@@ -380,8 +441,8 @@ class PresupuestoHelper
         
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
-                $query->where('gerencia.GerenciaID', $gerenciaId);
+            ->where(function ($query) use ($gerenciaId) {
+                self::aplicarAlcance($query, $gerenciaId);
             })
             ->whereHas('inventariolineas', function($query) use ($modo) {
                 PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_gps');
@@ -445,8 +506,8 @@ class PresupuestoHelper
         
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-                ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
-                $query->where('gerencia.GerenciaID', $gerenciaId);
+                ->where(function ($query) use ($gerenciaId) {
+                self::aplicarAlcance($query, $gerenciaId);
             })
             ->whereHas('inventariolineas', function($query) use ($modo) {
                 PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_voz');
@@ -510,7 +571,7 @@ class PresupuestoHelper
                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         $mesIndice = array_flip($meses);
 
-        $esExentaWindows = in_array($gerenciaId, [17, 18]);
+        $esExentaWindows = !self::esInterno() && in_array($gerenciaId, [17, 18]);
 
         // 1. Precio de referencia del PRO, con el que se cotizan las HOME. La inflación ya viene
         //    aplicada en el costo capturado, así que aquí no se ajusta nada.
@@ -524,8 +585,8 @@ class PresupuestoHelper
         // 2. Cargar empleados de la gerencia con sus insumos y líneas
         $empleados = Empleados::query()
             ->whereIn('tipo_persona', PresupuestoAsignacion::tiposPersonaPresupuesto())
-            ->whereHas('puestos.departamentos.gerencia', function ($q) use ($gerenciaId) {
-                $q->where('gerencia.GerenciaID', $gerenciaId);
+            ->where(function ($q) use ($gerenciaId) {
+                self::aplicarAlcance($q, $gerenciaId);
             })
             // Este método sólo lo consume Cortes, que NO filtra por Presupuestado.
             ->with([
@@ -766,7 +827,9 @@ class PresupuestoHelper
         // Empleados de la gerencia con su inventario.
         $empleados = Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->whereHas('puestos.departamentos.gerencia', fn ($q) => $q->where('gerencia.GerenciaID', $gerenciaId))
+            ->where(function ($q) use ($gerenciaId) {
+                self::aplicarAlcance($q, $gerenciaId);
+            })
             ->with([
                 'inventarioinsumo' => function ($q) use ($modo) {
                     $q->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CateogoriaInsumo',

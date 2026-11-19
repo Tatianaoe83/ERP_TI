@@ -1,12 +1,12 @@
 @php
 $user = auth()->user();
 $puedeVerEmpresa = $user && (
+    $user->can('ver-empleados') ||
     $user->can('ver-unidadesdenegocio') ||
     $user->can('ver-gerencias') ||
     $user->can('ver-obras') ||
     $user->can('ver-departamentos') ||
-    $user->can('ver-puestos') ||
-    $user->can('ver-empleados')
+    $user->can('ver-puestos')
 );
 $puedeVerActivos = $user && (
     $user->can('ver-Lineastelefonicas') ||
@@ -45,7 +45,7 @@ $puedeVerCatalogos = $puedeVerEmpresa || $puedeVerActivos;
 $puedeVerGestion = $puedeVerMovimientos || $puedeVerReportes;
 
 $openDefault = 'null';
-if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || request()->is('obras*') || request()->is('departamentos*') || request()->is('puestos*') || request()->is('empleados*')) {
+if (request()->is('divisiones*') || request()->is('unidadesDeNegocios*') || request()->is('direcciones*') || request()->is('gerencias*') || request()->is('departamentos*') || request()->is('puestos*') || request()->is('obras*') || request()->is('presupuestos-internos*') || request()->is('empleados*') || request()->is('actualizaciones*')) {
     $openDefault = 1;
 } elseif (request()->is('lineasTelefonicas*') || request()->is('equipos*') || request()->is('insumos*') || request()->is('categorias*') || request()->is('planes*')) {
     $openDefault = 2;
@@ -81,6 +81,13 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             class="sidebar-link flex items-center gap-2.5 no-underline px-2.5 py-2 rounded-lg text-sm {{ request()->is('tickets') || request()->is('tickets/*') ? 'is-active' : '' }}">
             <i class="fas fa-desktop sidebar-ico"></i>
             <span class="font-medium sidebar-text">Soporte</span>
+        </a>
+    </li>
+    <li>
+        <a href="/movimientos-erp" title="Movimientos ERP"
+            class="sidebar-link flex items-center gap-2.5 no-underline px-2.5 py-2 rounded-lg text-sm {{ request()->is('movimientos-erp*') ? 'is-active' : '' }}">
+            <i class="fas fa-exchange-alt sidebar-ico"></i>
+            <span class="font-medium sidebar-text">Movimientos ERP</span>
         </a>
     </li>
     @endif
@@ -122,7 +129,14 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
         <ul x-show="open === 1" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('ver-unidadesdenegocio'))
             <li>
-                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('unidadesDeNegocios*') ? 'is-active' : '' }}"
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('divisiones*') ? 'is-active' : '' }}"
+                    href="/divisiones" title="Divisiones">
+                    <i class="fas fa-layer-group sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Divisiones</span>
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('unidadesDeNegocios*') ? 'is-active' : '' }}"
                     href="/unidadesDeNegocios" title="Unidades de negocio">
                     <i class="fas fa-city sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Unidades de negocio</span>
@@ -131,46 +145,67 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             @endif
             @if(auth()->check() && auth()->user()->can('ver-gerencias'))
             <li>
-                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('gerencias*') ? 'is-active' : '' }}"
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('direcciones*') ? 'is-active' : '' }}"
+                    href="/direcciones" title="Direcciones">
+                    <i class="fas fa-sitemap sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Direcciones</span>
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('gerencias*') ? 'is-active' : '' }}"
                     href="/gerencias" title="Gerencias">
                     <i class="fas fa-user-tie sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Gerencias</span>
                 </a>
             </li>
             @endif
-            @if(auth()->check() && auth()->user()->can('ver-obras'))
-            <li>
-                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('obras*') ? 'is-active' : '' }}"
-                    href="/obras" title="Obras">
-                    <i class="fas fa-hard-hat sidebar-ico sidebar-ico-sm"></i>
-                    <span class="sidebar-text">Obras</span>
-                </a>
-            </li>
-            @endif
             @if(auth()->check() && auth()->user()->can('ver-departamentos'))
             <li>
-                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('departamentos*') ? 'is-active' : '' }}"
-                    href="/departamentos" title="Departamentos">
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('departamentos*') ? 'is-active' : '' }}"
+                    href="/departamentos" title="Áreas">
                     <i class="fas fa-tags sidebar-ico sidebar-ico-sm"></i>
-                    <span class="sidebar-text">Departamentos</span>
+                    <span class="sidebar-text">Áreas</span>
                 </a>
             </li>
             @endif
             @if(auth()->check() && auth()->user()->can('ver-puestos'))
             <li>
-                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('puestos*') ? 'is-active' : '' }}"
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('puestos*') ? 'is-active' : '' }}"
                     href="/puestos" title="Puestos">
                     <i class="fas fa-briefcase sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Puestos</span>
                 </a>
             </li>
             @endif
+            @if(auth()->check() && auth()->user()->can('ver-obras'))
+            <li>
+                <a class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('obras*') ? 'is-active' : '' }}"
+                    href="/obras" title="Ubicación">
+                    <i class="fas fa-hard-hat sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Ubicación</span>
+                </a>
+            </li>
+            @endif
             @if(auth()->check() && auth()->user()->can('ver-empleados'))
+            <li>
+                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('presupuestos-internos*') ? 'is-active' : '' }}"
+                    href="/presupuestos-internos" title="Presupuesto interno">
+                    <i class="fas fa-file-invoice sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Presupuesto interno</span>
+                </a>
+            </li>
             <li>
                 <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('empleados*') ? 'is-active' : '' }}"
                     href="/empleados" title="Empleados">
                     <i class="fas fa-user sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Empleados</span>
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('actualizaciones*') ? 'is-active' : '' }}"
+                    href="/actualizaciones" title="Actualizaciones">
+                    <i class="fas fa-sync-alt sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Actualizaciones</span>
                 </a>
             </li>
             @endif

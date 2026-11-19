@@ -3,15 +3,14 @@
 
         @foreach (\App\Models\Tickets::COLUMNAS_VISTA as $key => $titulo)
 
-        <div class="rounded-xl overflow-hidden shadow-sm dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
+        <div class="tk-list">
 
-            <div class="px-4 py-2.5 flex justify-between items-center bg-gray-50 dark:bg-[#242933] border-b border-gray-200 dark:border-[#2A2F3A]">
+            <div class="tk-col__head">
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full {{ \App\Models\Tickets::COLORES_COLUMNA[$key] ?? 'bg-gray-500' }}"></div>
-                    <h3 class="font-bold text-xs text-gray-800 dark:text-gray-100 uppercase tracking-wide">{{ $titulo }}</h3>
+                    <h3 class="tk-col__title">{{ $titulo }}</h3>
                 </div>
-                <span data-categoria-header="{{ $key }}"
-                    class="text-[11px] font-bold min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                <span data-categoria-header="{{ $key }}" class="erp-chip erp-chip--neutro">
                     {{ $key === 'resueltos' && $cerrados ? $cerrados->total() : count($ticketsStatus[$key]) }}
                 </span>
             </div>
@@ -20,7 +19,7 @@
                 @forelse ($ticketsStatus[$key] as $ticket)
 
                 <div wire:key="ticket-lista-{{ $ticket['id'] }}"
-                    class="group p-4 cursor-pointer transition-colors duration-150 dark:bg-[#1C1F26] hover:bg-blue-50/40 dark:hover:bg-[#242933] border-l-[3px]"
+                    class="tk-list__row group cursor-pointer"
                     style="border-left-color: {{ $ticket['color_prioridad'] ?? '#94a3b8' }};"
                     @include('tickets.partials.ticket-card-data', ['ticket' => $ticket, 'columna' => $key])
                     @click="abrirModalDesdeElemento($el)">

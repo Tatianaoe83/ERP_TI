@@ -124,6 +124,178 @@
             box-shadow:0 6px 12px -1px rgba(255, 165, 0, 0.4);
         }
 
+        #btnEnviarMovimiento {
+            background: #9ca3af;
+            color: #fff;
+        }
+
+        #btnEnviarMovimiento:not(:disabled) {
+            background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(22, 101, 52, 0.3);
+        }
+
+        #btnEnviarMovimiento:not(:disabled):hover {
+            transform: translateY(-2px);
+        }
+
+        #movimiento-form .grid > * {
+            min-width: 0;
+        }
+
+        .agregar-partida {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            height: 2rem;
+            padding: 0 0.75rem;
+            border: 1px solid #166534;
+            border-radius: 8px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 200ms ease, color 200ms ease;
+        }
+
+        .agregar-partida:hover {
+            background: #166534;
+            color: #fff;
+        }
+
+        .linea-movimiento {
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .linea-movimiento__barra {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.65rem;
+            background: #f0fdf4;
+            border-bottom: 1px solid #dcfce7;
+        }
+
+        .linea-movimiento__num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.45rem;
+            height: 1.45rem;
+            border-radius: 999px;
+            background: #166534;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .linea-movimiento__titulo {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #166534;
+        }
+
+        .quitar-linea {
+            margin-left: auto;
+            width: 1.7rem;
+            height: 1.7rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            background: #fff;
+            color: #b91c1c;
+            cursor: pointer;
+            transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+        }
+
+        .quitar-linea:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            color: #fff;
+        }
+
+        .linea-movimiento--unica .quitar-linea {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .partida-mov {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.6rem;
+            padding: 0.75rem;
+        }
+
+        @media (min-width: 640px) {
+            .partida-mov {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .partida-mov {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                align-items: end;
+            }
+        }
+
+        .partida-mov label {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: #6b7280;
+            min-width: 0;
+        }
+
+        .partida-mov input,
+        .partida-mov select {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #111827;
+        }
+
+        .partida-mov .importe-linea {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #14532d;
+        }
+
+        .mov-enviar {
+            padding-top: 0.35rem;
+        }
+
+        .aviso-destino {
+            border-radius: 12px;
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1e293b;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            line-height: 1.45;
+        }
+
+        .aviso-destino--alerta {
+            border-color: #fcd34d;
+            background: #fffbeb;
+        }
+
         /* Inputs focus mejorados */
         input:focus,
         textarea:focus,
@@ -197,11 +369,33 @@
             margin-top: -3px !important;
         }
 
+        .select2-container--open,
+        .select2-dropdown {
+            z-index: 100000 !important;
+        }
+
         .select2-dropdown {
             border: 1px solid #d1d5db !important;
             border-radius: 0.375rem !important;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
             margin-top: 4px !important;
+        }
+
+        .select2-container--disabled .select2-selection--single {
+            background: #f3f4f6 !important;
+            cursor: not-allowed !important;
+        }
+
+        .cargo-linea + .select2-container .select2-selection--single {
+            height: 32px !important;
+            border-width: 1px !important;
+            border-radius: 0.4rem !important;
+            padding: 0 0.35rem !important;
+        }
+
+        .cargo-linea + .select2-container .select2-selection__rendered {
+            line-height: 28px !important;
+            font-size: 0.75rem !important;
         }
 
         .select2-results__option {
@@ -289,6 +483,11 @@
             border-color: #fdba74 !important;
         }
 
+        #type + .select2-container.select-area-control .select2-selection--single {
+            background: #f0fdf4 !important;
+            border-color: #86efac !important;
+        }
+
         #type + .select2-container.select-area-ti.select2-container--focus .select2-selection--single {
             border-color: #3b82f6 !important;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
@@ -297,6 +496,11 @@
         #type + .select2-container.select-area-compras.select2-container--focus .select2-selection--single {
             border-color: #f97316 !important;
             box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12) !important;
+        }
+
+        #type + .select2-container.select-area-control.select2-container--focus .select2-selection--single {
+            border-color: #16a34a !important;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14) !important;
         }
 
         /* Dropdown limpio */
@@ -314,7 +518,8 @@
 
         /* Encabezados de grupo discretos */
         .select2-results__group.group-area-ti,
-        .select2-results__group.group-area-compras {
+        .select2-results__group.group-area-compras,
+        .select2-results__group.group-area-control {
             background: #fff !important;
             color: #9ca3af !important;
             border-bottom: 1px solid #f3f4f6 !important;
@@ -333,9 +538,14 @@
             color: #fb923c !important;
         }
 
+        .select2-results__group.group-area-control {
+            color: #22c55e !important;
+        }
+
         /* Opciones: fondo blanco + acento fino */
         .select2-results__option.option-area-ti,
-        .select2-results__option.option-area-compras {
+        .select2-results__option.option-area-compras,
+        .select2-results__option.option-area-control {
             background: #fff !important;
             color: #374151 !important;
             border-left: 2px solid transparent;
@@ -347,6 +557,10 @@
 
         .select2-results__option.option-area-compras {
             border-left-color: #fdba74;
+        }
+
+        .select2-results__option.option-area-control {
+            border-left-color: #86efac;
         }
 
         .select2-results__option.option-area-ti.select2-results__option--highlighted,
@@ -361,6 +575,13 @@
             background: #fff7ed !important;
             color: #c2410c !important;
             border-left-color: #f97316;
+        }
+
+        .select2-results__option.option-area-control.select2-results__option--highlighted,
+        .select2-results__option.option-area-control[aria-selected=true] {
+            background: #f0fdf4 !important;
+            color: #15803d !important;
+            border-left-color: #16a34a;
         }
 
         .tipo-badge {
@@ -388,6 +609,12 @@
             color: #ea580c;
         }
 
+        .tipo-badge-control {
+            background: transparent;
+            border-color: #86efac;
+            color: #16a34a;
+        }
+
         .select2-results__option--highlighted .tipo-badge-ti,
         .select2-results__option[aria-selected=true] .tipo-badge-ti {
             border-color: #93c5fd;
@@ -399,6 +626,13 @@
         .select2-results__option[aria-selected=true] .tipo-badge-compras {
             border-color: #fdba74;
             color: #ea580c;
+            background: #fff;
+        }
+
+        .select2-results__option--highlighted .tipo-badge-control,
+        .select2-results__option[aria-selected=true] .tipo-badge-control {
+            border-color: #4ade80;
+            color: #15803d;
             background: #fff;
         }
 
@@ -429,6 +663,16 @@
             color: #ea580c !important;
         }
 
+        #info-section.info-area-control {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        #info-section.info-area-control .text-blue-500,
+        #info-section.info-area-control i {
+            color: #16a34a !important;
+        }
+
         /* Fondo / atmósfera por departamento */
         #tsparticles {
             transition: opacity 0.35s ease;
@@ -445,13 +689,17 @@
         body.theme-compras #header-subtitle {
             color: #fdba74;
         }
+
+        body.theme-control #header-subtitle {
+            color: #86efac;
+        }
     </style>
 </head>
 
 <body class="h-screen flex items-center justify-center p-4 md:p-6 theme-general">
     <div id="tsparticles" class="fixed inset-0 -z-10"></div>
 
-    <div class="w-full max-w-4xl flex flex-col" id="main-container">
+    <div class="w-full max-w-6xl xl:max-w-7xl flex flex-col" id="main-container">
         <!-- Header Compacto -->
         <div class="text-center mb-4 md:mb-6 fade-in flex-shrink-0">
             <div class="inline-flex items-center gap-3 mb-3">
@@ -479,6 +727,7 @@
                             <option value="Ticket">Ticket para soporte</option>
                             <option value="Solicitud">Compras de recursos tecnológicos</option>
                             <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option>
+                            <option value="Movimiento" data-area="control">Solicitud de movimientos en ERP</option>
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">
@@ -578,10 +827,13 @@
                                 <input type="hidden" name="PuestoID" id="PuestoID">
                             </div>
                             <div class="relative w-full">
-                                <label for="SupervisorNombre" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Supervisor/Jefe Inmediato</label>
-                                <input type="text" id="SupervisorNombre" placeholder="Nombre del supervisor" autocomplete="off" class="autoSupervisor w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <label for="SupervisorNombre" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Jefe inmediato</label>
+                                <input type="text" id="SupervisorNombre" placeholder="Se propone el jefe registrado. Puedes cambiarlo." autocomplete="off" class="autoSupervisor w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
                                 <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
                                 <div id="suggestionsSupervisor" class="suggestionsSupervisor absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
+                            </div>
+                            <div id="destinoSolicitudAviso" class="md:col-span-2 hidden rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-slate-800">
+                                <p id="destinoSolicitudTexto"></p>
                             </div>
                             <div>
                                 <label for="Motivo" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Motivo de la solicitud</label>
@@ -612,6 +864,75 @@
                             <div class="md:col-span-2">
                                 <button type="submit" id="btnEnviarSolicitud" class="w-full md:w-auto px-8 py-3 bg-gray-400 text-white rounded-xl font-medium transition-all duration-300 cursor-not-allowed" disabled>
                                     <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="movimiento-form" class="hidden bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100 space-y-3">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="bg-green-700 rounded-xl w-10 h-10 flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Solicitud de movimientos en el ERP</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-black">
+                            <div class="md:col-span-2">
+                                <label for="correoMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Correo del solicitante *</label>
+                                <input type="email" id="correoMovimiento" placeholder="tucorreo@ejemplo.com" name="Correo" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm md:text-base" disabled>
+                                <p id="nombreMovimiento" class="text-xs text-gray-600 mt-1">Auxiliar de compras, residente de compras o residente administrativo.</p>
+                                <div id="correo-movimiento-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            </div>
+                            <div>
+                                <label for="obraMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Proyecto *</label>
+                                <select id="obraMovimiento" name="ObraID" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" disabled></select>
+                            </div>
+                            <div>
+                                <label for="folioMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Folio ERP</label>
+                                <input type="text" id="folioMovimiento" name="Folio" maxlength="40" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" placeholder="Ejemplo: 83" disabled>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="voboMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Enviar visto bueno a *</label>
+                                <input type="hidden" name="VoBoEmpleadoID" id="voboMovimientoId" value="">
+                                <select id="voboMovimiento" class="w-full" disabled></select>
+                                <p class="text-xs text-gray-600 mt-1">El correo de la solicitud se envía solo a esta persona, con una liga temporal para firmar. Puedes cambiarla.</p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="justificacionMovimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
+                                <textarea id="justificacionMovimiento" name="Justificacion" rows="3" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm" placeholder="Me apoyas con tu visto bueno para esta solicitud de movimiento" disabled></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <label class="block text-xs md:text-sm font-medium text-gray-700">Partidas del movimiento *</label>
+                                    <button type="button" id="agregarLineaMovimiento" class="agregar-partida"><i class="fas fa-plus"></i>Agregar partida</button>
+                                </div>
+                                <div id="lineasMovimiento" class="space-y-3"></div>
+                            </div>
+                            <div id="cargoMovimientoAviso" class="aviso-destino md:col-span-2 hidden">
+                                <p id="cargoMovimientoAutoriza"></p>
+                            </div>
+                            <template id="lineaMovimientoTpl">
+                                <div class="linea-movimiento">
+                                    <div class="linea-movimiento__barra">
+                                        <span class="linea-movimiento__num">1</span>
+                                        <span class="linea-movimiento__titulo">Partida</span>
+                                        <button type="button" class="quitar-linea" title="Quitar partida" aria-label="Quitar partida"><i class="fas fa-times"></i></button>
+                                    </div>
+                                    <div class="partida-mov">
+                                        <label>Con cargo a<select class="cargo-linea px-2 py-2"></select></label>
+                                        <label>Código<input type="text" class="codigo-linea px-2 py-2" maxlength="40"></label>
+                                        <label>Descripción<input type="text" class="desc-linea px-2 py-2" maxlength="180"></label>
+                                        <label>Partida<input type="text" class="partida-linea px-2 py-2" maxlength="120"></label>
+                                        <label>Cantidad<input type="number" step="0.01" class="cantidad-linea px-2 py-2"></label>
+                                        <label>Precio<input type="number" step="0.01" class="precio-linea px-2 py-2"></label>
+                                        <label>Importe<input type="text" class="importe-linea px-2 py-2" readonly></label>
+                                        <label>Justificación<input type="text" class="just-linea px-2 py-2" maxlength="500"></label>
+                                    </div>
+                                </div>
+                            </template>
+                            <div class="md:col-span-2 mov-enviar">
+                                <button type="submit" id="btnEnviarMovimiento" class="w-full md:w-auto px-8 py-3 rounded-xl font-medium cursor-not-allowed" disabled>
+                                    <i class="fas fa-paper-plane mr-2"></i>Enviar solicitud
                                 </button>
                             </div>
                         </div>
@@ -713,6 +1034,38 @@
         window.correoMantenimientoValido = false; // Para el formulario Mantenimiento
         window.telefonoReal = ''; // Valor real de 10 dígitos para validación y envío
 
+        window.montarSelectBusqueda = function ($el, placeholder, ancho) {
+            if (!$el || !$el.length || !$.fn.select2) return;
+            var deshabilitado = $el.prop('disabled');
+            if ($el.hasClass('select2-hidden-accessible')) {
+                try { $el.select2('destroy'); } catch (e) {}
+            }
+            $el.select2({
+                width: ancho || '100%',
+                dropdownParent: $(document.body),
+                placeholder: placeholder || 'Selecciona',
+                minimumResultsForSearch: 0
+            });
+            if (deshabilitado) {
+                $el.prop('disabled', true);
+                $el.next('.select2-container').addClass('select2-container--disabled');
+            }
+        };
+
+        window.estadoSelectBusqueda = function ($el, activo) {
+            if (!$el || !$el.length) return;
+            $el.prop('disabled', !activo);
+            var $caja = $el.next('.select2-container');
+            if ($caja.length) $caja.toggleClass('select2-container--disabled', !activo);
+        };
+
+        $(document).on('select2:open', function () {
+            window.setTimeout(function () {
+                var campo = document.querySelector('.select2-container--open .select2-search__field');
+                if (campo) campo.focus();
+            }, 0);
+        });
+
         $(document).ready(function() {
 
             // Carga inicial de datos de ubicación
@@ -735,6 +1088,7 @@
                 // Compras: Mantenimiento corporativo
                 if (seleccion === 'Ticket' || seleccion === 'Solicitud') return 'ti';
                 if (seleccion === 'Mantenimiento') return 'compras';
+                if (seleccion === 'Movimiento') return 'control';
                 return null;
             }
 
@@ -742,10 +1096,11 @@
                 if (!data.id) return data.text;
 
                 var area = $(data.element).data('area') || areaDeTipo(data.id);
-                var badgeClass = area === 'compras' ? 'tipo-badge-compras' : 'tipo-badge-ti';
-                var badgeText = area === 'compras' ? 'Compras' : 'TI';
+                var badgeClass = area === 'compras' ? 'tipo-badge-compras' : (area === 'control' ? 'tipo-badge-control' : 'tipo-badge-ti');
+                var badgeText = area === 'compras' ? 'Compras' : (area === 'control' ? 'Control' : 'TI');
                 var icon = data.id === 'Ticket' ? 'fa-ticket-alt'
-                    : (data.id === 'Solicitud' ? 'fa-laptop' : 'fa-tools');
+                    : (data.id === 'Solicitud' ? 'fa-laptop'
+                    : (data.id === 'Movimiento' ? 'fa-exchange-alt' : 'fa-tools'));
 
                 return $(
                     '<span class="flex items-center gap-2 w-full min-w-0">' +
@@ -771,6 +1126,9 @@
                 } else if (area === 'compras') {
                     $title.text('Mantenimiento Corporativo');
                     $subtitle.text('Área de Compras');
+                } else if (area === 'control') {
+                    $title.text('Movimientos en el ERP');
+                    $subtitle.text('Control · autorización del cargo y aplicación en Neodata');
                 } else {
                     $title.text('Centro de Solicitudes');
                     $subtitle.text('TI y Compras · seguimiento de tickets y solicitudes');
@@ -786,9 +1144,9 @@
                 var $info = $('#info-section');
                 var area = areaDeTipo(seleccion);
 
-                $container.removeClass('select-area-ti select-area-compras');
-                $info.removeClass('info-area-ti info-area-compras');
-                document.body.classList.remove('theme-general', 'theme-ti', 'theme-compras');
+                $container.removeClass('select-area-ti select-area-compras select-area-control');
+                $info.removeClass('info-area-ti info-area-compras info-area-control');
+                document.body.classList.remove('theme-general', 'theme-ti', 'theme-compras', 'theme-control');
 
                 if (area === 'ti') {
                     $container.addClass('select-area-ti');
@@ -798,6 +1156,10 @@
                     $container.addClass('select-area-compras');
                     $info.addClass('info-area-compras');
                     document.body.classList.add('theme-compras');
+                } else if (area === 'control') {
+                    $container.addClass('select-area-control');
+                    $info.addClass('info-area-control');
+                    document.body.classList.add('theme-control');
                 } else {
                     document.body.classList.add('theme-general');
                 }
@@ -812,8 +1174,10 @@
                 $('.select2-results__option[role="option"]').each(function() {
                     var $li = $(this);
                     var text = ($li.text() || '').toLowerCase();
-                    $li.removeClass('option-area-ti option-area-compras');
-                    if (text.indexOf('mantenimiento') !== -1) {
+                    $li.removeClass('option-area-ti option-area-compras option-area-control');
+                    if (text.indexOf('movimientos') !== -1) {
+                        $li.addClass('option-area-control');
+                    } else if (text.indexOf('mantenimiento') !== -1) {
                         $li.addClass('option-area-compras');
                     } else if (text.indexOf('ticket') !== -1 || text.indexOf('recursos tecnológicos') !== -1) {
                         $li.addClass('option-area-ti');
@@ -860,6 +1224,8 @@
                     $text.html('<strong class="uppercase">TI — Solicita recursos tecnológicos que requieran un proceso de compra.</strong>');
                 } else if (seleccion === 'Mantenimiento') {
                     $text.html('<strong class="uppercase">Compras — Reporta solicitudes de mantenimiento corporativo: plomería, electricidad, limpieza, instalaciones y más.</strong>');
+                } else if (seleccion === 'Movimiento') {
+                    $text.html('<strong class="uppercase">Control — Solicita un movimiento de cargo en el ERP. Lo autoriza el jefe de costos, el gerente de presupuestos, el gerente de compras o el director de proyectos, según el cargo.</strong>');
                 } else {
                     $text.text('');
                 }
@@ -874,6 +1240,7 @@
                 $('#ticket-form').addClass('hidden');
                 $('#solicitud-form').addClass('hidden');
                 $('#mantenimiento-form').addClass('hidden');
+                $('#movimiento-form').addClass('hidden');
                 actualizarInfoTipo(seleccion);
                 aislarPanelActivo(seleccion);
 
@@ -887,7 +1254,16 @@
                     $mainContainer.addClass('h-full max-h-[95vh]');
                     $formContainer.addClass('flex-1');
                     $scrollContent.addClass('h-full');
-                    setTimeout(function() { revivirSelect2(); }, 50);
+                    setTimeout(function() {
+                        revivirSelect2();
+                        window.montarSelectBusqueda($('#Motivo'), 'Selecciona el motivo');
+                    }, 50);
+                } else if (seleccion === 'Movimiento') {
+                    $('#movimiento-form').removeClass('hidden');
+                    prepararMovimiento();
+                    $mainContainer.addClass('h-full max-h-[95vh]');
+                    $formContainer.addClass('flex-1');
+                    $scrollContent.addClass('h-full');
                 } else if (seleccion === 'Mantenimiento') {
                     $('#mantenimiento-form').removeClass('hidden');
                     habilitarCamposMantenimiento();
@@ -911,8 +1287,23 @@
             deshabilitarCamposSolicitud();
             aislarPanelActivo(null);
 
-            // Detección de correo (Solicitud)
+            // Detección de correo (Solicitud): busca al terminar de escribir, sin esperar Tab.
+            var esperaCorreoSol = null;
+            $inputCorreoSol.on('input', function() {
+                var correo = $(this).val().trim();
+                clearTimeout(esperaCorreoSol);
+                if (!esCorreoValido(correo)) {
+                    return;
+                }
+                esperaCorreoSol = setTimeout(function() {
+                    var actual = $inputCorreoSol.val().trim();
+                    if (esCorreoValido(actual)) {
+                        buscarEmpleadoSolicitud(actual);
+                    }
+                }, 350);
+            });
             $inputCorreoSol.on('change blur', function() {
+                clearTimeout(esperaCorreoSol);
                 var correo = $(this).val().trim();
                 if (correo && esCorreoValido(correo)) {
                     buscarEmpleadoSolicitud(correo);
@@ -1149,7 +1540,8 @@ function renderTelefono() {
             var paneles = {
                 Ticket: '#ticket-form',
                 Solicitud: '#solicitud-form',
-                Mantenimiento: '#mantenimiento-form'
+                Mantenimiento: '#mantenimiento-form',
+                Movimiento: '#movimiento-form'
             };
 
             $.each(paneles, function(nombre, selector) {
@@ -1162,12 +1554,14 @@ function renderTelefono() {
 
             if (tipo === 'Ticket') $('#correoEmpleado').prop('disabled', false);
             if (tipo === 'Solicitud') $('#correoEmpleadoSolicitud').prop('disabled', false);
+            if (tipo === 'Movimiento') $('#correoMovimiento').prop('disabled', false);
         }
 
         function panelDelTipo(tipo) {
             if (tipo === 'Ticket') return '#ticket-form';
             if (tipo === 'Solicitud') return '#solicitud-form';
             if (tipo === 'Mantenimiento') return '#mantenimiento-form';
+            if (tipo === 'Movimiento') return '#movimiento-form';
 
             return null;
         }
@@ -1175,6 +1569,31 @@ function renderTelefono() {
         function esCorreoValido(correo) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
         }
+
+        window.pintarAvisoSolicitud = function (data) {
+            var $aviso = $('#destinoSolicitudAviso');
+            var $texto = $('#destinoSolicitudTexto');
+            if (!$aviso.length) {
+                return;
+            }
+            if (data && data.DestinoNombre) {
+                var rol = String(data.DestinoRol || 'gerente').toLowerCase();
+                var frase = data.Solo
+                    ? 'Se envía solo al ' + rol + ': ' + data.DestinoNombre + '.'
+                    : 'Después del visto bueno del jefe inmediato se envía al ' + rol + ': ' + data.DestinoNombre + '.';
+                if (data.DestinoDetalle) {
+                    frase += ' ' + data.DestinoDetalle;
+                }
+                $texto.text(frase);
+                $aviso.removeClass('hidden border-amber-300 bg-amber-50').addClass('border-blue-200 bg-blue-50');
+            } else if (data && data.DestinoDetalle) {
+                $texto.text(data.DestinoDetalle);
+                $aviso.removeClass('hidden border-blue-200 bg-blue-50').addClass('border-amber-300 bg-amber-50');
+            } else {
+                $aviso.addClass('hidden');
+                $texto.text('');
+            }
+        };
 
         // Función para enmascarar número telefónico (999****999)
         var valorRealTelefono = ''; // Variable para almacenar el valor real
@@ -1207,6 +1626,7 @@ function renderTelefono() {
             }
             var $cont = $p.next('.select2-container');
             if ($cont.length) $cont.addClass('select2-container--disabled');
+            window.estadoSelectBusqueda($('#Motivo'), false);
         }
 
         function buscarEmpleadoSolicitud(correo) {
@@ -1252,19 +1672,27 @@ function renderTelefono() {
                             .prop('required', false)
                             .prop('disabled', false); // Debe estar habilitado para que se envíe el valor "N/A"
                     } else {
-                        // CASO NORMAL: Mostramos el campo
+                        // CASO NORMAL: el jefe inmediato registrado, y se puede cambiar.
                         $supervisorContainer.removeClass('hidden');
 
-                        // Limpiamos, habilitamos y hacemos obligatorio
                         $supervisorInput
-                            .val('')
-                            .prop('required', true)
+                            .val(data.NombreJefe || '')
+                            .prop('required', false)
                             .prop('disabled', false)
                             .removeClass('bg-gray-100');
+                        $('#SupervisorID').val(data.JefeDirectoID || '');
                     }
+
+                    window.__avisoBaseSolicitud = {
+                        DestinoNombre: data.DestinoNombre || '',
+                        DestinoRol: data.DestinoRol || '',
+                        DestinoDetalle: data.DestinoDetalle || ''
+                    };
+                    window.pintarAvisoSolicitud(window.__avisoBaseSolicitud);
 
                     // 4. Habilitar el resto de los campos (Nota: Quité #SupervisorNombre de aquí porque ya se manejó arriba)
                     $('#Motivo, #DescripcionMotivo, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+                    window.estadoSelectBusqueda($('#Motivo'), true);
 
                     // 5. Activar botón de envío
                     $('#btnEnviarSolicitud').prop('disabled', false).removeClass('cursor-not-allowed');
@@ -1308,6 +1736,7 @@ function renderTelefono() {
                 placeholder: "Selecciona ubicación...",
                 allowClear: true,
                 width: '100%',
+                minimumResultsForSearch: 0,
                 templateResult: function(d) {
                     return d.id ? $('<span>' + d.text + '</span>') : d.text;
                 },
@@ -1339,6 +1768,12 @@ function renderTelefono() {
                     $('#numeroTelefono').val(enmascararNumero(data.NumTelefono)).removeClass('border-red-500').addClass('border-green-500');
                     $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
                     $('#btnEnviar').prop('disabled', false).removeClass('cursor-not-allowed');
+                },
+                error: function(xhr) {
+                    window.correoTicketValido = false;
+                    deshabilitarCamposTicket();
+                    $('#autoEmpleadosTicket').val('').addClass('border-red-500');
+                    $('#correo-error').removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el empleado');
                 }
             });
         }
@@ -1372,11 +1807,11 @@ function renderTelefono() {
                     $('#btnEnviarMantenimiento').prop('disabled', false).removeClass('cursor-not-allowed');
                     $('#dropzoneMantenimiento').removeClass('opacity-50 cursor-not-allowed').addClass('hover:border-orange-400 hover:bg-orange-50');
                 },
-                error: function() {
+                error: function(xhr) {
                     window.correoMantenimientoValido = false;
                     $('#nombreSolicitante, #areaDepartamento').val('');
                     $('#correoMantenimiento').removeClass('border-green-500').addClass('border-red-500');
-                    $('#correo-mantenimiento-error').removeClass('hidden').text('No se encontró correo, contacta a soporte');
+                    $('#correo-mantenimiento-error').removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró correo, contacta a soporte');
                     $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-100');
                     $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed');
                     $('#dropzoneMantenimiento').addClass('opacity-50 cursor-not-allowed').removeClass('hover:border-orange-400 hover:bg-orange-50');
@@ -1384,7 +1819,22 @@ function renderTelefono() {
             });
         }
 
+        var esperaCorreoMant = null;
+        $('#correoMantenimiento').on('input', function() {
+            var correo = $(this).val().trim();
+            clearTimeout(esperaCorreoMant);
+            if (!esCorreoValido(correo)) {
+                return;
+            }
+            esperaCorreoMant = setTimeout(function() {
+                var actual = $('#correoMantenimiento').val().trim();
+                if (esCorreoValido(actual)) {
+                    buscarEmpleadoMantenimiento(actual);
+                }
+            }, 350);
+        });
         $('#correoMantenimiento').on('change blur', function() {
+            clearTimeout(esperaCorreoMant);
             var correo = $(this).val().trim();
             if (!correo) {
                 deshabilitarCamposMantenimiento();
@@ -1401,48 +1851,245 @@ function renderTelefono() {
             buscarEmpleadoMantenimiento(correo);
         });
     </script>
+    <script>
+        window.correoMovimientoValido = false;
+        window.__catalogoMovimiento = null;
+
+        function opcionesCargoMovimiento() {
+            var html = '<option value="">Cargo</option>';
+            ((window.__catalogoMovimiento && window.__catalogoMovimiento.cargos) || []).forEach(function (cargo) {
+                html += '<option value="' + cargo.id + '">' + cargo.clave + '</option>';
+            });
+            return html;
+        }
+
+        function numerarLineasMovimiento() {
+            var filas = $('#lineasMovimiento .linea-movimiento');
+            filas.each(function (indice) {
+                $(this).find('.linea-movimiento__num').text(indice + 1);
+                $(this).find('.cargo-linea').attr('name', 'lineas[' + indice + '][CargoID]');
+                $(this).find('.codigo-linea').attr('name', 'lineas[' + indice + '][CodigoInsumo]');
+                $(this).find('.desc-linea').attr('name', 'lineas[' + indice + '][Descripcion]');
+                $(this).find('.partida-linea').attr('name', 'lineas[' + indice + '][Partida]');
+                $(this).find('.cantidad-linea').attr('name', 'lineas[' + indice + '][Cantidad]');
+                $(this).find('.precio-linea').attr('name', 'lineas[' + indice + '][Precio]');
+                $(this).find('.just-linea').attr('name', 'lineas[' + indice + '][Justificacion]');
+            });
+            filas.toggleClass('linea-movimiento--unica', filas.length < 2);
+        }
+
+        function agregarLineaMovimiento() {
+            var fila = document.getElementById('lineaMovimientoTpl').content.cloneNode(true);
+            $('#lineasMovimiento').append(fila);
+            var $fila = $('#lineasMovimiento .linea-movimiento').last();
+            $fila.find('.cargo-linea').html(opcionesCargoMovimiento());
+            window.montarSelectBusqueda($fila.find('.cargo-linea'), 'Cargo', '100%');
+            numerarLineasMovimiento();
+            consultarAutorizadoresMovimiento();
+        }
+
+        window.voboElegidoAMano = false;
+
+        function iniciarVoboMovimiento() {
+            var $campo = $('#voboMovimiento');
+            if (!$campo.length || $campo.hasClass('select2-hidden-accessible') || !$.fn.select2) return;
+            $campo.select2({
+                width: '100%',
+                dropdownParent: $(document.body),
+                placeholder: 'Busca a quién se envía el visto bueno',
+                minimumInputLength: 2,
+                minimumResultsForSearch: 0,
+                ajax: {
+                    url: '/autocompleteEmpleado',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { query: params.term || '' }; },
+                    processResults: function (data) {
+                        return {
+                            results: (data || []).map(function (persona) {
+                                return { id: persona.EmpleadoID, text: persona.NombreEmpleado };
+                            })
+                        };
+                    }
+                }
+            });
+            $campo.on('select2:select', function (evento) {
+                window.voboElegidoAMano = true;
+                fijarVoboMovimiento(evento.params && evento.params.data ? evento.params.data.id : $campo.val());
+            });
+            $campo.on('select2:clear', function () { fijarVoboMovimiento(''); });
+        }
+
+        function fijarVoboMovimiento(id) {
+            $('#voboMovimientoId').val(id ? String(id) : '');
+        }
+
+        function proponerVoboMovimiento(persona) {
+            if (!persona || window.voboElegidoAMano) return;
+            var $campo = $('#voboMovimiento');
+            if (!$campo.find('option[value="' + persona.id + '"]').length) {
+                $campo.append(new Option(persona.nombre, persona.id, true, true));
+            }
+            $campo.val(String(persona.id)).trigger('change');
+            fijarVoboMovimiento(persona.id);
+        }
+
+        function consultarAutorizadoresMovimiento() {
+            var obra = $('#obraMovimiento').val();
+            var cargos = [];
+            $('#lineasMovimiento .cargo-linea').each(function () {
+                if ($(this).val()) cargos.push($(this).val());
+            });
+            if (!obra || !cargos.length) {
+                $('#cargoMovimientoAutoriza').text('');
+                $('#cargoMovimientoAviso').addClass('hidden').removeClass('aviso-destino--alerta');
+                return;
+            }
+            $.get('/movimientos-erp/autorizadores', { obra_id: obra, cargos: cargos }, function (data) {
+                var texto = (data.autorizadores || []).map(function (persona) {
+                    return persona.nombre + (persona.puesto ? ' (' + persona.puesto + ')' : '');
+                }).join(', ');
+                var $aviso = $('#cargoMovimientoAviso');
+                if (texto) {
+                    $('#cargoMovimientoAutoriza').text('Se propone para el visto bueno: ' + texto + '.');
+                    $aviso.removeClass('hidden aviso-destino--alerta');
+                } else {
+                    $('#cargoMovimientoAutoriza').text('No se encontró quién autoriza estos cargos. Busca a la persona en Enviar visto bueno.');
+                    $aviso.removeClass('hidden').addClass('aviso-destino--alerta');
+                }
+                if (!window.voboElegidoAMano && data.autorizadores && data.autorizadores[0]) {
+                    proponerVoboMovimiento(data.autorizadores[0]);
+                }
+            });
+        }
+
+        function prepararMovimiento() {
+            $('#correoMovimiento, #obraMovimiento, #folioMovimiento, #justificacionMovimiento, #voboMovimiento').prop('disabled', false);
+            iniciarVoboMovimiento();
+            $('#lineasMovimiento').find('input, select, button').prop('disabled', false);
+            if (window.__catalogoMovimiento) {
+                window.montarSelectBusqueda($('#obraMovimiento'), 'Selecciona el proyecto');
+                if (!$('#lineasMovimiento .linea-movimiento').length) {
+                    agregarLineaMovimiento();
+                } else {
+                    $('#lineasMovimiento .cargo-linea').each(function () {
+                        window.montarSelectBusqueda($(this), 'Cargo', '100%');
+                    });
+                }
+                return;
+            }
+            $.get('/movimientos-erp/catalogo', function (data) {
+                window.__catalogoMovimiento = data;
+                var $obra = $('#obraMovimiento');
+                if ($obra.hasClass('select2-hidden-accessible')) {
+                    try { $obra.select2('destroy'); } catch (e) {}
+                }
+                $obra.empty().append('<option value="">Selecciona el proyecto</option>');
+                (data.obras || []).forEach(function (obra) {
+                    $obra.append($('<option>', { value: obra.ObraID, text: obra.NombreObra }));
+                });
+                window.montarSelectBusqueda($obra, 'Selecciona el proyecto');
+                if (!$('#lineasMovimiento .linea-movimiento').length) {
+                    agregarLineaMovimiento();
+                } else {
+                    $('#lineasMovimiento .cargo-linea').each(function () {
+                        if ($(this).hasClass('select2-hidden-accessible')) {
+                            try { $(this).select2('destroy'); } catch (e) {}
+                        }
+                        $(this).html(opcionesCargoMovimiento());
+                        window.montarSelectBusqueda($(this), 'Cargo', '100%');
+                    });
+                }
+            });
+        }
+
+        $('#agregarLineaMovimiento').on('click', agregarLineaMovimiento);
+        $('#lineasMovimiento').on('click', '.quitar-linea', function () {
+            if ($('#lineasMovimiento .linea-movimiento').length === 1) {
+                return;
+            }
+            $(this).closest('.linea-movimiento').remove();
+            numerarLineasMovimiento();
+            consultarAutorizadoresMovimiento();
+        });
+        $('#lineasMovimiento').on('input', '.cantidad-linea, .precio-linea', function () {
+            var $fila = $(this).closest('.linea-movimiento');
+            var cantidad = parseFloat($fila.find('.cantidad-linea').val());
+            var precio = parseFloat($fila.find('.precio-linea').val());
+            if (isNaN(cantidad) || isNaN(precio)) {
+                $fila.find('.importe-linea').val('');
+                return;
+            }
+            $fila.find('.importe-linea').val((cantidad * precio).toFixed(2));
+        });
+        $('#lineasMovimiento').on('change', '.cargo-linea', consultarAutorizadoresMovimiento);
+        $('#obraMovimiento').on('change', consultarAutorizadoresMovimiento);
+
+        var esperaCorreoMov = null;
+        $('#correoMovimiento').on('input', function () {
+            var correo = $(this).val().trim();
+            clearTimeout(esperaCorreoMov);
+            if (!esCorreoValido(correo)) {
+                return;
+            }
+            esperaCorreoMov = setTimeout(function () {
+                buscarEmpleadoMovimiento($('#correoMovimiento').val().trim());
+            }, 350);
+        });
+
+        function buscarEmpleadoMovimiento(correo) {
+            $.ajax({
+                url: '/buscarEmpleadoPorCorreo',
+                method: 'GET',
+                data: { correo: correo, type: 'Movimiento' },
+                success: function (data) {
+                    window.correoMovimientoValido = true;
+                    var puesto = data.NombrePuesto ? ' · ' + data.NombrePuesto : '';
+                    $('#nombreMovimiento').text((data.NombreEmpleado || '') + puesto);
+                    $('#correo-movimiento-error').addClass('hidden');
+                    $('#btnEnviarMovimiento').prop('disabled', false).removeClass('cursor-not-allowed bg-gray-400').addClass('bg-green-700');
+                },
+                error: function (xhr) {
+                    window.correoMovimientoValido = false;
+                    $('#nombreMovimiento').text('Auxiliar de compras, residente de compras o residente administrativo.');
+                    $('#correo-movimiento-error').removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el correo');
+                    $('#btnEnviarMovimiento').prop('disabled', true).removeClass('bg-green-700').addClass('cursor-not-allowed bg-gray-400');
+                }
+            });
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @if (session('success'))
     @php
     $tipo = session('tipo', 'Ticket');
-    $titulo = match($tipo) {
-        'Solicitud' => '¡Solicitud Enviada Exitosamente! 🎉',
-        'Mantenimiento' => '¡Solicitud de Mantenimiento Enviada! 🎉',
-        default => '¡Ticket Enviado Exitosamente! 🎉',
-    };
     $mensaje = match($tipo) {
-        'Solicitud' => 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.',
-        'Mantenimiento' => 'Hemos recibido tu solicitud de mantenimiento y el equipo de compras la atenderá pronto.',
-        default => 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.',
+        'Solicitud' => 'Recibimos tu solicitud de compra. El equipo la revisará pronto.',
+        'Mantenimiento' => 'Recibimos tu solicitud de mantenimiento. El equipo de compras la atenderá pronto.',
+        'Movimiento' => session('success') ?: 'La solicitud se envió. Espera el visto bueno.',
+        default => 'Recibimos tu ticket. El equipo de soporte lo revisará pronto.',
     };
     @endphp
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        if (!window.Swal) return;
         Swal.fire({
             icon: 'success',
-            title: '{{ $titulo }}',
+            title: 'Solicitud enviada',
             html: `
-                <div style="text-align: center; padding: 10px;">
-                    <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
-                        <strong>¡Gracias por contactarnos!</strong>
+                <div style="text-align: center; padding: 4px 8px 0;">
+                    <p style="font-size: 15px; margin: 0 0 8px; color: #1e293b;">
+                        <strong>Gracias por contactarnos</strong>
                     </p>
-                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
-                        {{ $mensaje }}
-                    </p>
-                    <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <i class="fas fa-clock"></i> Te contactaremos a la brevedad posible
+                    <p style="font-size: 14px; color: #475569; margin: 0;">
+                        ${@json($mensaje)}
                     </p>
                 </div>
             `,
-            confirmButtonText: '¡Entendido!',
-            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#0f766e',
             timer: 10000,
-            timerProgressBar: true,
-            showClass: {
-                popup: 'animate__animated animate__fadeInDown'
-            },
-            hideClass: {
-                popup: 'animate__animated animate__fadeOutUp'
-            }
+            timerProgressBar: true
+        });
         });
     </script>
     @elseif (session('error'))
@@ -1514,6 +2161,11 @@ function renderTelefono() {
                     bg: '#431407',
                     particle: '#fb923c',
                     link: '#f97316'
+                },
+                control: {
+                    bg: '#052e16',
+                    particle: '#4ade80',
+                    link: '#22c55e'
                 }
             };
             var tema = temas[area] || temas.general;
@@ -2173,6 +2825,12 @@ function renderTelefono() {
 
             $input.on("input", function() {
                 const query = $(this).val().trim();
+                $("#SupervisorID").val("");
+                if (query === '' && window.__avisoBaseSolicitud) {
+                    window.pintarAvisoSolicitud(window.__avisoBaseSolicitud);
+                } else if (window.pintarAvisoSolicitud) {
+                    window.pintarAvisoSolicitud({ DestinoDetalle: 'Elige el jefe de la lista para ver a quién se envía después.' });
+                }
 
                 if (query.length < 2) {
                     $suggestions.empty().addClass("hidden");
@@ -2201,8 +2859,14 @@ function renderTelefono() {
                             const id = $(this).data("id");
                             $input.val(nombre);
                             $("#SupervisorID").val(id);
-
                             $suggestions.empty().addClass("hidden");
+
+                            $.get('/destinoDeJefe', {
+                                empleado_id: id,
+                                solicitante_id: $('#EmpleadoIDSolicitud').val()
+                            }, function (resp) {
+                                window.pintarAvisoSolicitud(resp);
+                            });
                         });
                     }
                 });
@@ -2256,9 +2920,8 @@ function renderTelefono() {
             // Deshabilitar campos inicialmente
             deshabilitarCampos();
 
-            // Validar correo en Tickets (solo cuando pierde el foco o cambia)
-            $('#correoEmpleado').on('change blur', function() {
-                const correo = $(this).val().trim();
+            // Valida el correo al terminar de escribir. Tab no hace falta.
+            function procesarCorreoTicket(correo, alSalir) {
                 const $errorDiv = $('#correo-error');
                 const $empleadoInput = $('#autoEmpleadosTicket');
                 const $numeroInput = $('#numeroTelefono');
@@ -2277,6 +2940,9 @@ function renderTelefono() {
                 // Validar formato de correo básico
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(correo)) {
+                    if (!alSalir) {
+                        return;
+                    }
                     deshabilitarCampos();
                     $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
                     $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
@@ -2307,12 +2973,32 @@ function renderTelefono() {
                         // Habilitar campos
                         habilitarCamposEspecificos();
                     },
-                    error: function() {
+                    error: function(xhr) {
                         deshabilitarCampos();
-                        $errorDiv.removeClass('hidden').text('No se encontró el empleado');
+                        $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el empleado');
                         $empleadoInput.val('').removeClass('border-blue-500').addClass('border-red-500');
                     }
                 });
+            }
+
+            var esperaCorreoTicket = null;
+            $('#correoEmpleado').on('input', function() {
+                var correo = $(this).val().trim();
+                clearTimeout(esperaCorreoTicket);
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+                    if (correo === '') {
+                        procesarCorreoTicket('', false);
+                    }
+                    return;
+                }
+                esperaCorreoTicket = setTimeout(function() {
+                    var actual = $('#correoEmpleado').val().trim();
+                    procesarCorreoTicket(actual, false);
+                }, 350);
+            });
+            $('#correoEmpleado').on('change blur', function() {
+                clearTimeout(esperaCorreoTicket);
+                procesarCorreoTicket($(this).val().trim(), true);
             });
 
             // Enter en correo (Ticket)
@@ -2388,6 +3074,7 @@ function renderTelefono() {
 
                         // Habilitar campos de texto generales
                         $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
+                        if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), true);
                         $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                         $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
 
@@ -2433,7 +3120,7 @@ function renderTelefono() {
 
                         // Limpieza de error visual...
                         $empleadoInput.val('').addClass('border-red-500');
-                        $errorDiv.removeClass('hidden').text('No se encontró el empleado.');
+                        $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró el empleado.');
                     }
                 });
             }
@@ -2610,6 +3297,7 @@ function renderTelefono() {
                         placeholder: "Busca y selecciona una ubicación...",
                         allowClear: true,
                         width: '100%',
+                        minimumResultsForSearch: 0,
                         templateResult: function(data) {
                             return data.id ? $('<span>' + data.text + '</span>') : data.text;
                         },
@@ -2617,6 +3305,7 @@ function renderTelefono() {
                             return data.text;
                         }
                     });
+                    if (window.montarSelectBusqueda) window.montarSelectBusqueda($('#Motivo'), 'Selecciona el motivo');
                 }, 100);
             } else if (seleccion === 'Mantenimiento') {
                 $('#mantenimiento-form').removeClass('hidden');
@@ -2641,6 +3330,7 @@ function renderTelefono() {
                 $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
                 $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+                if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), false);
                 $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
                 // Deshabilitar campo Proyecto (Select2)
@@ -2832,6 +3522,7 @@ function renderTelefono() {
 
                 // Habilitar todos los demás campos
                 $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
+                if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), true);
                 $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
 
@@ -2856,6 +3547,7 @@ function renderTelefono() {
                 $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
                 $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+                if (window.estadoSelectBusqueda) window.estadoSelectBusqueda($('#Motivo'), false);
                 $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
                 $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
@@ -2937,6 +3629,17 @@ function renderTelefono() {
                         $gerenciaIDInput.val(data.GerenciaID || '');
                         $obraIDInput.val(data.ObraID || '');
                         $puestoIDInput.val(data.PuestoID || '');
+                        $('#SupervisorNombre').val(data.NombreJefe || '');
+                        $('#SupervisorID').val(data.JefeDirectoID || '');
+                        const $avisoDestino = $('#destinoSolicitudAviso');
+                        const $textoDestino = $('#destinoSolicitudTexto');
+                        if (data.DestinoNombre) {
+                            $textoDestino.text('Después del visto bueno del jefe inmediato se envía a ' + data.DestinoRol.toLowerCase() + ': ' + data.DestinoNombre + '. ' + (data.DestinoDetalle || ''));
+                            $avisoDestino.removeClass('hidden border-amber-300 bg-amber-50').addClass('border-blue-200 bg-blue-50');
+                        } else {
+                            $textoDestino.text(data.DestinoDetalle || 'No se encontró el gerente ni el director a quien se enviará.');
+                            $avisoDestino.removeClass('hidden border-blue-200 bg-blue-50').addClass('border-amber-300 bg-amber-50');
+                        }
                         $errorDiv.addClass('hidden').text('');
 
                         // Luego habilitar todos los campos
@@ -2958,7 +3661,7 @@ function renderTelefono() {
                     error: function(xhr) {
                         deshabilitarCamposSolicitud();
                         deshabilitarCampoUbicacion();
-                        if (xhr.status === 404) {
+                        if (xhr.status === 404 || xhr.status === 422) {
                             $empleadoInput.val('')
                                 .removeClass('border-blue-500 border-green-500')
                                 .addClass('border-red-500');
@@ -2981,6 +3684,8 @@ function renderTelefono() {
                             $obraIDInput.val('');
                             $puestoIDInput.val('');
                             $('#SupervisorID').val('');
+                            $('#destinoSolicitudAviso').addClass('hidden');
+                            $('#destinoSolicitudTexto').text('');
                             $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró correo, contacta a soporte');
                         } else {
                             $empleadoInput.val('')
@@ -3005,6 +3710,8 @@ function renderTelefono() {
                             $obraIDInput.val('');
                             $puestoIDInput.val('');
                             $('#SupervisorID').val('');
+                            $('#destinoSolicitudAviso').addClass('hidden');
+                            $('#destinoSolicitudTexto').text('');
                             $errorDiv.removeClass('hidden').text('Error al buscar empleado. Intenta de nuevo.');
                         }
                     }
@@ -3083,8 +3790,9 @@ function renderTelefono() {
             const textoTicket        = '<i class="fas fa-paper-plane mr-2"></i>Enviar Ticket';
             const textoSolicitud     = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
             const textoMantenimiento = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
+            const textoMovimiento = '<i class="fas fa-paper-plane mr-2"></i>Enviar solicitud';
 
-            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud, #btnEnviarMantenimiento', function (e) {
+            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud, #btnEnviarMantenimiento, #btnEnviarMovimiento', function (e) {
                 if (_enviando || formEstaLocked()) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
@@ -3104,6 +3812,7 @@ function renderTelefono() {
                 const esSolicitud    = $('#solicitud-form').is(':visible');
                 const esTicket       = $('#ticket-form').is(':visible');
                 const esMantenimiento = $('#mantenimiento-form').is(':visible');
+                const esMovimiento = $('#movimiento-form').is(':visible');
                 const emailRegex     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
                 if (esTicket) {
@@ -3140,6 +3849,36 @@ function renderTelefono() {
 
                     if (!$('#descripcionMantenimiento').val().trim())
                         errores.push('La descripción es requerida.');
+                }
+
+                if (esMovimiento) {
+                    if (!$('#correoMovimiento').val().trim() || !window.correoMovimientoValido) {
+                        errores.push('El solicitante debe ser una persona física activa.');
+                    }
+                    if (!$('#obraMovimiento').val()) errores.push('Selecciona el proyecto.');
+                    if (!$('#voboMovimiento').val() && !$('#voboMovimientoId').val()) errores.push('Elige a quién se envía el visto bueno.');
+                    if (!$('#voboMovimientoId').val() && $('#voboMovimiento').val()) fijarVoboMovimiento($('#voboMovimiento').val());
+                    if (!$('#justificacionMovimiento').val().trim()) errores.push('Escribe el mensaje de la solicitud.');
+                    var partidas = 0;
+                    $('#lineasMovimiento .linea-movimiento').each(function () {
+                        var vacia = !$(this).find('.cargo-linea').val()
+                            && !$(this).find('.codigo-linea').val().trim()
+                            && !$(this).find('.desc-linea').val().trim()
+                            && !$(this).find('.partida-linea').val().trim()
+                            && !$(this).find('.cantidad-linea').val()
+                            && !$(this).find('.precio-linea').val()
+                            && !$(this).find('.just-linea').val().trim();
+                        if (vacia) {
+                            $(this).remove();
+                            return;
+                        }
+                        partidas += 1;
+                        if (!$(this).find('.cargo-linea').val() || !$(this).find('.codigo-linea').val().trim() || !$(this).find('.desc-linea').val().trim() || !$(this).find('.partida-linea').val().trim() || $(this).find('.cantidad-linea').val() === '' || $(this).find('.precio-linea').val() === '' || !$(this).find('.just-linea').val().trim()) {
+                            errores.push('Cada partida necesita cargo, código, descripción, partida, cantidad, precio y justificación.');
+                        }
+                    });
+                    numerarLineasMovimiento();
+                    if (!partidas) errores.push('Agrega al menos una partida del movimiento.');
                 }
 
                 if (esSolicitud) {
@@ -3193,6 +3932,8 @@ function renderTelefono() {
                     bloquearBoton($('#btnEnviarSolicitud'), textoSolicitud);
                 } else if (esMantenimiento) {
                     bloquearBoton($('#btnEnviarMantenimiento'), textoMantenimiento);
+                } else if (esMovimiento) {
+                    bloquearBoton($('#btnEnviarMovimiento'), textoMovimiento);
                 }
 
             });

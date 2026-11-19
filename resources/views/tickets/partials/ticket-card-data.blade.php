@@ -5,7 +5,7 @@
         'data-ticket-asunto' => 'Ticket #' . ($ticket['id'] ?? ''),
         'data-ticket-descripcion' => htmlspecialchars($ticket['descripcion'] ?? '', ENT_QUOTES, 'UTF-8'),
         'data-ticket-prioridad' => $ticket['prioridad'] ?? '',
-        'data-ticket-empleado' => htmlspecialchars($ticket['empleado_corto'] ?? '', ENT_QUOTES, 'UTF-8'),
+        'data-ticket-empleado' => htmlspecialchars($ticket['empleado']['nombre'] ?? ($ticket['empleado_corto'] ?? ''), ENT_QUOTES, 'UTF-8'),
         'data-ticket-responsable' => htmlspecialchars($ticket['responsable_nombre'] ?? '', ENT_QUOTES, 'UTF-8'),
         'data-ticket-correo' => $ticket['correo'] ?? '',
         'data-ticket-fecha' => \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i:s'),

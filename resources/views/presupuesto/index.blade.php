@@ -96,9 +96,9 @@
     text-decoration: line-through;
 }
 .dark .rep-scope .inv-chip-off { color: #64748b; border-color: #475569; }
-.dark .rep-scope .inv-chip-stock { background: rgba(4, 120, 87, 0.18); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.4); }
-.dark .rep-scope .inv-chip-extra { background: rgba(194, 65, 12, 0.18); color: #fdba74; border-color: rgba(251, 146, 60, 0.45); }
-.dark .rep-scope .inv-chip-share { background: rgba(29, 78, 216, 0.2); color: #93c5fd; border-color: rgba(96, 165, 250, 0.45); }
+.dark .rep-scope .inv-chip-stock { background: rgba(54, 179, 126, 0.16); color: #57d9a3; border-color: rgba(54, 179, 126, 0.45); }
+.dark .rep-scope .inv-chip-extra { background: rgba(255, 171, 0, 0.16); color: #ffc400; border-color: rgba(255, 171, 0, 0.5); }
+.dark .rep-scope .inv-chip-share { background: rgba(76, 154, 255, 0.16); color: #4c9aff; border-color: rgba(76, 154, 255, 0.45); }
 </style>
 
 <div data-app-tabset>
@@ -182,24 +182,24 @@
                 @csrf
                 <input type="hidden" name="modo" value="presupuesto">
                 <div class="row crud-form">
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <label>Tipo</label>
                         <select name="tipo" id="semestre" class="form-control" required>
                             <option value="mens">Mensual</option>
                             <option value="anual">Anual</option>
                         </select>
                     </div>
-                    <div class="col-sm-6">
-                        <label>Gerencia</label>
+                    <div class="col-sm-8">
+                        <label>Presupuesto interno</label>
+                        <input type="hidden" name="agrupar" value="interno">
                         {!! Form::select(
-                            'GerenciaID',
-                            $genusuarios->pluck('NombreGerencia','GerenciaID'),
+                            'PresupuestoInternoID',
+                            $presupuestosInternos->pluck('Nombre','PresupuestoInternoID'),
                             null,
                             [
                                 'placeholder' => 'Seleccionar',
                                 'class'=>'jz form-control',
-                                'id' => 'GerenciaID',
-                                'required',
+                                'id' => 'PresupuestoInternoID',
                                 'style' => 'width:100%'
                             ]
                         ) !!}
@@ -257,24 +257,24 @@
                 @csrf
                 <input type="hidden" name="modo" value="inventario">
                 <div class="row crud-form">
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <label>Tipo</label>
                         <select name="tipo" id="semestre_inventario" class="form-control" required>
                             <option value="mens">Mensual</option>
                             <option value="anual">Anual</option>
                         </select>
                     </div>
-                    <div class="col-sm-6">
-                        <label>Gerencia</label>
+                    <div class="col-sm-8">
+                        <label>Presupuesto interno</label>
+                        <input type="hidden" name="agrupar" value="interno">
                         {!! Form::select(
-                            'GerenciaID',
-                            $genusuarios->pluck('NombreGerencia','GerenciaID'),
+                            'PresupuestoInternoID',
+                            $presupuestosInternos->pluck('Nombre','PresupuestoInternoID'),
                             null,
                             [
                                 'placeholder' => 'Seleccionar',
                                 'class'=>'jz form-control',
-                                'id' => 'GerenciaID_inventario',
-                                'required',
+                                'id' => 'PresupuestoInternoID_inventario',
                                 'style' => 'width:100%'
                             ]
                         ) !!}
@@ -316,11 +316,11 @@
         var btnPdf = document.getElementById('btn-validar-pdf');
         var btnExcel = document.getElementById('btn-validar-excel');
         var submitButtonInput = document.getElementById('submitbutton');
-        var gerenciaId = valorGerencia('GerenciaID');
+        var internoId = valorGerencia('PresupuestoInternoID');
 
         if (!form || !submitButtonInput) return;
-        if (!gerenciaId) {
-            alert('Por favor selecciona una Gerencia');
+        if (!internoId) {
+            alert('Selecciona un presupuesto interno');
             return;
         }
 
@@ -335,7 +335,7 @@
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ GerenciaID: gerenciaId })
+            body: JSON.stringify({ PresupuestoInternoID: internoId, agrupar: 'interno' })
         })
         .then(function (response) { return response.json(); })
         .then(function (data) {
@@ -388,11 +388,11 @@
     function enviarInventario(tipoBoton) {
         var inventarioForm = document.getElementById('inventarioForm');
         var submitInv = document.getElementById('submitbutton_inventario');
-        var gerencia = valorGerencia('GerenciaID_inventario');
+        var interno = valorGerencia('PresupuestoInternoID_inventario');
 
         if (!inventarioForm || !submitInv) return;
-        if (!gerencia) {
-            alert('Por favor selecciona una Gerencia');
+        if (!interno) {
+            alert('Selecciona un presupuesto interno');
             return;
         }
         submitInv.value = tipoBoton;

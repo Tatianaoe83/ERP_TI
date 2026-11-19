@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 //agregamos lo siguiente
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Gerencias_usuarios;
-use App\Models\Gerencia;
+use App\Models\PresupuestoInterno;
+use App\Models\PresupuestoInternoUsuario;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -51,7 +51,8 @@ class UsuarioController extends Controller
     {
         //aqui trabajamos con name de las tablas de users
         $roles = Role::pluck('name','name')->all();
-        return view('usuarios.crear',compact('roles'));
+        $presupuestos = PresupuestoInterno::query()->orderBy('Nombre')->pluck('Nombre', 'PresupuestoInternoID');
+        return view('usuarios.crear',compact('roles', 'presupuestos'));
     }
 
     /**
@@ -78,17 +79,7 @@ class UsuarioController extends Controller
     
         $user = User::create($input);
         $user->assignRole($request->input('roles'));
-
-        $IdUsuario = $user->id;
-
-        if ($request->gerenci_id != null){
-            foreach ($request->gerenci_id as $key => $value) {
-                Gerencias_usuarios::create([
-                            'GerenciaID' => $value,
-                            'users_id' => $IdUsuario,
-                ]);
-                }
-        }
+        $this->guardarPresupuestos($user->id, $request->input('presupuesto_interno_id', []));
     
         return redirect()->route('usuarios.index');
     }
@@ -115,11 +106,13 @@ class UsuarioController extends Controller
         $user = User::find($id);
         $roles = Role::pluck('name','name')->all();
         $userRole = $user->roles->pluck('name','name')->all();
-        $geren = Gerencia::pluck('NombreGerencia','GerenciaID')->all();
-        $gerenUsu= DB::select("SELECT GerenciaID FROM gerencias_usuarios WHERE users_id = $id");
-        $gerenUsuarios = array_column($gerenUsu, 'GerenciaID');
+        $presupuestos = PresupuestoInterno::query()->orderBy('Nombre')->pluck('Nombre', 'PresupuestoInternoID');
+        $presupuestosUsuario = PresupuestoInternoUsuario::query()
+            ->where('users_id', $id)
+            ->pluck('PresupuestoInternoID')
+            ->all();
     
-        return view('usuarios.editar',compact('user','roles','userRole','geren','gerenUsuarios'));
+        return view('usuarios.editar',compact('user','roles','userRole','presupuestos','presupuestosUsuario'));
     }
     
 
@@ -151,44 +144,7 @@ class UsuarioController extends Controller
         DB::table('model_has_roles')->where('model_id',$id)->delete();
     
         $user->assignRole($request->input('roles'));
-    
-        $IdUsuario = $user->id;
-
-
-        if ($request->gerenci_id != null){
-                
-                    $gerenEmp= DB::select("SELECT GerenciaID FROM gerencias_usuarios WHERE users_id = $IdUsuario");
-                    $gerenToEmp = array_column($gerenEmp, 'GerenciaID');
-
-                    $resultado = array_diff($request->gerenci_id, $gerenToEmp);
-
-
-                    $resultado2 = array_diff($gerenToEmp, $request->gerenci_id);
-
-                
-                    foreach ($resultado as $key => $value) {
-                        Gerencias_usuarios::create([
-                            'GerenciaID' => $value,
-                            'users_id' => $IdUsuario,
-                            ]);
-                        }
-                    foreach ($resultado2 as $key => $value2) {
-                        Gerencias_usuarios::where('users_id', $IdUsuario)
-                        ->where('GerenciaID',$value2)
-                        ->delete();
-                        }
-                }else{
-                
-                    $gerenEmp= DB::select("SELECT GerenciaID FROM gerencias_usuarios WHERE users_id = $IdUsuario");
-                    $gerenToEmp = array_column($gerenEmp, 'GerenciaID');
-                    foreach ($gerenToEmp as $key => $value2) {
-                    
-                        Gerencias_usuarios::where('users_id', $IdUsuario)
-                        ->where('GerenciaID',$value2)
-                        ->delete();
-                        }
-                    
-        }
+        $this->guardarPresupuestos($user->id, $request->input('presupuesto_interno_id', []));
 
         return redirect()->route('usuarios.index');
     }
@@ -199,6 +155,22 @@ class UsuarioController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+    private function guardarPresupuestos($userId, $ids): void
+    {
+        $ids = array_values(array_filter((array) $ids));
+        $validos = PresupuestoInterno::query()
+            ->whereIn('PresupuestoInternoID', $ids)
+            ->pluck('PresupuestoInternoID');
+
+        PresupuestoInternoUsuario::query()->where('users_id', $userId)->delete();
+        foreach ($validos as $presupuestoId) {
+            PresupuestoInternoUsuario::create([
+                'PresupuestoInternoID' => $presupuestoId,
+                'users_id' => $userId,
+            ]);
+        }
+    }
+
     public function destroy($id)
     {
         User::find($id)->delete();

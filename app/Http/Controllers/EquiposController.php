@@ -141,7 +141,7 @@ class EquiposController extends AppBaseController
 
         $equipos = $this->equiposRepository->create($input);
 
-        Flash::success('Equipos saved successfully.');
+        Flash::success('Equipo guardado.');
 
         return redirect(route('equipos.index'));
     }
@@ -158,7 +158,7 @@ class EquiposController extends AppBaseController
         $equipos = $this->equiposRepository->find($id);
 
         if (empty($equipos)) {
-            Flash::error('Equipos not found');
+            Flash::error('Equipo no encontrado');
 
             return redirect(route('equipos.index'));
         }
@@ -178,7 +178,7 @@ class EquiposController extends AppBaseController
         $equipos = $this->equiposRepository->find($id);
 
         if (empty($equipos)) {
-            Flash::error('Equipos not found');
+            Flash::error('Equipo no encontrado');
 
             return redirect(route('equipos.index'));
         }
@@ -199,7 +199,7 @@ class EquiposController extends AppBaseController
         $equipos = $this->equiposRepository->find($id);
 
         if (empty($equipos)) {
-            Flash::error('Equipos not found');
+            Flash::error('Equipo no encontrado');
 
             return redirect(route('equipos.index'));
         }
@@ -300,14 +300,14 @@ class EquiposController extends AppBaseController
         $equipos = $this->equiposRepository->find($id);
 
         if (empty($equipos)) {
-            Flash::error('Equipos not found');
+            Flash::error('Equipo no encontrado');
 
             return redirect(route('equipos.index'));
         }
 
         $this->equiposRepository->delete($id);
 
-        Flash::success('Equipos deleted successfully.');
+        Flash::success('Equipo borrado.');
 
         return redirect(route('equipos.index'));
     }

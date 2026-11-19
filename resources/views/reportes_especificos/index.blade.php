@@ -86,7 +86,7 @@
         <div>
             <h4>Información sobre los reportes</h4>
             <ul>
-                <li>Todos incluyen filtrado por empleado y fechas</li>
+                <li>Todos incluyen filtrado por empleado, presupuesto interno y fechas</li>
                 <li>La descarga en Excel respeta los filtros aplicados</li>
                 <li>Los datos se actualizan según la información del sistema</li>
             </ul>

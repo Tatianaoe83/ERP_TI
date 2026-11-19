@@ -8,7 +8,7 @@ use App\Repositories\FacturasRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Facturas;
-use App\Models\Gerencia;
+use App\Models\PresupuestoInterno;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,26 +77,7 @@ class FacturasController extends AppBaseController
         $currentYear = (int) Carbon::now()->format('Y');
         $years       = range($currentYear - 2, $currentYear + 3);
 
-        $gerenciasConFacturas = Gerencia::query()
-            ->where('estado', 1)
-            ->whereIn('GerenciaID', function ($q) {
-                $q->select('GerenciaID')
-                    ->from('facturas')
-                    ->whereNull('deleted_at')
-                    ->whereNotNull('GerenciaID');
-            })
-            ->orderBy('NombreGerencia')
-            ->pluck('NombreGerencia', 'GerenciaID')
-            ->toArray();
-
-        $gerencia = ['' => 'Todas las gerencias'] + $gerenciasConFacturas;
-
-        $gerenciasModal = DB::table('gerencia')
-            ->where('estado', 1)
-            ->whereNull('deleted_at')
-            ->select('GerenciaID as id', 'NombreGerencia as nombre')
-            ->orderBy('NombreGerencia')
-            ->get();
+        [$gerencia, $gerenciasModal] = $this->opcionesFactura();
 
         $insumosModal = DB::table('cortes')
             ->whereNull('deleted_at')
@@ -116,7 +97,7 @@ class FacturasController extends AppBaseController
     {
         if (!$request->ajax()) return redirect()->route('facturas.index');
 
-        $gerenciaID = $request->input('gerenci_id');
+        [$alcance, $gerenciaID] = $this->separarAlcance($request->input('gerenci_id'));
         $mesParam   = $request->input('mes');
         $año        = $request->input('año');
 
@@ -148,16 +129,23 @@ class FacturasController extends AppBaseController
                 'facturas.PdfRuta',
                 'facturas.ArchivoRuta',
                 'facturas.InsumoNombre',
-                'facturas.GerenciaID',
-                'gerencia.NombreGerencia',
+                DB::raw('COALESCE(facturas.PresupuestoInternoID, facturas.GerenciaID) as GerenciaID'),
+                DB::raw('COALESCE(presupuestos_internos.Nombre, gerencia.NombreGerencia) as NombreGerencia'),
                 'empleados.NombreEmpleado'
             ])
             ->leftJoin('gerencia', 'facturas.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('presupuestos_internos', function ($join) {
+                $join->on('facturas.PresupuestoInternoID', '=', 'presupuestos_internos.PresupuestoInternoID')
+                    ->whereNull('presupuestos_internos.deleted_at');
+            })
             ->leftJoin('empleados', 'facturas.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->whereNull('facturas.deleted_at');
 
         if ($gerenciaID) {
-            $query->where('facturas.GerenciaID', $gerenciaID);
+            $query->where(
+                $alcance === 'interno' ? 'facturas.PresupuestoInternoID' : 'facturas.GerenciaID',
+                $gerenciaID
+            );
         }
         if ($numMes) $query->where('facturas.Mes', $numMes);
         if ($año)    $query->where('facturas.Anio', (int)$año);
@@ -324,7 +312,7 @@ class FacturasController extends AppBaseController
             'Emisor'             => 'nullable|string|max:300',
             'archivo_xml'        => 'nullable|file|max:5120',
             'archivo_pdf'        => 'nullable|file|mimes:pdf|max:10240',
-            'GerenciaID'         => 'nullable|integer',
+            'GerenciaID'         => 'nullable|string|max:30',
         ]);
 
         try {
@@ -348,8 +336,6 @@ class FacturasController extends AppBaseController
 
             $uuid = trim((string)($request->input('UUID', '')));
             $emisor = trim((string)($request->input('Emisor', '')));
-            $rawG = $request->input('GerenciaID');
-            $gerenciaId = ($rawG === null || $rawG === '') ? null : (int) $rawG;
 
             if ($parsedXml) {
                 if ($uuid === '' && ! empty($parsedXml['uuid'])) {
@@ -385,8 +371,7 @@ class FacturasController extends AppBaseController
 
                 $uuid = trim((string) ($request->input('UUID', '')));
                 $emisor = trim((string) ($request->input('Emisor', '')));
-                $rawG = $request->input('GerenciaID');
-                $gerenciaId = ($rawG === null || $rawG === '') ? null : (int) $rawG;
+                [$alcanceFactura, $alcanceId] = $this->separarAlcance($request->input('GerenciaID'));
                 $mes = $request->input('Mes') ?: null;
                 $anio = $request->input('Anio') ?: null;
                 $nombre = trim((string) ($request->input('Nombre', '')));
@@ -422,7 +407,8 @@ class FacturasController extends AppBaseController
 
                 DB::table('facturas')->insert([
                     'SolicitudID'  => null,
-                    'GerenciaID'   => $gerenciaId,
+                    'GerenciaID'   => $alcanceFactura === 'gerencia' ? $alcanceId : null,
+                    'PresupuestoInternoID' => $alcanceFactura === 'interno' ? $alcanceId : null,
                     'Nombre'       => $nombre,
                     'Costo'        => $costo,
                     'Importe'      => $importe,
@@ -549,6 +535,7 @@ class FacturasController extends AppBaseController
                         DB::table('facturas')->insert([
                             'SolicitudID'  => $factura->SolicitudID,
                             'GerenciaID'   => $factura->GerenciaID,
+                            'PresupuestoInternoID' => $factura->PresupuestoInternoID,
                             'Nombre'       => mb_substr(trim((string)($concepto['nombre'] ?? '')), 0, 300),
                             'Costo'        => is_numeric($concepto['costo'] ?? null) ? (float)$concepto['costo'] : 0,
                             'Importe'      => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
@@ -609,21 +596,42 @@ class FacturasController extends AppBaseController
 
     public function getInsumosPorGerencia(Request $request): JsonResponse
     {
-        $gerenciaID = $request->input('gerenciaID');
+        [$alcance, $gerenciaID] = $this->separarAlcance($request->input('gerenciaID'));
 
-        // Si no viene gerenciaID directamente, intentar extraerlo de una factura (para compatibilidad)
         if (!$gerenciaID) {
             $facturaID = $request->input('facturaID');
             if ($facturaID) {
-                $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('GerenciaID');
+                $factura = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->first(['GerenciaID', 'PresupuestoInternoID']);
+                if ($factura && $factura->PresupuestoInternoID) {
+                    $alcance = 'interno';
+                    $gerenciaID = (int) $factura->PresupuestoInternoID;
+                } elseif ($factura) {
+                    $alcance = 'gerencia';
+                    $gerenciaID = (int) $factura->GerenciaID;
+                }
             }
         }
 
-        if (!$gerenciaID) return response()->json(['data' => []]);
+        if (!$gerenciaID) return response()->json(['data' => [], 'tiene_presupuesto' => false]);
 
-        return response()->json(['data' => DB::table('cortes')
-            ->where('GerenciaID', $gerenciaID)->whereNull('deleted_at')
-            ->distinct()->orderBy('NombreInsumo')->pluck('NombreInsumo')]);
+        $anio = (int) $request->input('anio');
+        if ($anio <= 0 && $request->filled('facturaID')) {
+            $anio = (int) DB::table('facturas')->where('FacturasID', $request->input('facturaID'))->value('Anio');
+        }
+
+        $consulta = DB::table('cortes')
+            ->where($alcance === 'interno' ? 'PresupuestoInternoID' : 'GerenciaID', $gerenciaID)
+            ->whereNull('deleted_at');
+        if ($anio > 0) {
+            $consulta->where('Anio', $anio);
+        }
+
+        $nombres = $consulta->distinct()->orderBy('NombreInsumo')->pluck('NombreInsumo')->values();
+
+        return response()->json([
+            'data' => $nombres,
+            'tiene_presupuesto' => $nombres->isNotEmpty(),
+        ]);
     }
 
     public function actualizarMes(Request $request, $id): JsonResponse
@@ -727,6 +735,15 @@ class FacturasController extends AppBaseController
             return response()->json(['message' => 'Factura no encontrada'], 404);
         }
 
+        $esPdf = ! empty($factura->PdfRuta);
+        $esXml = ! $esPdf && ! empty($factura->ArchivoRuta);
+        if ($esPdf && $request->hasFile('archivo_xml')) {
+            return response()->json(['message' => 'Esta factura se subió como PDF. Solo puedes reemplazar el PDF.'], 422);
+        }
+        if ($esXml && $request->hasFile('archivo_pdf')) {
+            return response()->json(['message' => 'Esta factura se subió como XML. Solo puedes reemplazar el XML.'], 422);
+        }
+
         try {
             DB::transaction(function () use ($request, $id, $factura) {
                 $rutaXml = $factura->ArchivoRuta;
@@ -776,7 +793,7 @@ class FacturasController extends AppBaseController
 
     public function historial(Request $request): JsonResponse
     {
-        $gerenciaID = $request->input('gerenci_id');
+        [$alcanceHistorial, $gerenciaID] = $this->separarAlcance($request->input('gerenci_id'));
 
         $query = DB::table('facturas as f')
             ->select([
@@ -786,8 +803,8 @@ class FacturasController extends AppBaseController
                 's.Requerimientos',
                 's.Presupuesto',
                 's.created_at as solicitud_fecha',
-                'g.NombreGerencia',
-                'g.GerenciaID',
+                DB::raw('COALESCE(p.Nombre, g.NombreGerencia) as NombreGerencia'),
+                DB::raw('COALESCE(f.PresupuestoInternoID, f.GerenciaID) as GerenciaID'),
                 'f.FacturasID',
                 'f.Nombre as FacturaNombre',
                 'f.Costo',
@@ -802,7 +819,11 @@ class FacturasController extends AppBaseController
                 'c.CostoTotal as CostoAnual',
             ])
             ->join('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
-            ->join('gerencia as g', 's.GerenciaID', '=', 'g.GerenciaID')
+            ->leftJoin('gerencia as g', 'f.GerenciaID', '=', 'g.GerenciaID')
+            ->leftJoin('presupuestos_internos as p', function ($join) {
+                $join->on('f.PresupuestoInternoID', '=', 'p.PresupuestoInternoID')
+                    ->whereNull('p.deleted_at');
+            })
             ->leftJoin(
                 DB::raw('(SELECT NombreInsumo, MIN(Costo) as Costo, MIN(CostoTotal) as CostoTotal FROM cortes WHERE deleted_at IS NULL GROUP BY NombreInsumo) as c'),
                 fn($j) => $j->on(
@@ -813,7 +834,9 @@ class FacturasController extends AppBaseController
             )
             ->whereNull('f.deleted_at')->whereNull('s.deleted_at');
 
-        if ($gerenciaID) $query->where('s.GerenciaID', $gerenciaID);
+        if ($gerenciaID) {
+            $query->where($alcanceHistorial === 'interno' ? 'f.PresupuestoInternoID' : 'f.GerenciaID', $gerenciaID);
+        }
 
         $rows        = $query->orderBy('s.SolicitudID', 'desc')->orderBy('f.Mes', 'asc')->cursor();
         $solicitudes = [];
@@ -869,38 +892,42 @@ class FacturasController extends AppBaseController
 
     private function comparativaPayload(Request $request): array
     {
-        $gerenciaId = $request->input('gerencia_id');
+        [$alcanceFiltro, $gerenciaId] = $this->separarAlcance($request->input('gerencia_id'));
         $mes        = $request->input('mes');
         $anio       = $request->input('anio');
         $insumo     = trim((string)$request->input('insumo', ''));
 
         [$mesIntCortes, $mesNombreCortes] = $this->resolveMesCortes($mes);
-        $gerenciaMap = DB::table('gerencia')->select('GerenciaID', 'NombreGerencia')->get()->keyBy('GerenciaID');
+        $nombresGerencia = DB::table('gerencia')->pluck('NombreGerencia', 'GerenciaID');
+        $nombresInterno = DB::table('presupuestos_internos')->whereNull('deleted_at')->pluck('Nombre', 'PresupuestoInternoID');
 
         $facturas = DB::table('facturas as f')
             ->leftJoin('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
             ->whereNull('f.deleted_at')
             ->where(fn($q) => $q->whereNull('s.deleted_at')->orWhereNull('f.SolicitudID'))
             ->whereNotNull('f.InsumoNombre')->where('f.InsumoNombre', '<>', '')
-            ->whereNotNull('f.GerenciaID')
-            ->when($gerenciaId, fn($q) => $q->where('f.GerenciaID', (int)$gerenciaId))
+            ->where(fn($q) => $q->whereNotNull('f.GerenciaID')->orWhereNotNull('f.PresupuestoInternoID'))
+            ->when($gerenciaId && $alcanceFiltro === 'gerencia', fn($q) => $q->where('f.GerenciaID', $gerenciaId))
+            ->when($gerenciaId && $alcanceFiltro === 'interno', fn($q) => $q->where('f.PresupuestoInternoID', $gerenciaId))
             ->when($mes, fn($q) => $q->where('f.Mes', (int)$mes))
             ->when($anio, fn($q) => $q->where('f.Anio', (int)$anio))
             ->when($insumo !== '', fn($q) => $q->where('f.InsumoNombre', 'like', "%{$insumo}%"))
             ->select([
                 'f.InsumoNombre',
                 'f.GerenciaID',
+                'f.PresupuestoInternoID',
                 'f.Mes',
                 DB::raw('SUM(COALESCE(f.Costo, f.Importe, 0)) as TotalFacturado'),
             ])
-            ->groupBy('f.InsumoNombre', 'f.GerenciaID', 'f.Mes')
+            ->groupBy('f.InsumoNombre', 'f.GerenciaID', 'f.PresupuestoInternoID', 'f.Mes')
             ->get();
 
         $presupuestos = DB::table('cortes')
             ->whereNull('deleted_at')
             ->whereNotNull('NombreInsumo')->where('NombreInsumo', '<>', '')
-            ->whereNotNull('GerenciaID')
-            ->when($gerenciaId, fn($q) => $q->where('GerenciaID', (int)$gerenciaId))
+            ->where(fn($q) => $q->whereNotNull('GerenciaID')->orWhereNotNull('PresupuestoInternoID'))
+            ->when($gerenciaId && $alcanceFiltro === 'gerencia', fn($q) => $q->where('GerenciaID', $gerenciaId))
+            ->when($gerenciaId && $alcanceFiltro === 'interno', fn($q) => $q->where('PresupuestoInternoID', $gerenciaId))
             ->when($mesNombreCortes !== null, function ($q) use ($mesNombreCortes, $mesIntCortes) {
                 $q->where(function ($w) use ($mesNombreCortes, $mesIntCortes) {
                     $w->where('Mes', $mesNombreCortes);
@@ -912,20 +939,22 @@ class FacturasController extends AppBaseController
             ->select([
                 'NombreInsumo',
                 'GerenciaID',
+                'PresupuestoInternoID',
                 'Mes',
                 DB::raw('SUM(COALESCE(CostoTotal, Costo, 0)) as TotalPresupuesto'),
             ])
-            ->groupBy('NombreInsumo', 'GerenciaID', 'Mes')
+            ->groupBy('NombreInsumo', 'GerenciaID', 'PresupuestoInternoID', 'Mes')
             ->get();
 
         $items = [];
         foreach ($presupuestos as $row) {
             $mesInt = $this->mesToInt($row->Mes);
             if (!$mesInt) continue;
-            $key = $this->comparativaKey((int)$row->GerenciaID, (string)$row->NombreInsumo, $mesInt);
+            $clave = $this->claveAlcance($row->GerenciaID, $row->PresupuestoInternoID);
+            $key = $this->comparativaKey($clave, (string)$row->NombreInsumo, $mesInt);
             $items[$key] = $items[$key] ?? [
-                'gerencia_id' => (int)$row->GerenciaID,
-                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Gerencia #' . $row->GerenciaID,
+                'gerencia_id' => $clave,
+                'gerencia' => $this->nombreAlcance($clave, $nombresGerencia, $nombresInterno),
                 'insumo' => (string)$row->NombreInsumo,
                 'mes' => $mesInt,
                 'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? (string)$row->Mes,
@@ -938,10 +967,11 @@ class FacturasController extends AppBaseController
         foreach ($facturas as $row) {
             $mesInt = $this->mesToInt($row->Mes);
             if (!$mesInt) continue;
-            $key = $this->comparativaKey((int)$row->GerenciaID, (string)$row->InsumoNombre, $mesInt);
+            $clave = $this->claveAlcance($row->GerenciaID, $row->PresupuestoInternoID);
+            $key = $this->comparativaKey($clave, (string)$row->InsumoNombre, $mesInt);
             $items[$key] = $items[$key] ?? [
-                'gerencia_id' => (int)$row->GerenciaID,
-                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Gerencia #' . $row->GerenciaID,
+                'gerencia_id' => $clave,
+                'gerencia' => $this->nombreAlcance($clave, $nombresGerencia, $nombresInterno),
                 'insumo' => (string)$row->InsumoNombre,
                 'mes' => $mesInt,
                 'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? (string)$row->Mes,
@@ -1088,9 +1118,59 @@ class FacturasController extends AppBaseController
         return null;
     }
 
-    private function comparativaKey(int $gerenciaId, string $insumo, int $mes): string
+    private function comparativaKey(string $clave, string $insumo, int $mes): string
     {
-        return $gerenciaId . '|' . mb_strtolower(trim($insumo)) . '|' . $mes;
+        return $clave . '|' . mb_strtolower(trim($insumo)) . '|' . $mes;
+    }
+
+    private function opcionesFactura(): array
+    {
+        $internos = PresupuestoInterno::visiblesPara(auth()->id());
+
+        $lista = ['' => 'Todos'];
+        $modal = collect();
+        foreach ($internos as $presupuesto) {
+            $clave = 'p-'.$presupuesto->PresupuestoInternoID;
+            $lista[$clave] = $presupuesto->Nombre;
+            $modal->push((object) ['id' => $clave, 'nombre' => $presupuesto->Nombre, 'grupo' => 'interno']);
+        }
+
+        return [$lista, $modal];
+    }
+
+    private function separarAlcance($valor): array
+    {
+        $valor = (string) $valor;
+        if ($valor === 'interno' || str_starts_with($valor, 'p-')) {
+            return ['interno', str_starts_with($valor, 'p-') ? (int) substr($valor, 2) : 0];
+        }
+        if (str_starts_with($valor, 'g-')) {
+            return ['gerencia', (int) substr($valor, 2)];
+        }
+
+        return ['gerencia', (int) $valor];
+    }
+
+    private function claveAlcance($gerenciaId, $presupuestoId): string
+    {
+        if ($presupuestoId) {
+            return 'p-'.(int) $presupuestoId;
+        }
+
+        return 'g-'.(int) $gerenciaId;
+    }
+
+    private function nombreAlcance(string $clave, $nombresGerencia, $nombresInterno): string
+    {
+        if (str_starts_with($clave, 'p-')) {
+            $id = (int) substr($clave, 2);
+
+            return (string) ($nombresInterno[$id] ?? ('Presupuesto interno #'.$id));
+        }
+
+        $id = (int) substr($clave, 2);
+
+        return (string) ($nombresGerencia[$id] ?? ('Gerencia #'.$id));
     }
 
     public function create()

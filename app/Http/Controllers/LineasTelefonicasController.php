@@ -68,18 +68,18 @@ class LineasTelefonicasController extends AppBaseController
                 })
                 ->addColumn('estado_disponibilidad', function ($row) {
                     if ($row->Disponible == 1) {
-                        return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
+                        return '<span class="erp-chip erp-chip--ok">Disponible</span>';
                     }
                     if ($row->Disponible == 0 && $row->tipo_asignacion === 'REFERENCIADO') {
-                        return '<span class="badge badge-warning" style="background-color: #fd7e14; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada (Referenciado)</span>';
+                        return '<span class="erp-chip erp-chip--aviso">Asignada (Referenciado)</span>';
                     }
-                    return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
+                    return '<span class="erp-chip erp-chip--alerta">Asignada</span>';
                 })
                 ->addColumn('estado_activo', function ($row) {
                     if ($row->Activo == 1) {
-                        return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
+                        return '<span class="erp-chip erp-chip--ok">Activo</span>';
                     } else {
-                        return '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
+                        return '<span class="erp-chip erp-chip--neutro">Inactivo</span>';
                     }
                 })
                 ->editColumn('FechaFianza', function ($row) {
@@ -194,7 +194,7 @@ class LineasTelefonicasController extends AppBaseController
 
         try {
             $lineasTelefonicas = $this->lineasTelefonicasRepository->create($input);
-            Flash::success('Linea telefonica guardada correctamente');
+            Flash::success('Línea telefónica guardada.');
         } catch (QueryException $e) {
             if ($e->getCode() == 23000) {
                 session()->flash('swal', [
@@ -227,7 +227,7 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
@@ -247,7 +247,7 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
@@ -268,7 +268,7 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
@@ -431,14 +431,14 @@ class LineasTelefonicasController extends AppBaseController
         $lineasTelefonicas = $this->lineasTelefonicasRepository->find($id);
 
         if (empty($lineasTelefonicas)) {
-            Flash::error('Lineas Telefonicas not found');
+            Flash::error('Línea telefónica no encontrada');
 
             return redirect(route('lineasTelefonicas.index'));
         }
 
         $this->lineasTelefonicasRepository->delete($id);
 
-        Flash::success('Lineas Telefonicas deleted successfully.');
+        Flash::success('Línea telefónica borrada.');
 
         return redirect(route('lineasTelefonicas.index'));
     }

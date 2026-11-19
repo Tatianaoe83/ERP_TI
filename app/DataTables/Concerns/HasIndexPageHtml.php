@@ -12,7 +12,7 @@ trait HasIndexPageHtml
             ->setTableId($tableId)
             ->columns($this->getColumns())
             ->minifiedAjax()
-            ->dom($options['dom'] ?? "<'index-page__dt-toolbar'Bf>t<'index-page__dt-footer'ip>")
+            ->dom($options['dom'] ?? "<'index-page__dt-toolbar'Bf>t<'index-page__dt-footer'<'index-page__dt-meta'li>p>")
             ->orderBy($options['orderColumn'] ?? 1, $options['orderDir'] ?? 'asc')
             ->buttons($this->indexPageButtons())
             ->parameters($this->indexPageParameters($options['parameters'] ?? []));
@@ -35,11 +35,16 @@ trait HasIndexPageHtml
             'processing' => true,
             'serverSide' => true,
             'responsive' => true,
+            'autoWidth' => false,
             // Si el script de init corre dos veces (pushes duplicados, navegación
             // sin recarga, etc.) DataTables lanza "Cannot reinitialise". Con
             // retrieve devuelve la instancia existente en vez de tronar.
             'retrieve' => true,
+            'paging' => true,
+            'pagingType' => 'simple_numbers',
             'pageLength' => 10,
+            'lengthChange' => true,
+            'lengthMenu' => [[10, 15, 25, 50], [10, 15, 25, 50]],
             'searching' => true,
             'language' => [
                 'sProcessing' => 'Procesando...',

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<x-crud-page title="Nuevo departamento" icon="fa-tags" subtitle="Completa los datos" :back-url="route('departamentos.index')">
+<x-crud-page title="Nueva área" icon="fa-tags" subtitle="Completa los datos" :back-url="route('departamentos.index')">
     @include('adminlte-templates::common.errors')
     {!! Form::open(['route' => 'departamentos.store']) !!}
 

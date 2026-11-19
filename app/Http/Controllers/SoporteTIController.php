@@ -11,7 +11,13 @@ use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Tickets;
 use App\Models\TicketMantenimiento;
+use App\Models\CargoMovimiento;
+use App\Models\SolicitudMovimiento;
+use App\Models\SolicitudMovimientoArchivo;
+use App\Models\SolicitudMovimientoLinea;
+use App\Services\MovimientoErpService;
 use App\Services\SolicitudAprobacionEmailService;
+use App\Services\SolicitudFlujoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,11 +36,11 @@ class SoporteTIController extends Controller
     {
         $query = $request->get('query');
 
-        $resultados = DB::table('empleados')
+        $resultados = Empleados::query()
+            ->fisicosActivos()
             ->select('EmpleadoID', 'NombreEmpleado')
             ->where('NombreEmpleado', 'like', '%' . $query . '%')
-            ->where('Estado', '1')
-            ->groupBy('EmpleadoID', 'NombreEmpleado')
+            ->orderBy('NombreEmpleado')
             ->limit(5)
             ->get();
 
@@ -50,9 +56,14 @@ class SoporteTIController extends Controller
             return response()->json(['error' => 'Correo requerido'], 400);
         }
 
-        $empleado = Empleados::where('Correo', $correo)->where('Estado', '1')->first();
+        $empleado = Empleados::query()->fisicosActivos()->where('Correo', $correo)->first();
 
         if (!$empleado) {
+            $otroTipo = Empleados::where('Correo', $correo)->where('Estado', 1)->where('tipo_persona', '!=', 'FISICA')->exists();
+            if ($otroTipo) {
+                return response()->json(['error' => 'Solo se puede dar de alta a una persona física activa.'], 422);
+            }
+
             return response()->json(['error' => 'No se encontró correo, contacta a soporte'], 404);
         }
 
@@ -72,16 +83,63 @@ class SoporteTIController extends Controller
             $response['NombreDepartamento'] = $empleado->puestos->departamentos->NombreDepartamento ?? null;
         }
 
+        if ($type === 'Movimiento') {
+            $empleado->load(['puestos', 'obras']);
+            $puesto = (string) ($empleado->puestos->NombrePuesto ?? '');
+            if (!app(MovimientoErpService::class)->puedeSolicitar($puesto)) {
+                return response()->json([
+                    'error' => 'Esta solicitud solo la puede levantar un auxiliar de compras, un residente de compras o un residente administrativo.',
+                ], 422);
+            }
+            $response['NombrePuesto'] = $puesto;
+            $response['ObraID'] = $empleado->ObraID;
+            $response['NombreObra'] = $empleado->obras->NombreObra ?? null;
+        }
+
         if ($type === 'Solicitud') {
+            $flujo = app(SolicitudFlujoService::class);
+            $jefe = $flujo->jefeInmediato($empleado);
+            $destino = $flujo->destinoTrasSupervisor($empleado);
+
             $response['GerenciaID'] = $empleado->puestos->departamentos->gerencia->GerenciaID ?? null;
             $response['NombreGerencia'] = $empleado->puestos->departamentos->gerencia->NombreGerencia ?? null;
             $response['PuestoID'] = $empleado->puestos->PuestoID ?? null;
             $response['NombrePuesto'] = $empleado->puestos->NombrePuesto ?? null;
             $response['ObraID'] = $empleado->obras->ObraID ?? null;
             $response['NombreObra'] = $empleado->obras->NombreObra ?? null;
+            $response['JefeDirectoID'] = $jefe->EmpleadoID ?? null;
+            $response['NombreJefe'] = $jefe->NombreEmpleado ?? null;
+            $response['DestinoID'] = $destino['empleado']->EmpleadoID ?? null;
+            $response['DestinoNombre'] = $destino['empleado']->NombreEmpleado ?? null;
+            $response['DestinoRol'] = $destino['rol'];
+            $response['DestinoDetalle'] = $destino['detalle'];
         }
 
         return response()->json($response);
+    }
+
+    public function destinoDeJefe(Request $request): JsonResponse
+    {
+        $persona = Empleados::query()->fisicosActivos()->find((int) $request->input('empleado_id'));
+        if (!$persona) {
+            return response()->json(['error' => 'El jefe debe ser una persona física activa.'], 422);
+        }
+
+        $flujo = app(SolicitudFlujoService::class);
+        $solicitante = Empleados::query()->fisicosActivos()->find((int) $request->input('solicitante_id'));
+        $destino = $solicitante
+            ? $flujo->destinoDespuesDelSupervisor($solicitante, $persona)
+            : $flujo->destinoVisible($persona);
+
+        $destinoId = (int) ($destino['empleado']->EmpleadoID ?? 0);
+
+        return response()->json([
+            'DestinoID' => $destinoId ?: null,
+            'DestinoNombre' => $destino['empleado']->NombreEmpleado ?? null,
+            'DestinoRol' => $destino['rol'],
+            'DestinoDetalle' => $destino['detalle'],
+            'Solo' => $destinoId > 0 && $destinoId === (int) $persona->EmpleadoID,
+        ]);
     }
 
     public function getEmpleadoInfo(Request $request): JsonResponse
@@ -156,7 +214,7 @@ public function crearTickets(Request $request)
     {
         $type = $request->input('type');
 
-        if (!in_array($type, ['Ticket', 'Solicitud', 'Mantenimiento'])) {
+        if (!in_array($type, ['Ticket', 'Solicitud', 'Mantenimiento', 'Movimiento'])) {
             \Log::warning('Tipo no válido: ' . $type);
             return redirect()->back()->with(['error' => 'Tipo no válido'], 400);
         }
@@ -169,8 +227,8 @@ public function crearTickets(Request $request)
              $correo = $request->input('Correo');
              if (empty($correo)) return redirect()->back()->with('error', 'El correo electrónico es requerido');
              
-             $empleado = Empleados::where('Correo', $correo)->where('Estado', '1')->first();
-             if (!$empleado) return redirect()->back()->with('error', 'No se encontró el empleado');
+             $empleado = Empleados::query()->fisicosActivos()->where('Correo', $correo)->first();
+             if (!$empleado) return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
              
              $descripcion = $request->input('Descripcion');
              if (empty($descripcion)) return redirect()->back()->with('error', 'La descripción es requerida');
@@ -217,9 +275,9 @@ public function crearTickets(Request $request)
                 'Descripcion'       => 'required|string',
             ]);
 
-            $empleado = Empleados::where('Correo', $data['Correo'])->where('Estado', '1')->first();
+            $empleado = Empleados::query()->fisicosActivos()->where('Correo', $data['Correo'])->first();
             if (!$empleado) {
-                return redirect()->back()->with('error', 'No se encontró el empleado con ese correo');
+                return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
             }
 
             $files = $request->file('imagen');
@@ -267,30 +325,33 @@ public function crearTickets(Request $request)
                 'SupervisorID' => 'nullable', 
             ]);
 
-            $empleadoSolicitante = Empleados::where('Correo', $data['Correo'])->first();
+            $empleadoSolicitante = Empleados::query()->fisicosActivos()->where('Correo', $data['Correo'])->first();
             if (!$empleadoSolicitante) {
-                return redirect()->back()->with('error', 'Empleado solicitante no encontrado');
+                return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
             }
 
-            // 1. Detectar Supervisor
+            $flujo = app(SolicitudFlujoService::class);
+
+            // El jefe inmediato viene propuesto; si la persona lo cambia, se usa el que eligió.
+            // Si lo deja vacío, el visto bueno de supervisor se aprueba solo.
             $supervisor = null;
             if (!empty($data['SupervisorID']) && is_numeric($data['SupervisorID']) && $data['SupervisorID'] > 0) {
-                $supervisor = Empleados::find($data['SupervisorID']);
+                $supervisor = Empleados::query()->fisicosActivos()->find($data['SupervisorID']);
+                if (!$supervisor) {
+                    return redirect()->back()->with('error', 'El jefe inmediato debe ser una persona física activa.');
+                }
             }
 
-            // 2. Definir Gerencia
-            $gerencia = null;
-            if ($supervisor) {
-                $gerencia = $supervisor->puestos?->departamentos?->gerencia;
-            } else {
-                $gerencia = $empleadoSolicitante->puestos?->departamentos?->gerencia;
-            }
+            $gerencia = $empleadoSolicitante->puestos?->departamentos?->gerencia;
+            // Cambiar al supervisor no cambia la gerencia de la compra.
+            // Solo si esa persona ya es el gerente o el director, la solicitud se queda con ella.
+            $destino = $flujo->destinoDespuesDelSupervisor($empleadoSolicitante, $supervisor);
+            $gerente = $destino['empleado'];
+            $gerencia = $gerencia ?: $destino['gerencia'];
 
-            if (!$gerencia || !$gerencia->NombreGerente) {
-                return redirect()->back()->with('error', 'No se pudo determinar la Gerencia o el Gerente');
+            if (!$gerencia || !$gerente) {
+                return redirect()->back()->with('error', $destino['detalle'] ?: 'No se pudo determinar a quién se envía después del visto bueno del supervisor.');
             }
-
-            $gerente = Empleados::where('NombreEmpleado', $gerencia->NombreGerente)->first();
             
             // Configurar Admin
             $admin = Empleados::where('NombreEmpleado', 'BAAS SANCHEZ JOSE ALBERTO')->first();
@@ -456,6 +517,104 @@ public function crearTickets(Request $request)
             }
         }
 
+        if ($type === 'Movimiento') {
+            return $this->guardarMovimientoErp($request);
+        }
+
         return redirect()->back()->with(['error' => 'Error inesperado'], 500);
+    }
+
+    private function guardarMovimientoErp(Request $request)
+    {
+        $data = $request->validate([
+            'Correo' => 'required|email',
+            'ObraID' => 'required|integer',
+            'Folio' => 'nullable|string|max:40',
+            'Justificacion' => 'required|string|max:5000',
+            'lineas' => 'required|array|min:1|max:23',
+            'lineas.*.CargoID' => 'required|integer',
+            'lineas.*.CodigoInsumo' => 'required|string|max:40',
+            'lineas.*.Descripcion' => 'required|string|max:180',
+            'lineas.*.Partida' => 'required|string|max:120',
+            'lineas.*.Cantidad' => 'required|numeric',
+            'lineas.*.Precio' => 'required|numeric',
+            'lineas.*.Justificacion' => 'required|string|max:500',
+            'VoBoEmpleadoID' => 'required|integer',
+        ]);
+
+        $solicitante = Empleados::query()->fisicosActivos()->with('puestos')->where('Correo', $data['Correo'])->first();
+        if (!$solicitante) {
+            return redirect()->back()->with('error', 'Solo se puede dar de alta a una persona física activa.');
+        }
+
+        $servicio = app(MovimientoErpService::class);
+        if (!$servicio->puedeSolicitar($solicitante->puestos->NombrePuesto ?? '')) {
+            return redirect()->back()->with('error', 'Esta solicitud solo la puede levantar un auxiliar de compras, un residente de compras o un residente administrativo.');
+        }
+
+        $folio = trim((string) ($data['Folio'] ?? ''));
+        if ($folio !== '' && SolicitudMovimiento::query()->where('Folio', $folio)->exists()) {
+            return redirect()->back()->with('error', 'Ese folio ya está usado en otra solicitud.')->withInput();
+        }
+
+        $cargos = CargoMovimiento::query()->whereIn('CargoID', collect($data['lineas'])->pluck('CargoID'))->get()->keyBy('CargoID');
+        if ($cargos->count() !== collect($data['lineas'])->pluck('CargoID')->unique()->count()) {
+            return redirect()->back()->with('error', 'Hay un cargo que no es válido.');
+        }
+
+        $primerCargo = $cargos->get((int) $data['lineas'][0]['CargoID']);
+        $roles = $cargos->map(fn ($cargo) => $cargo->etiquetaAutoriza())->unique()->implode(', ');
+        $firmante = Empleados::query()->fisicosActivos()->find((int) $data['VoBoEmpleadoID']);
+        if (!$firmante) {
+            return redirect()->back()->with('error', 'El visto bueno se envía a una persona física activa.')->withInput();
+        }
+        if (empty($firmante->Correo)) {
+            return redirect()->back()->with('error', 'Esa persona no tiene correo para enviarle la liga de firma.')->withInput();
+        }
+
+        $solicitud = DB::transaction(function () use ($data, $solicitante, $primerCargo, $roles, $firmante, $folio, $cargos, $servicio) {
+            $solicitud = SolicitudMovimiento::create([
+                'EmpleadoID' => $solicitante->EmpleadoID,
+                'ObraID' => $data['ObraID'],
+                'CargoID' => $primerCargo->CargoID,
+                'ResidenteControlID' => null,
+                'AutorizadorID' => $firmante->EmpleadoID,
+                'AutorizadorRol' => $roles,
+                'Justificacion' => $data['Justificacion'],
+                'Folio' => $folio !== '' ? $folio : null,
+                'Estatus' => \App\Models\SolicitudMovimiento::PENDIENTE,
+            ]);
+
+            foreach (array_values($data['lineas']) as $indice => $linea) {
+                $cantidad = (float) $linea['Cantidad'];
+                $precio = (float) $linea['Precio'];
+                SolicitudMovimientoLinea::create([
+                    'SolicitudMovimientoID' => $solicitud->SolicitudMovimientoID,
+                    'Orden' => $indice + 1,
+                    'CargoID' => $cargos->get((int) $linea['CargoID'])->CargoID,
+                    'CodigoInsumo' => $linea['CodigoInsumo'],
+                    'Descripcion' => $linea['Descripcion'],
+                    'Partida' => $linea['Partida'],
+                    'Cantidad' => $cantidad,
+                    'Precio' => $precio,
+                    'Importe' => round($cantidad * $precio, 2),
+                    'Justificacion' => $linea['Justificacion'],
+                ]);
+            }
+
+            $servicio->abrirFirma($solicitud, $firmante);
+
+            return $solicitud;
+        });
+
+        $liga = $solicitud->pasos()->where('stage', 'vobo')->first()?->token;
+        $enviada = $liga ? $servicio->enviarLigaFirma($solicitud, $firmante, $liga) : false;
+
+        return redirect()->back()->with([
+            'success' => $enviada
+                ? 'La solicitud se envió. El correo de visto bueno se mandó solo a ' . $firmante->NombreEmpleado . '.'
+                : 'La solicitud se guardó, pero no se pudo enviar el correo a ' . $firmante->NombreEmpleado . '. Se puede reenviar desde el detalle.',
+            'tipo' => 'Movimiento',
+        ]);
     }
 }

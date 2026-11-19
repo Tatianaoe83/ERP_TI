@@ -120,6 +120,18 @@ function mantenimientoModal(soloPanel = false) {
                 solicitante: datos.solicitante || '',
                 correo: datos.correo || '',
                 area: datos.area || '',
+                puesto: datos.puesto || '',
+                departamento: datos.departamento || '',
+                gerencia: datos.gerencia || '',
+                obra: datos.obra || '',
+                direccion: datos.direccion || '',
+                unidad: datos.unidad || '',
+                division: datos.division || '',
+                centro_costo: datos.centro_costo || '',
+                jefe: datos.jefe || '',
+                telefono: datos.telefono || '',
+                tipo_persona: datos.tipo_persona || '',
+                estado_empleado: datos.estado_empleado || '',
                 fecha: datos.fecha || '',
                 estatus: datos.estatus || 'Pendiente',
                 imagen: datos.imagen || '',
@@ -140,6 +152,7 @@ function mantenimientoModal(soloPanel = false) {
 
             this.cargarMensajes();
             this.iniciarVerificacionMensajes();
+            if (!datos.completo) this.cargarDatosEmpleado(id);
             this.$nextTick(() => {
                 if (!this.tinyMCEInstance) this.inicializarTinyMCE();
                 else this.actualizarEstadoEditor();
@@ -191,6 +204,19 @@ function mantenimientoModal(soloPanel = false) {
                     solicitante: t.solicitante,
                     correo: t.correo,
                     area: t.area,
+                    puesto: t.puesto,
+                    departamento: t.departamento,
+                    gerencia: t.gerencia,
+                    obra: t.obra,
+                    direccion: t.direccion,
+                    unidad: t.unidad,
+                    division: t.division,
+                    centro_costo: t.centro_costo,
+                    jefe: t.jefe,
+                    telefono: t.telefono,
+                    tipo_persona: t.tipo_persona,
+                    estado_empleado: t.estado_empleado,
+                    completo: true,
                     fecha: this.formatearFechaIso(t.created_at),
                     estatus: t.estatus,
                     imagen: t.imagen,
@@ -202,6 +228,22 @@ function mantenimientoModal(soloPanel = false) {
             } catch (e) {
                 return false;
             }
+        },
+
+        async cargarDatosEmpleado(id) {
+            try {
+                const response = await fetch(`/tickets-mantenimiento/${id}`, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data.success || !data.ticket || String(this.selected?.id) !== String(id)) return;
+                const t = data.ticket;
+                ['puesto', 'departamento', 'gerencia', 'obra', 'direccion', 'unidad', 'division', 'centro_costo', 'jefe', 'telefono', 'tipo_persona', 'estado_empleado'].forEach((campo) => {
+                    this.selected[campo] = t[campo] || '';
+                });
+                if (!this.selected.correo && t.correo) this.selected.correo = t.correo;
+            } catch (e) {}
         },
 
         /** El tablero pinta la fecha ya formateada; desde JSON llega ISO8601. */

@@ -28,38 +28,84 @@
         </div>
     </div>
 
-    <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-[#2A2F3A]">
+    @php
+        $chartTareas = [
+            'carga' => [
+                ['nombre' => 'Pendientes', 'total' => (int) $kpis['pendientes']],
+                ['nombre' => 'De hoy', 'total' => (int) $kpis['hoy']],
+                ['nombre' => 'Críticas', 'total' => (int) $kpis['criticas']],
+                ['nombre' => 'Completadas', 'total' => (int) $kpis['completadas_mes']],
+                ['nombre' => 'Sin fecha', 'total' => (int) $kpis['sin_fecha']],
+                ['nombre' => 'Métricas activas', 'total' => (int) $kpis['metricas_activas']],
+            ],
+            'personal' => collect($rendimiento)->map(fn ($row) => [
+                'nombre' => $row['empleado']->NombreEmpleado ?? 'Sin asignar',
+                'pendientes' => (int) $row['pendientes'],
+                'criticas' => (int) $row['criticas'],
+                'completadas' => (int) $row['completadas_mes'],
+            ])->values()->all(),
+            'metricas' => [
+                'Activas' => $metricas->where('activo', true)->count(),
+                'Inactivas' => $metricas->where('activo', false)->count(),
+            ],
+        ];
+    @endphp
+    <script id="productividad-tareas-json" type="application/json">{!! json_encode($chartTareas, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) !!}</script>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold m-0 mb-2">Carga de tareas</h3>
+            <div class="relative h-[260px]"><canvas id="chartTareasCarga" role="img" aria-label="Carga de tareas"></canvas></div>
+        </div>
+        <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold m-0 mb-2">Métricas mensuales</h3>
+            <div class="relative h-[260px]"><canvas id="chartTareasMetricas" role="img" aria-label="Métricas activas e inactivas"></canvas></div>
+        </div>
+    </div>
+    <div class="rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A]">
+        <h3 class="text-sm font-semibold m-0 mb-1">Carga por persona</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Pendientes, críticas y completadas del mes. El detalle sigue en la tabla.</p>
+        <div class="relative h-[280px]"><canvas id="chartTareasPersonal" role="img" aria-label="Carga de tareas por persona"></canvas></div>
+    </div>
+
+    <div class="index-page__card">
+        <div class="px-4 py-3">
             <h3 class="text-sm font-semibold m-0">Rendimiento por personal de TI</h3>
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-0 mt-1">Carga actual de tareas asignadas a usuarios activos del área.</p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table index-table--sin-accion w-full">
                 <thead>
-                    <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-                        <th class="px-4 py-2">Usuario</th>
-                        <th class="px-4 py-2">Pendientes</th>
-                        <th class="px-4 py-2">De hoy</th>
-                        <th class="px-4 py-2">Críticas</th>
-                        <th class="px-4 py-2">Sin fecha</th>
-                        <th class="px-4 py-2">Completadas (mes)</th>
-                        <th class="px-4 py-2">Total</th>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Pendientes</th>
+                        <th>De hoy</th>
+                        <th>Críticas</th>
+                        <th>Sin fecha</th>
+                        <th>Completadas (mes)</th>
+                        <th>Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($rendimiento as $row)
-                    <tr class="border-t border-gray-100 dark:border-[#2A2F3A]">
-                        <td class="px-4 py-2 font-medium">{{ $row['empleado']->NombreEmpleado ?? 'Sin asignar (métricas)' }}</td>
-                        <td class="px-4 py-2">{{ $row['pendientes'] }}</td>
-                        <td class="px-4 py-2">{{ $row['hoy'] }}</td>
-                        <td class="px-4 py-2 {{ $row['criticas'] > 0 ? 'text-red-500 font-semibold' : '' }}">{{ $row['criticas'] }}</td>
-                        <td class="px-4 py-2">{{ $row['sin_fecha'] }}</td>
-                        <td class="px-4 py-2">{{ $row['completadas_mes'] }}</td>
-                        <td class="px-4 py-2">{{ $row['total'] }}</td>
+                    <tr>
+                        <td>{{ $row['empleado']->NombreEmpleado ?? 'Sin asignar (métricas)' }}</td>
+                        <td><span class="erp-chip erp-chip--aviso">{{ $row['pendientes'] }}</span></td>
+                        <td>{{ $row['hoy'] }}</td>
+                        <td>
+                            @if($row['criticas'] > 0)
+                                <span class="erp-chip erp-chip--alerta">{{ $row['criticas'] }}</span>
+                            @else
+                                <span class="erp-chip erp-chip--neutro">0</span>
+                            @endif
+                        </td>
+                        <td>{{ $row['sin_fecha'] }}</td>
+                        <td><span class="erp-chip erp-chip--ok">{{ $row['completadas_mes'] }}</span></td>
+                        <td>{{ $row['total'] }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">Aún no hay tareas asignadas al personal de TI.</td>
+                        <td colspan="7">Aún no hay tareas asignadas al personal de TI.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -67,8 +113,8 @@
         </div>
     </div>
 
-    <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-[#2A2F3A] flex flex-wrap items-center justify-between gap-2">
+    <div class="index-page__card">
+        <div class="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
             <div>
                 <h3 class="text-sm font-semibold m-0">Métricas mensuales</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-0 mt-1">Tareas que se crean solas una vez al mes. El detalle de cumplimiento se ve aquí, no en Tareas.</p>
@@ -84,43 +130,43 @@
             </div>
             @endcan
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table w-full @cannot('tickets.gestionar-tareas') index-table--sin-accion @endcannot">
                 <thead>
-                    <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-                        <th class="px-4 py-2">Nombre</th>
-                        <th class="px-4 py-2">Día de creación</th>
-                        <th class="px-4 py-2">Estado</th>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Día de creación</th>
+                        <th>Estado</th>
                         @can('tickets.ver-creador-tarea')
-                        <th class="px-4 py-2">Creada por</th>
+                        <th>Creada por</th>
                         @endcan
                         @can('tickets.gestionar-tareas')
-                        <th class="px-4 py-2">Acciones</th>
+                        <th>Acciones</th>
                         @endcan
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($metricas as $metrica)
-                    <tr class="border-t border-gray-100 dark:border-[#2A2F3A]" wire:key="prod-metrica-{{ $metrica->id }}">
-                        <td class="px-4 py-2">
-                            <div class="font-medium">{{ $metrica->nombre }}</div>
+                    <tr wire:key="prod-metrica-{{ $metrica->id }}">
+                        <td>
+                            <div>{{ $metrica->nombre }}</div>
                             @if($metrica->descripcion)
                             <div class="text-xs text-gray-500">{{ Str::limit($metrica->descripcion, 80) }}</div>
                             @endif
                         </td>
-                        <td class="px-4 py-2">Día <strong>{{ $metrica->dia_compromiso }}</strong></td>
-                        <td class="px-4 py-2">
+                        <td>Día {{ $metrica->dia_compromiso }}</td>
+                        <td>
                             @if($metrica->activo)
-                            <span class="tarea-badge tarea-badge--ok">Activa</span>
+                            <span class="erp-chip erp-chip--ok">Activa</span>
                             @else
-                            <span class="tarea-badge tarea-badge--muted">Inactiva</span>
+                            <span class="erp-chip erp-chip--neutro">Inactiva</span>
                             @endif
                         </td>
                         @can('tickets.ver-creador-tarea')
-                        <td class="px-4 py-2">{{ optional($metrica->creador)->name ?: (optional($metrica->creador)->username ?: 'Sin registro') }}</td>
+                        <td>{{ optional($metrica->creador)->name ?: (optional($metrica->creador)->username ?: 'Sin registro') }}</td>
                         @endcan
                         @can('tickets.gestionar-tareas')
-                        <td class="px-4 py-2">
+                        <td>
                             <button type="button" wire:click="abrirModalMetrica({{ $metrica->id }})" class="tarea-btn" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -129,7 +175,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ 3 + (auth()->user()->can('tickets.ver-creador-tarea') ? 1 : 0) + (auth()->user()->can('tickets.gestionar-tareas') ? 1 : 0) }}" class="px-4 py-8 text-center text-gray-500">Sin métricas configuradas.</td>
+                        <td colspan="{{ 3 + (auth()->user()->can('tickets.ver-creador-tarea') ? 1 : 0) + (auth()->user()->can('tickets.gestionar-tareas') ? 1 : 0) }}">Sin métricas configuradas.</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @version August 15, 2025, 6:19 pm UTC
  *
  * @property \Illuminate\Database\Eloquent\Collection $solicitudes
- * @property string $RazonSocial
  * @property string $Proyecto
  * @property string $NombreProyecto
  */
@@ -34,7 +33,6 @@ class Proyecto extends Model
 
 
     public $fillable = [
-        'RazonSocial',
         'Proyecto',
         'NombreProyecto'
     ];
@@ -46,7 +44,6 @@ class Proyecto extends Model
      */
     protected $casts = [
         'ProyectoID' => 'integer',
-        'RazonSocial' => 'string',
         'Proyecto' => 'string',
         'NombreProyecto' => 'string'
     ];
@@ -57,7 +54,6 @@ class Proyecto extends Model
      * @var array
      */
     public static $rules = [
-        'RazonSocial' => 'required|string|max:100',
         'Proyecto' => 'required|string|max:100',
         'NombreProyecto' => 'required|string|max:250'
     ];

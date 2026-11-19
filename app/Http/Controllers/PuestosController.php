@@ -10,9 +10,11 @@ use App\Repositories\PuestosRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
+use App\Models\Direccion;
+use App\Models\Gerencia;
 use App\Models\Puestos;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
-use DB;
 
 class PuestosController extends AppBaseController
 {
@@ -35,30 +37,20 @@ class PuestosController extends AppBaseController
      *
      * @return Response
      */
-    public function index(PuestosDataTable $puestosDataTable)
+    public function index()
     {
-        if (request()->ajax()) {
-            $unidades = Puestos::join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-            ->join('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
-            ->select([
-                'puestos.PuestoID',
-                'puestos.NombrePuesto',
-                DB::raw('CONCAT(departamentos.NombreDepartamento," - ", gerencia.NombreGerencia) AS nombre_departamento')
-            ]);
-            
-        return DataTables::of($unidades)
-                ->addColumn('action', function($row){
-                    return view('puestos.datatables_actions', ['id' => $row->PuestoID])->render();
-                })
-                ->filterColumn('nombre_departamento', function($query, $keyword) {
-                    $query->whereRaw("CONCAT(departamentos.NombreDepartamento, ' - ', gerencia.NombreGerencia) like ?", ["%{$keyword}%"]);
-                })
-                ->rawColumns(['action'])
-                ->setRowId('PuestoID')
-                ->make(true);
-        }
+        $puestos = Puestos::with(['departamentos.gerencia.direccion'])
+            ->when(request('area_id'), function ($query, $areaId) {
+                $query->where('DepartamentoID', $areaId);
+            })
+            ->orderBy('NombrePuesto')
+            ->get();
 
-        return $puestosDataTable->render('puestos.index');
+        $this->marcarDireccionVisible($puestos);
+
+        $areas = \App\Models\Departamentos::with('gerencia')->orderBy('NombreDepartamento')->get();
+
+        return view('puestos.index', compact('puestos', 'areas'));
     }
 
     /**
@@ -84,7 +76,7 @@ class PuestosController extends AppBaseController
 
         $puestos = $this->puestosRepository->create($input);
 
-        Flash::success('Puestos saved successfully.');
+        Flash::success('Puesto guardado.');
 
         return redirect(route('puestos.index'));
     }
@@ -101,7 +93,7 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
@@ -121,7 +113,7 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
@@ -142,14 +134,14 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
 
         $puestos = $this->puestosRepository->update($request->all(), $id);
 
-        Flash::success('Puestos updated successfully.');
+        Flash::success('Puesto actualizado.');
 
         return redirect(route('puestos.index'));
     }
@@ -166,15 +158,82 @@ class PuestosController extends AppBaseController
         $puestos = $this->puestosRepository->find($id);
 
         if (empty($puestos)) {
-            Flash::error('Puestos not found');
+            Flash::error('Puesto no encontrado');
 
             return redirect(route('puestos.index'));
         }
 
         $this->puestosRepository->delete($id);
 
-        Flash::success('Puestos deleted successfully.');
+        Flash::success('Puesto borrado.');
 
         return redirect(route('puestos.index'));
+    }
+
+    private function marcarDireccionVisible($puestos): void
+    {
+        $porGerencia = [];
+        foreach (Gerencia::with('direccion')->whereNotNull('DireccionID')->orderBy('GerenciaID')->get() as $gerencia) {
+            $clave = $this->claveEstructura($gerencia->NombreGerencia);
+            if (!isset($porGerencia[$clave]) && $gerencia->direccion) {
+                $porGerencia[$clave] = $gerencia->direccion;
+            }
+        }
+
+        $porNombre = Direccion::query()->get()->keyBy(function ($direccion) {
+            return $this->claveEstructura($direccion->NombreDireccion);
+        });
+
+        $alias = [
+            'DIRECCION JURIDICA' => 'JURIDICA Y DE GESTION ESTRATEGICA',
+            'VIAS TERRESTRES ESTRUCTURA' => 'VIAS TERRESTRES',
+            'VIAS TERRESTRES OBRA' => 'VIAS TERRESTRES',
+            'DESARROLLO DE NEGOCIOS' => 'DESARROLLO DE NEGOCIOS',
+            'DIRECCION ADMINISTRACION Y FINANZAS' => 'ADMINISTRACION Y FINANZAS',
+            'GASTOS COMPARTIDOS' => 'DIRECCION GENERAL',
+            'GASTOS CORPORATIVOS' => 'DIRECCION GENERAL',
+            'PROYECTOS' => 'TECNICA CORPORATIVA',
+            'EDIFICACION ESTRUCTURA' => 'CONSTRUCCION',
+            'EDIFICACION OBRA' => 'CONSTRUCCION',
+        ];
+
+        $porUnidad = DB::table('direccion_unidad_negocio')
+            ->join('direcciones', 'direcciones.DireccionID', '=', 'direccion_unidad_negocio.DireccionID')
+            ->whereNull('direcciones.deleted_at')
+            ->get(['direccion_unidad_negocio.UnidadNegocioID', 'direcciones.DireccionID', 'direcciones.NombreDireccion'])
+            ->groupBy('UnidadNegocioID');
+
+        foreach ($puestos as $puesto) {
+            $gerencia = $puesto->departamentos->gerencia ?? null;
+            if (!$gerencia) {
+                continue;
+            }
+            if ($gerencia->direccion) {
+                $puesto->direccionVisible = $gerencia->direccion;
+                continue;
+            }
+
+            $clave = $this->claveEstructura($gerencia->NombreGerencia);
+            $direccion = $porGerencia[$clave] ?? null;
+            if (!$direccion && isset($alias[$clave])) {
+                $direccion = $porNombre->get($alias[$clave]);
+            }
+            if (!$direccion) {
+                $ligadas = $porUnidad->get($gerencia->UnidadNegocioID);
+                if ($ligadas && $ligadas->count() === 1) {
+                    $direccion = $porNombre->firstWhere('DireccionID', (int) $ligadas->first()->DireccionID);
+                }
+            }
+            $puesto->direccionVisible = $direccion;
+        }
+    }
+
+    private function claveEstructura(string $nombre): string
+    {
+        $nombre = mb_strtoupper(trim($nombre));
+        $nombre = strtr($nombre, ['Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ñ' => 'N']);
+        $nombre = preg_replace('/\s+/', ' ', $nombre);
+
+        return str_replace('GERENTE DE ', 'GERENCIA DE ', $nombre);
     }
 }

@@ -60,9 +60,8 @@
         </div>
         <div class="col-xs-12 col-sm-12 col-md-12">
             <div class="form-group">
-                <label for="gerenci_id">Gerencia(s) <abbr title="Si se requieren todas las gerencias, dejar vacio">(?)</abbr></label>
-                {!!Form::select('gerenci_id[]',App\Models\Gerencia::all()->
-                pluck('NombreGerencia','GerenciaID'),null,['class'=>'form-control jz', 'multiple'=>'multiple', 'style' => 'width: 100%'])!!}
+                <label for="presupuesto_interno_id">Presupuesto interno <abbr title="Si debe ver todos, dejar vacío">(?)</abbr></label>
+                {!! Form::select('presupuesto_interno_id[]', $presupuestos, null, ['class'=>'form-control jz', 'multiple'=>'multiple', 'style' => 'width: 100%']) !!}
             </div>
         </div>
     </div>

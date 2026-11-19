@@ -66,5 +66,10 @@ class Planes extends Model implements Auditable
     public function companiaslineastelefonicas()
     {
         return $this->belongsTo(\App\Models\CompaniasLineasTelefonicas::class, 'CompaniaID');
-    }  
+    }
+
+    public function lineas()
+    {
+        return $this->hasMany(\App\Models\LineasTelefonicas::class, 'PlanID', 'ID');
+    }
 }

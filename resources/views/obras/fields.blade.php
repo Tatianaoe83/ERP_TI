@@ -1,12 +1,12 @@
 <!-- Nombreobra Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
-    {!! Form::label('NombreObra', 'Nombre obra:') !!}
+    {!! Form::label('NombreObra', 'Nombre:') !!}
     {!! Form::text('NombreObra', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
 </div>
 
 <!-- Direccion Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
-    {!! Form::label('Direccion', 'Direccion:') !!}
+    {!! Form::label('Direccion', 'Domicilio de la obra:') !!}
     {!! Form::text('Direccion', null, ['class' => 'form-control','maxlength' => 150,'maxlength' => 150]) !!}
 </div>
 
@@ -25,9 +25,3 @@
 
 </div>
 
-
-<!-- Estado Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
-    {!! Form::label('estado', 'Es obra:') !!}
-    {!! Form::select('estado', [1 => 'Si', 0 => 'No'], null, ['class' => 'form-control','style' => 'width: 100%']) !!}
-</div>

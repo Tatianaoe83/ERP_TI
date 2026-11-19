@@ -107,7 +107,8 @@ class SolicitudAprobacionEmailService
                 'eyebrow'    => 'Vo.Bo. de supervisor',
                 'titulo'     => 'Necesitamos tu firma para una compra de producto',
                 'preheader'  => "{$solicitante} pide autorización de compra. Solicitud {$folio}.",
-                'intro'      => '<strong>' . e($solicitante) . '</strong> solicitó una compra de producto y necesita tu firma para continuar. Revisa el detalle y da tu Vo.Bo. o recházala.',
+                'intro'      => '<strong>' . e($solicitante) . '</strong> solicitó una compra de producto y necesita tu firma para continuar. Revisa el detalle y da tu Vo.Bo. o recházala.'
+                    . $this->fraseDestinoTrasSupervisor($solicitud),
                 'boton'      => 'Revisar y firmar',
             ];
         }
@@ -627,6 +628,35 @@ class SolicitudAprobacionEmailService
     /**
      * Datos cortos de la solicitud (tarjeta de detalle).
      */
+    private function fraseDestinoTrasSupervisor(Solicitud $solicitud): string
+    {
+        $paso = SolicitudPasos::query()
+            ->where('solicitud_id', $solicitud->SolicitudID)
+            ->where('stage', 'gerencia')
+            ->with('approverEmpleado.puestos')
+            ->first();
+        $persona = $paso?->approverEmpleado;
+
+        if (!$persona) {
+            $solicitud->loadMissing('empleadoid');
+            if (!$solicitud->empleadoid) {
+                return '';
+            }
+            $destino = app(SolicitudFlujoService::class)->destinoTrasSupervisor($solicitud->empleadoid);
+            $persona = $destino['empleado'] ?? null;
+            $rol = $destino['rol'] ?? 'Gerente';
+        } else {
+            $puesto = (string) ($persona->puestos->NombrePuesto ?? '');
+            $rol = stripos($puesto, 'DIRECTOR') !== false ? 'Director' : 'Gerente';
+        }
+
+        if (!$persona) {
+            return '';
+        }
+
+        return ' Al firmar, se envía a <strong>' . e($persona->NombreEmpleado) . '</strong> (' . e($rol) . ').';
+    }
+
     private function filasSolicitud(Solicitud $solicitud): array
     {
         $presupuesto = (float) ($solicitud->Presupuesto ?? 0);
@@ -689,6 +719,9 @@ class SolicitudAprobacionEmailService
 
     private function renderMensaje(array $datos): string
     {
+        $datos['logoCid'] = $datos['logoCid'] ?? 'logoProser';
+        $datos['marca'] = $datos['marca'] ?? 'Proser';
+
         return view('emails.solicitudes.mensaje', $datos)->render();
     }
 
@@ -702,9 +735,12 @@ class SolicitudAprobacionEmailService
             $this->configurarMailer($mail);
 
             $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
-            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
 
-            $mail->setFrom($fromAddress, $nombreSoporte);
+            $mail->setFrom($fromAddress, 'Proser');
+            $logo = public_path('img/LogoAzul.png');
+            if (is_file($logo)) {
+                $mail->addEmbeddedImage($logo, 'logoProser', 'LogoAzul.png');
+            }
             $mail->addAddress($correo, $nombre ?? '');
             $mail->isHTML(true);
             $mail->CharSet = 'UTF-8';

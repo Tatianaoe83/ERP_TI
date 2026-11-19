@@ -16,6 +16,7 @@ use App\Http\Controllers\AuditoriasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\SolicitudAprobacionController;
 use App\Http\Controllers\SolicitudesController;
+use App\Http\Controllers\MovimientoErpController;
 use App\Http\Controllers\SoporteTIController;
 use App\Http\Controllers\TicketsController;
 use App\Http\Controllers\TicketsMantenimientoController;
@@ -23,7 +24,11 @@ use App\Http\Livewire\ReportesLista;
 use App\Models\TicketChat;
 
 Route::get('/', function () {
-    return redirect('/login');
+    if (!auth()->check()) {
+        return redirect('/login');
+    }
+
+    return redirect(\App\Http\Controllers\HomeController::destinoDe(auth()->user()));
 });
 
 Auth::routes(['register' => false]);
@@ -38,13 +43,20 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('blogs', BlogController::class);
 
+    Route::resource('divisiones', App\Http\Controllers\DivisionController::class);
     Route::resource('unidadesDeNegocios', App\Http\Controllers\UnidadesDeNegocioController::class);
+    Route::resource('direcciones', App\Http\Controllers\DireccionController::class);
     Route::resource('gerencias', App\Http\Controllers\GerenciaController::class);
     Route::resource('obras', App\Http\Controllers\ObrasController::class);
     Route::resource('departamentos', App\Http\Controllers\DepartamentosController::class);
     Route::resource('puestos', App\Http\Controllers\PuestosController::class);
+    Route::resource('presupuestos-internos', App\Http\Controllers\PresupuestoInternoController::class)->except(['create', 'show', 'edit']);
     Route::resource('empleados', App\Http\Controllers\EmpleadosController::class);
     Route::get('empleados-filtros', [App\Http\Controllers\EmpleadosController::class, 'filtros'])->name('empleados.filtros');
+    Route::get('actualizaciones', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'index'])->name('actualizaciones.index');
+    Route::post('actualizaciones/traer', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'traer'])->name('actualizaciones.traer');
+    Route::post('actualizaciones/{id}/baja', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'registrarBaja'])->name('actualizaciones.baja');
+    Route::post('actualizaciones/empleado/{empleado}/presupuesto', [App\Http\Controllers\ActualizacionCapitalHumanoController::class, 'asignarPresupuesto'])->name('actualizaciones.presupuesto');
     Route::resource('lineasTelefonicas', App\Http\Controllers\LineasTelefonicasController::class);
     Route::get('lineas-telefonicas-inventario-records', [App\Http\Controllers\LineasTelefonicasController::class, 'getInventarioRecords'])->name('lineas-telefonicas.inventario-records');
     Route::resource('equipos', App\Http\Controllers\EquiposController::class);
@@ -143,6 +155,15 @@ Route::group(['middleware' => ['auth']], function () {
 
     // Tickets
     Route::get('/tickets', [TicketsController::class, 'index'])->name('tickets.index');
+    Route::get('/movimientos-erp', [MovimientoErpController::class, 'index'])->name('movimientos-erp.index');
+    Route::get('/movimientos-erp/{id}', [MovimientoErpController::class, 'show'])->whereNumber('id')->name('movimientos-erp.show');
+    Route::get('/movimientos-erp/{id}/datos', [MovimientoErpController::class, 'datos'])->whereNumber('id')->name('movimientos-erp.datos');
+    Route::get('/movimientos-erp/{id}/formato', [MovimientoErpController::class, 'formato'])->whereNumber('id')->name('movimientos-erp.formato');
+    Route::post('/movimientos-erp/{id}/comentar', [MovimientoErpController::class, 'comentar'])->whereNumber('id')->name('movimientos-erp.comentar');
+    Route::post('/movimientos-erp/{id}/autorizar', [MovimientoErpController::class, 'autorizar'])->whereNumber('id')->name('movimientos-erp.autorizar');
+    Route::post('/movimientos-erp/{id}/rechazar', [MovimientoErpController::class, 'rechazar'])->whereNumber('id')->name('movimientos-erp.rechazar');
+    Route::post('/movimientos-erp/{id}/aplicar', [MovimientoErpController::class, 'aplicar'])->whereNumber('id')->name('movimientos-erp.aplicar');
+    Route::post('/movimientos-erp/{id}/reenviar-firma', [MovimientoErpController::class, 'reenviarFirma'])->whereNumber('id')->name('movimientos-erp.reenviar-firma');
     Route::get('/tickets/productividad-ajax', [TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');
     Route::get('/tickets/detalle-grafica', [TicketsController::class, 'getTicketsDetalleGrafica'])->name('tickets.detalle-grafica');
     Route::get('/tickets/chat-messages', [TicketsController::class, 'getChatMessages']);
@@ -385,6 +406,92 @@ Route::get('/notificaciones-panel', function () {
             'timestamp' => $m->created_at->timestamp,
         ]);
 
+    $verEmpleados = $usuario && $usuario->can('ver-empleados');
+    $idsConBaja = !$verEmpleados ? collect() : \App\Models\ActualizacionCapitalHumano::query()
+        ->where('tipo', 'BAJA')
+        ->whereNotNull('empleado_ti_id')
+        ->pluck('empleado_ti_id');
+
+    $actualizacionesAltas = !$verEmpleados ? collect() : \App\Models\ActualizacionCapitalHumano::query()
+        ->with('empleado')
+        ->where('tipo', 'ALTA')
+        ->where('estado', 'aplicado')
+        ->when($idsConBaja->isNotEmpty(), function ($query) use ($idsConBaja) {
+            $query->where(function ($filtro) use ($idsConBaja) {
+                $filtro->whereNull('empleado_ti_id')->orWhereNotIn('empleado_ti_id', $idsConBaja);
+            });
+        })
+        ->orderByDesc('id')
+        ->limit(40)
+        ->get()
+        ->filter(function ($alta) {
+            return $alta->empleado
+                && (int) $alta->empleado->Estado === 1
+                && empty($alta->empleado->PresupuestoInternoID);
+        })
+        ->unique(fn ($alta) => $alta->empleado_ti_id ?: $alta->nombre)
+        ->take(10)
+        ->map(function ($alta) {
+            $cuando = $alta->fecha ? \Carbon\Carbon::parse($alta->fecha) : $alta->created_at;
+
+            return [
+                'id' => $alta->id,
+                'nombre' => $alta->empleado->NombreEmpleado ?? $alta->nombre,
+                'created_at' => $cuando ? $cuando->diffForHumans() : '',
+                'timestamp' => $cuando ? $cuando->timestamp : 0,
+            ];
+        })
+        ->values();
+
+    $actualizacionesBajas = !$verEmpleados ? collect() : \App\Models\ActualizacionCapitalHumano::query()
+        ->with('empleado')
+        ->where('tipo', 'BAJA')
+        ->where('estado', 'pendiente_inventario')
+        ->orderByDesc('fecha')
+        ->limit(40)
+        ->get()
+        ->unique(fn ($baja) => $baja->empleado_ti_id ?: $baja->nombre)
+        ->take(10)
+        ->map(function ($baja) {
+            $cuando = $baja->fecha ? \Carbon\Carbon::parse($baja->fecha) : $baja->created_at;
+
+            return [
+                'id' => $baja->id,
+                'nombre' => $baja->empleado->NombreEmpleado ?? $baja->nombre,
+                'created_at' => $cuando ? $cuando->diffForHumans() : '',
+                'timestamp' => $cuando ? $cuando->timestamp : 0,
+            ];
+        })
+        ->values();
+
+    $movimientosPendientes = !$verTI ? collect() : \App\Models\SolicitudMovimiento::query()
+        ->with('solicitante')
+        ->where('Estatus', \App\Models\SolicitudMovimiento::PENDIENTE)
+        ->orderByDesc('created_at')
+        ->limit(10)
+        ->get()
+        ->map(fn ($mov) => [
+            'id' => $mov->SolicitudMovimientoID,
+            'solicitante' => $mov->solicitante->NombreEmpleado ?? 'Sin solicitante',
+            'created_at' => $mov->created_at ? $mov->created_at->diffForHumans() : '',
+            'timestamp' => $mov->created_at ? $mov->created_at->timestamp : 0,
+        ]);
+
+    $movimientosAplicados = !$verTI ? collect() : \App\Models\SolicitudMovimiento::query()
+        ->with('solicitante')
+        ->where('Estatus', \App\Models\SolicitudMovimiento::APLICADA)
+        ->where('aplicado_en', '>=', now()->subDays(7))
+        ->orderByDesc('aplicado_en')
+        ->limit(10)
+        ->get()
+        ->map(fn ($mov) => [
+            'id' => $mov->SolicitudMovimientoID,
+            'solicitante' => $mov->solicitante->NombreEmpleado ?? 'Sin solicitante',
+            'aplicado_por' => $mov->aplicado_por ?: 'Sin registro',
+            'created_at' => $mov->aplicado_en ? $mov->aplicado_en->diffForHumans() : '',
+            'timestamp' => $mov->aplicado_en ? $mov->aplicado_en->timestamp : 0,
+        ]);
+
     return response()->json([
         'tickets_nuevos' => $ticketsNuevos,
         'tickets_nuevos_count' => !$verTI ? 0 : \App\Models\Tickets::where('Estatus', 'Pendiente')
@@ -403,6 +510,10 @@ Route::get('/notificaciones-panel', function () {
         'solicitudes_seguimiento_ti_count' => !$verTI ? 0 : \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])->count(),
         'solicitudes_factura_pendiente' => $solicitudesFacturaPendiente,
         'solicitudes_factura_pendiente_count' => $solicitudesFacturaPendienteCount,
+        'actualizaciones_altas' => $actualizacionesAltas,
+        'actualizaciones_bajas' => $actualizacionesBajas,
+        'movimientos_pendientes' => $movimientosPendientes,
+        'movimientos_aplicados' => $movimientosAplicados,
         'mensajes_nuevos' => $mensajesNuevos,
 'mensajes_nuevos_count' => !$verTI ? 0 :
 \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
@@ -493,8 +604,13 @@ Route::post(
 Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
 Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
 Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);
+Route::get('/destinoDeJefe', [SoporteTIController::class, 'destinoDeJefe']);
 Route::post('/crearTickets', [SoporteTIController::class, 'crearTickets'])->name('soporte.ticket')->withoutMiddleware(['auth']);
 Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
+Route::get('/movimientos-erp/catalogo', [MovimientoErpController::class, 'catalogo']);
+Route::get('/movimientos-erp/autorizadores', [MovimientoErpController::class, 'autorizadores']);
+Route::get('/revision-movimiento/{token}', [MovimientoErpController::class, 'firma'])->name('movimientos-erp.public.show');
+Route::post('/revision-movimiento/{token}', [MovimientoErpController::class, 'decidir'])->name('movimientos-erp.public.decide');
 
 // Aprobación de solicitudes (sin auth, acceso por token)
 Route::get('/revision-solicitud/{token}', [SolicitudAprobacionController::class, 'show'])->name('solicitudes.public.show');

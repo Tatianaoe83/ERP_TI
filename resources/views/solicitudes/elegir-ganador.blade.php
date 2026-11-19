@@ -66,6 +66,7 @@
                 <div class="absolute bottom-0 left-0 w-32 h-32 bg-slate-600/10 rounded-full blur-3xl"></div>
                 
                 <div class="relative z-10">
+                    <img src="{{ asset('img/LogoBlanco.png') }}" alt="Proser" class="h-10 w-auto mb-4">
                     <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white flex items-center gap-3 mb-3">
                         <i class="fas {{ $soloLectura ? 'fa-check-circle text-emerald-400' : 'fa-trophy text-amber-400' }} text-2xl md:text-3xl"></i>
                         {{ $soloLectura ? 'Ganadores confirmados' : 'Elegir Ganador' }}

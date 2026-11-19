@@ -56,8 +56,8 @@ class Puestos extends Model
      * @var array
      */
     public static $rules = [
-        'NombrePuesto' => 'nullable|string|max:75',
-        'DepartamentoID' => 'nullable|integer'
+        'NombrePuesto' => 'required|string|max:75',
+        'DepartamentoID' => 'required|integer|exists:departamentos,DepartamentoID'
     ];
 
     /**

@@ -7,8 +7,8 @@
     .dash-top-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        gap: 0.55rem;
+        margin-bottom: 0.7rem;
         align-items: stretch;
     }
     @media (min-width: 1024px) {
@@ -17,7 +17,7 @@
     .dash-top-col {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.55rem;
         min-height: 0;
     }
     .dash-kpi--fill {
@@ -48,8 +48,8 @@
     .dash-kpi-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        gap: 0.55rem;
+        margin-bottom: 0.7rem;
     }
     @media (min-width: 900px) {
         .dash-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -61,8 +61,8 @@
         .dash-kpi-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     .dash-kpi-grid.dash-kpi-grid--ops {
-        gap: 0.75rem;
-        margin-bottom: 1rem;
+        gap: 0.55rem;
+        margin-bottom: 0.65rem;
     }
     @media (min-width: 640px) {
         .dash-kpi-grid.dash-kpi-grid--ops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -75,134 +75,124 @@
     }
 </style>
 
-<p class="dash-kpi__hint mb-4">
-    Indicadores de personal activo (física y referenciado), plazas extraordinarias y asignaciones presupuestadas.
-</p>
+@php
+    $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'presupuesto_id' => 0, 'anio' => (int) now()->year];
+    $catalogoDash = $catalogoDash ?? ['gerencias' => collect(), 'centros' => collect(), 'presupuestos' => collect()];
+    $chartPresupuestos = collect($stats['estadisticas_presupuesto'] ?? [])->map(fn ($g) => [
+        'nombre' => $g->NombrePresupuesto,
+        'total' => (int) $g->total_empleados,
+    ])->values();
+    $chartCategorias = collect($stats['equipos_por_categoria'] ?? [])->take(8)->map(fn ($e) => [
+        'nombre' => $e->CategoriaEquipo ?: 'Sin categoría',
+        'total' => (int) $e->total_inventario,
+    ])->values();
+    $decision = $stats['decision'] ?? [];
+    $chartMeses = array_values($decision['meses'] ?? []);
+    $chartTickets = collect(is_iterable($op['tickets_estatus'] ?? null) ? $op['tickets_estatus'] : [])->map(fn ($fila) => [
+        'nombre' => $fila->Estatus ?: 'Sin estatus',
+        'total' => (int) $fila->total,
+    ])->values();
+    $anioDash = (int) ($decision['anio'] ?? $filtrosDash['anio'] ?? now()->year);
+    $chartPlantilla = [
+        ['nombre' => 'Activos', 'total' => (int) ($stats['empleados']['activos'] ?? 0)],
+        ['nombre' => 'Plazas extraordinarias', 'total' => (int) ($stats['empleados']['vacantes'] ?? 0)],
+        ['nombre' => 'Sin equipo', 'total' => (int) ($decision['sin_equipo'] ?? 0)],
+    ];
+    $chartLineas = [
+        ['nombre' => 'Disponibles', 'total' => (int) ($stats['inventario']['lineas']['disponibles'] ?? 0)],
+        ['nombre' => 'Persona física', 'total' => (int) ($stats['inventario']['lineas']['fisicas'] ?? 0)],
+        ['nombre' => 'Referenciado', 'total' => (int) ($stats['inventario']['lineas']['referenciados'] ?? 0)],
+    ];
+    $chartExtra = [
+        ['nombre' => 'Equipos', 'total' => (int) ($pre['equipos'] ?? 0)],
+        ['nombre' => 'Insumos', 'total' => (int) ($pre['insumos'] ?? 0)],
+        ['nombre' => 'Líneas', 'total' => (int) ($pre['lineas'] ?? 0)],
+        ['nombre' => 'Equipo propio', 'total' => (int) ($stats['inventario']['equipos']['propios'] ?? 0)],
+    ];
+    $chartOperacion = [
+        ['nombre' => 'Tickets abiertos', 'total' => (int) ($op['tickets_abiertos'] ?? 0)],
+        ['nombre' => 'Tareas atrasadas', 'total' => (int) ($op['tareas_atrasadas'] ?? 0)],
+        ['nombre' => 'Tareas de hoy', 'total' => (int) ($op['tareas_hoy'] ?? 0)],
+        ['nombre' => 'Solicitudes', 'total' => (int) ($op['solicitudes_activas'] ?? 0)],
+        ['nombre' => 'Auditorías', 'total' => (int) ($op['auditorias_anio'] ?? 0)],
+    ];
+    $chartMantenimiento = [
+        ['nombre' => 'Programados', 'total' => (int) ($stats['mantenimientos']['pendientes'] ?? 0)],
+        ['nombre' => 'Concluidos', 'total' => (int) ($stats['mantenimientos']['realizados'] ?? 0)],
+    ];
+    $chartGerencias = collect($stats['estadisticas_gerencia'] ?? [])->map(fn ($g) => [
+        'nombre' => $g->NombreGerencia,
+        'total' => (int) $g->empleados_activos,
+    ])->values();
+    $licenciasDash = $stats['insumos_por_licencia'] ?? collect();
+    $chartLicencias = collect(is_object($licenciasDash) && method_exists($licenciasDash, 'items') ? $licenciasDash->items() : $licenciasDash)
+        ->take(8)
+        ->map(fn ($i) => [
+            'nombre' => is_object($i) ? ($i->NombreInsumo ?: 'Sin nombre') : 'Sin nombre',
+            'total' => is_object($i) ? (int) $i->total_inventario : 0,
+        ])->values();
+    $chartOrganizacion = [
+        ['nombre' => 'Obras', 'total' => (int) ($stats['organizacion']['obras'] ?? 0)],
+        ['nombre' => 'Gerencias', 'total' => (int) ($stats['organizacion']['gerencias'] ?? 0)],
+        ['nombre' => 'Unidades', 'total' => (int) ($stats['organizacion']['unidades_negocio'] ?? 0)],
+    ];
+@endphp
 
-<p class="dash-section-title">Plantilla</p>
-<div class="dash-kpi-grid dash-kpi-grid--3">
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Personal activo</p>
-                <p class="dash-kpi__hint">Personas físicas y referenciadas</p>
-                <p class="dash-kpi__value">{{ $stats['empleados']['activos'] }}</p>
+<form method="GET" action="{{ route('home') }}" id="dashFiltros" class="index-page__filters">
+    <div class="form-group">
+        <label for="dash-presupuesto">Presupuesto interno</label>
+        <select id="dash-presupuesto" name="presupuesto_id" class="jz form-control">
+            <option value="">Todos</option>
+            @foreach($catalogoDash['presupuestos'] as $id => $nombre)
+                <option value="{{ $id }}" @if((int) $filtrosDash['presupuesto_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
+            @endforeach
+        </select>
             </div>
-            <span class="dash-kpi__icon dash-kpi__icon--blue"><i class="fas fa-users"></i></span>
+    <div class="form-group">
+        <label for="dash-gerencia">Gerencia</label>
+        <select id="dash-gerencia" name="gerencia_id" class="jz form-control">
+            <option value="">Todas</option>
+            @foreach($catalogoDash['gerencias'] as $id => $nombre)
+                <option value="{{ $id }}" @if((int) $filtrosDash['gerencia_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
+            @endforeach
+        </select>
         </div>
+    <div class="form-group">
+        <label for="dash-centro">Centro de costos</label>
+        <select id="dash-centro" name="centro_id" class="jz form-control">
+            <option value="">Todos</option>
+            @foreach($catalogoDash['centros'] as $id => $nombre)
+                <option value="{{ $id }}" @if((int) $filtrosDash['centro_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
+            @endforeach
+        </select>
     </div>
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Plazas extraordinarias</p>
-                <p class="dash-kpi__hint">Vacantes presupuestadas</p>
-                <p class="dash-kpi__value">{{ $stats['empleados']['vacantes'] ?? 0 }}</p>
+    <div class="form-group">
+        <label for="dash-anio">Año</label>
+        <select id="dash-anio" name="anio" class="jz form-control">
+            @for($anioOpcion = (int) now()->year; $anioOpcion >= (int) now()->year - 2; $anioOpcion--)
+                <option value="{{ $anioOpcion }}" @if($anioDash === $anioOpcion) selected @endif>{{ $anioOpcion }}</option>
+            @endfor
+        </select>
             </div>
-            <span class="dash-kpi__icon dash-kpi__icon--amber"><i class="fas fa-user-plus"></i></span>
-        </div>
+    <div class="form-group d-flex align-items-end">
+        <a href="{{ route('home') }}" class="index-page__btn-primary">
+            <i class="fa fa-times"></i> Limpiar filtros
+        </a>
     </div>
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Asignaciones presupuestadas</p>
-                <p class="dash-kpi__hint">Modalidad extra y compartido</p>
-                <p class="dash-kpi__value">{{ $pre['total'] ?? 0 }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-calendar-alt"></i></span>
-        </div>
-    </div>
-</div>
+</form>
 
-<p class="dash-section-title">Inventario en operación</p>
-<div class="dash-top-grid">
-    <div class="dash-top-col">
-        <div class="dash-kpi">
-            <div class="dash-kpi__top">
-                <div>
-                    <p class="dash-kpi__label">Líneas disponibles</p>
-                    <p class="dash-kpi__hint">Disponibles para asignación</p>
-                    <p class="dash-kpi__value">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
-                </div>
-                <span class="dash-kpi__icon dash-kpi__icon--amber" aria-hidden="true">
-                    <i class="fas fa-phone"></i>
-                </span>
-            </div>
-            <div class="dash-stat mt-4 flex items-center justify-between">
-                <span class="dash-stat__label">Asignadas a personal activo</span>
-                <span class="dash-stat__value" style="font-size:1.05rem;">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
-            </div>
-        </div>
-
-        <div class="dash-kpi">
-            <div class="grid grid-cols-3 gap-3">
-                <div class="dash-stat text-center">
-                    <p class="dash-stat__label">Persona física</p>
-                    <p class="dash-stat__value">{{ $stats['inventario']['lineas']['fisicas'] }}</p>
-                </div>
-                <div class="dash-stat text-center">
-                    <p class="dash-stat__label">Referenciado</p>
-                    <p class="dash-stat__value">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
-                </div>
-                <div class="dash-stat text-center">
-                    <p class="dash-stat__label">Insumos</p>
-                    <p class="dash-stat__value">{{ $stats['inventario']['insumos']['asignados'] }}</p>
-                </div>
-            </div>
-            <p class="dash-kpi__hint mt-3">Stock y compartido de personal activo.</p>
-        </div>
-    </div>
-
-    <div class="dash-top-col">
-        <div class="dash-kpi">
-            <div class="dash-kpi__top">
-                <div>
-                    <p class="dash-kpi__label">Equipo propio</p>
-                    <p class="dash-kpi__hint">Propiedad del colaborador</p>
-                    <p class="dash-kpi__value">{{ $stats['inventario']['equipos']['propios'] ?? 0 }}</p>
-                </div>
-                <span class="dash-kpi__icon dash-kpi__icon--navy" aria-hidden="true">
-                    <i class="fas fa-user-shield"></i>
-                </span>
-            </div>
-        </div>
-
-        <div class="dash-kpi dash-kpi--fill">
-            <p class="dash-kpi__label mb-3">Equipo de cómputo asignado</p>
-            <div class="dash-equipos-grid">
-                @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
-                <div class="dash-stat">
-                    <span class="dash-stat__name">{{ Str::limit($equipo->CategoriaEquipo, 18) }}</span>
-                    <span class="dash-stat__value" style="font-size:1.25rem;">{{ $equipo->total_inventario }}</span>
-                </div>
-                @empty
-                <p class="dash-kpi__hint col-span-3 text-center py-2">No hay equipos disponibles</p>
-                @endforelse
-            </div>
-        </div>
-    </div>
-</div>
-
-<p class="dash-section-title">Presupuesto</p>
-<div class="dash-kpi-grid dash-kpi-grid--3 mb-6">
-    <div class="dash-kpi">
-        <p class="dash-kpi__label">Equipo de cómputo</p>
-        <p class="dash-kpi__value">{{ $pre['equipos'] ?? 0 }}</p>
-        <p class="dash-kpi__hint">Extra y compartido</p>
-    </div>
-    <div class="dash-kpi">
-        <p class="dash-kpi__label">Insumos y licencias</p>
-        <p class="dash-kpi__value">{{ $pre['insumos'] ?? 0 }}</p>
-        <p class="dash-kpi__hint">Extra y compartido</p>
-    </div>
-    <div class="dash-kpi">
-        <p class="dash-kpi__label">Líneas telefónicas</p>
-        <p class="dash-kpi__value">{{ $pre['lineas'] ?? 0 }}</p>
-        <p class="dash-kpi__hint">Extra y compartido</p>
-    </div>
-</div>
-
-<p class="dash-section-title">Gestión operativa</p>
+<p class="dash-section-title">Para decidir</p>
 <div class="dash-kpi-grid dash-kpi-grid--ops">
+    <div class="dash-kpi {{ ((float) ($decision['desviacion'] ?? 0)) > 0 ? 'dash-kpi--alerta' : 'dash-kpi--ok' }}">
+        <div class="dash-kpi__top">
+            <div>
+                <p class="dash-kpi__label">Desviación {{ $anioDash }}</p>
+                <p class="dash-kpi__hint">Ahorro {{ $fmtMoney($decision['ahorro'] ?? 0) }} · Sin consumir {{ $fmtMoney($decision['no_consumido'] ?? 0) }}</p>
+                <p class="dash-kpi__value">{{ $fmtMoney($decision['desviacion'] ?? 0) }}</p>
+            </div>
+            <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-exclamation-triangle"></i></span>
+        </div>
+    </div>
     <a href="{{ route('tickets.index') }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
         <div class="dash-kpi__top">
             <div>
@@ -210,159 +200,338 @@
                 <p class="dash-kpi__hint">{{ $op['tickets_pendientes'] ?? 0 }} pendientes · {{ $op['tickets_progreso'] ?? 0 }} en progreso</p>
                 <p class="dash-kpi__value">{{ $op['tickets_abiertos'] ?? 0 }}</p>
             </div>
-            <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-headset"></i></span>
+            <span class="dash-kpi__icon dash-kpi__icon--blue"><i class="fas fa-headset"></i></span>
         </div>
     </a>
-    <a href="{{ route('tickets.index', ['tab' => 'tareas', 'filtroEstatus' => ((int) ($op['tareas_atrasadas'] ?? 0) > 0 ? 'atrasadas' : 'hoy')]) }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
+    <a href="{{ route('tickets.index', ['tab' => 'tareas', 'filtroEstatus' => 'atrasadas']) }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
         <div class="dash-kpi__top">
             <div>
-                @php
-                    $tHoy = (int) ($op['tareas_hoy'] ?? 0);
-                    $tAtr = (int) ($op['tareas_atrasadas'] ?? 0);
-                    $tProx = (int) ($op['tareas_proximas'] ?? 0);
-                    $tareasHint = $tHoy . ' de hoy + ' . $tAtr . ' no realizadas';
-                    if ($tProx > 0) {
-                        $tareasHint .= ' + ' . $tProx . ' próximas';
-                    }
-                @endphp
-                <p class="dash-kpi__label">Tareas pendientes</p>
-                <p class="dash-kpi__hint">{{ $tareasHint }}</p>
-                <p class="dash-kpi__value">{{ $op['tareas_pendientes'] ?? 0 }}</p>
+                <p class="dash-kpi__label">Tareas atrasadas</p>
+                <p class="dash-kpi__hint">{{ $op['tareas_hoy'] ?? 0 }} de hoy · {{ $op['tareas_criticas'] ?? 0 }} críticas</p>
+                <p class="dash-kpi__value">{{ $op['tareas_atrasadas'] ?? 0 }}</p>
             </div>
             <span class="dash-kpi__icon dash-kpi__icon--amber"><i class="fas fa-tasks"></i></span>
         </div>
     </a>
-    <a href="{{ route('tickets.index', ['tab' => 'solicitudes']) }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Solicitudes en trámite</p>
-                <p class="dash-kpi__hint">Pendientes de cierre</p>
-                <p class="dash-kpi__value">{{ $op['solicitudes_activas'] ?? 0 }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--blue"><i class="fas fa-file-alt"></i></span>
-        </div>
-    </a>
-    @can('ver-auditorias')
-    <a href="{{ route('auditorias.index') }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Auditorías</p>
-                <p class="dash-kpi__hint">Ejercicio {{ now()->year }}</p>
-                <p class="dash-kpi__value">{{ $op['auditorias_anio'] ?? 0 }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-clipboard-check"></i></span>
-        </div>
-    </a>
-    @else
     <div class="dash-kpi">
         <div class="dash-kpi__top">
             <div>
-                <p class="dash-kpi__label">Auditorías</p>
-                <p class="dash-kpi__hint">Ejercicio {{ now()->year }}</p>
-                <p class="dash-kpi__value">{{ $op['auditorias_anio'] ?? 0 }}</p>
+                <p class="dash-kpi__label">Personal sin equipo</p>
+                <p class="dash-kpi__hint">Activos del filtro sin equipo de la empresa</p>
+                <p class="dash-kpi__value">{{ (int) ($decision['sin_equipo'] ?? 0) }}</p>
             </div>
-            <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-clipboard-check"></i></span>
+            <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-laptop"></i></span>
         </div>
     </div>
-    @endcan
-    @can('ver-facturas')
-    <a href="{{ route('facturas.index') }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Facturación del periodo</p>
-                <p class="dash-kpi__hint">Importe del mes: {{ $fmtMoney($op['facturas_importe'] ?? 0) }}</p>
-                <p class="dash-kpi__value">{{ $op['facturas_mes'] ?? 0 }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-file-invoice-dollar"></i></span>
-        </div>
-    </a>
-    @else
     <div class="dash-kpi">
         <div class="dash-kpi__top">
             <div>
-                <p class="dash-kpi__label">Facturación del periodo</p>
-                <p class="dash-kpi__hint">Importe del mes: {{ $fmtMoney($op['facturas_importe'] ?? 0) }}</p>
-                <p class="dash-kpi__value">{{ $op['facturas_mes'] ?? 0 }}</p>
+                <p class="dash-kpi__label">Mantenimiento pendiente</p>
+                <p class="dash-kpi__hint">{{ $stats['mantenimientos']['realizados'] ?? 0 }} concluidos en {{ $anioDash }}</p>
+                <p class="dash-kpi__value">{{ $stats['mantenimientos']['pendientes'] ?? 0 }}</p>
             </div>
-            <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-file-invoice-dollar"></i></span>
-        </div>
-    </div>
-    @endcan
-</div>
-
-<div class="dash-panel mb-6">
-    <div class="dash-panel__head">
-        <h3 class="dash-panel__title">
-            <i class="fas fa-tools"></i>
-            Mantenimiento preventivo {{ $stats['mantenimientos']['anio'] }}
-        </h3>
-        @can('ver-mantenimientos')
-            <a href="{{ route('mantenimientos.index') }}" class="dash-panel__link">Ver detalle</a>
-        @endcan
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div class="dash-stat flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-clock"></i></span>
-                <span class="dash-stat__name">Programados</span>
-            </div>
-            <span class="dash-stat__value">{{ $stats['mantenimientos']['pendientes'] }}</span>
-        </div>
-        <div class="dash-stat flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-check-circle"></i></span>
-                <span class="dash-stat__name">Concluidos</span>
-            </div>
-            <span class="dash-stat__value">{{ $stats['mantenimientos']['realizados'] }}</span>
+            <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-tools"></i></span>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-    <div class="dash-panel">
-        <h3 class="dash-panel__title mb-3">
-            <i class="fas fa-certificate"></i>
-            Licencias en inventario
-        </h3>
-        @include('partials.insumos-licencia', ['stats' => $stats])
+<div class="dash-charts">
+    <div class="dash-chart dash-chart--wide">
+        <h3>Presupuesto contra facturas {{ $anioDash }}</h3>
+        <p class="dash-kpi__hint">Autorizado {{ $fmtMoney($decision['presupuesto'] ?? 0) }} · Facturado {{ $fmtMoney($decision['facturado'] ?? 0) }}. El corte oficial es el de presupuesto interno.</p>
+        <canvas id="chartPresupuestoMes"></canvas>
     </div>
-
-    <div class="dash-panel">
-        <h3 class="dash-panel__title mb-3">
-            <i class="fas fa-building"></i>
-            Personal activo por gerencia
-        </h3>
-        <div class="space-y-2">
-            @forelse($stats['estadisticas_gerencia'] as $gerencia)
-            <div class="dash-row">
-                <p class="dash-row__name">{{ $gerencia->NombreGerencia }}</p>
-                <span class="dash-chip">{{ $gerencia->empleados_activos }}</span>
+    <div class="dash-chart">
+        <h3>Inventario asignado</h3>
+        <canvas id="chartInventarioDash"></canvas>
             </div>
-            @empty
-            <p class="dash-kpi__hint text-center py-4">No hay datos disponibles</p>
-            @endforelse
+    <div class="dash-chart">
+        <h3>Tickets abiertos</h3>
+        <canvas id="chartTicketsDash"></canvas>
         </div>
+    <div class="dash-chart">
+        <h3>Personal por presupuesto interno</h3>
+        <canvas id="chartPresupuestoDash"></canvas>
+            </div>
+    <div class="dash-chart">
+        <h3>Equipos por categoría</h3>
+        <canvas id="chartCategoriasDash"></canvas>
     </div>
 </div>
 
-<div class="dash-panel mb-6">
-    <h3 class="dash-panel__title mb-3">
-        <i class="fas fa-sitemap"></i>
-        Estructura organizacional
-    </h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="dash-stat flex items-center justify-between">
-            <span class="dash-stat__name">Obras</span>
-            <span class="dash-stat__value">{{ $stats['organizacion']['obras'] }}</span>
+<p class="dash-kpi__hint mb-4">
+    Personal, inventario, tickets, tareas y presupuesto de este recuadro siguen el filtro de arriba.
+</p>
+
+@push('third_party_scripts')
+<script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
+<script>
+(function () {
+    function bootDashInformatica() {
+        if (!window.Chart || !window.UxCharts || document.getElementById('chartInventarioDash')?.dataset.listo === '1') return;
+        UxCharts.aplicar(Chart);
+        if (typeof UxCharts.preparar === 'function') UxCharts.preparar(document);
+        var nueva = typeof UxCharts.crear === 'function' ? UxCharts.crear : function (canvas, config) { return new window.Chart(canvas, config); };
+        var inventario = document.getElementById('chartInventarioDash');
+        var gerencias = document.getElementById('chartPresupuestoDash');
+        var categorias = document.getElementById('chartCategoriasDash');
+        var presupuestoMes = document.getElementById('chartPresupuestoMes');
+        var ticketsChart = document.getElementById('chartTicketsDash');
+        if (presupuestoMes) {
+            var meses = @json($chartMeses);
+            var optsMes = UxCharts.barras(false);
+            optsMes.plugins.legend.display = true;
+            nueva(presupuestoMes, {
+                type: 'bar',
+                data: {
+                    labels: meses.map(function (f) { return f.nombre; }),
+                    datasets: [
+                        { label: 'Presupuesto', data: meses.map(function (f) { return f.presupuesto; }), backgroundColor: '#0052CC', maxBarThickness: 18 },
+                        { label: 'Facturado', data: meses.map(function (f) { return f.facturado; }), backgroundColor: '#FFAB00', maxBarThickness: 18 },
+                        { label: 'Desviación', data: meses.map(function (f) { return f.desviacion; }), backgroundColor: '#FF5630', maxBarThickness: 18 }
+                    ]
+                },
+                options: optsMes
+            });
+        }
+        if (ticketsChart) {
+            var filasT = @json($chartTickets);
+            if (!filasT.length) {
+                filasT = [{ nombre: 'Sin tickets abiertos', total: 1 }];
+            }
+            nueva(ticketsChart, {
+                type: 'doughnut',
+                plugins: filasT[0].nombre === 'Sin tickets abiertos' ? [] : [UxCharts.centro],
+                data: {
+                    labels: filasT.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        data: filasT.map(function (f) { return f.total; }),
+                        backgroundColor: filasT[0].nombre === 'Sin tickets abiertos' ? ['#E2E8F0'] : UxCharts.tonos(filasT.length)
+                    }]
+                },
+                options: UxCharts.anillo()
+            });
+        }
+        if (inventario) {
+            inventario.dataset.listo = '1';
+            nueva(inventario, {
+                type: 'doughnut',
+                plugins: [UxCharts.centro],
+                data: {
+                    labels: ['Equipos', 'Insumos', 'Líneas'],
+                    datasets: [{
+                        data: [
+                            {{ (int) ($stats['inventario']['equipos']['asignados'] ?? 0) }},
+                            {{ (int) ($stats['inventario']['insumos']['asignados'] ?? 0) }},
+                            {{ (int) ($stats['inventario']['lineas']['asignadas'] ?? 0) }}
+                        ],
+                        backgroundColor: ['#0052CC', '#6554C0', '#A3B3C9'],
+                        hoverBackgroundColor: ['#0066FF', '#8777D9', '#CBD5E1']
+                    }]
+                },
+                options: UxCharts.anillo()
+            });
+        }
+        if (gerencias) {
+            var filasG = @json($chartPresupuestos);
+            nueva(gerencias, {
+                type: 'bar',
+                data: {
+                    labels: filasG.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        label: 'Personas',
+                        data: filasG.map(function (f) { return f.total; }),
+                        backgroundColor: UxCharts.degradado(gerencias),
+                        hoverBackgroundColor: '#0066FF'
+                    }]
+                },
+                options: UxCharts.barras(false)
+            });
+        }
+        if (categorias) {
+            var filasC = @json($chartCategorias);
+            nueva(categorias, {
+                type: 'bar',
+                data: {
+                    labels: filasC.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        label: 'Equipos',
+                        data: filasC.map(function (f) { return f.total; }),
+                        backgroundColor: UxCharts.tonos(filasC.length),
+                        borderRadius: 8
+                    }]
+                },
+                options: UxCharts.barras(true)
+            });
+        }
+        function dona(canvas, filas, vacio) {
+            if (!canvas) return;
+            var sinDatos = !filas.length || filas.every(function (f) { return !f.total; });
+            if (sinDatos) filas = [{ nombre: vacio, total: 1 }];
+            nueva(canvas, {
+                type: 'doughnut',
+                plugins: sinDatos ? [] : [UxCharts.centro],
+                data: {
+                    labels: filas.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        data: filas.map(function (f) { return f.total; }),
+                        backgroundColor: sinDatos ? ['#E2E8F0'] : UxCharts.tonos(filas.length)
+                    }]
+                },
+                options: UxCharts.anillo()
+            });
+        }
+        function barrasNom(canvas, filas, horizontal) {
+            if (!canvas) return;
+            nueva(canvas, {
+                type: 'bar',
+                data: {
+                    labels: filas.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        label: 'Total',
+                        data: filas.map(function (f) { return f.total; }),
+                        backgroundColor: UxCharts.tonos(filas.length),
+                        borderRadius: 8
+                    }]
+                },
+                options: UxCharts.barras(horizontal)
+            });
+        }
+        dona(document.getElementById('chartPlantilla'), @json($chartPlantilla), 'Sin personal');
+        dona(document.getElementById('chartLineasDash'), @json($chartLineas), 'Sin líneas');
+        dona(document.getElementById('chartMantenimientoDash'), @json($chartMantenimiento), 'Sin mantenimiento');
+        barrasNom(document.getElementById('chartExtraDash'), @json($chartExtra), false);
+        barrasNom(document.getElementById('chartOperacionDash'), @json($chartOperacion), true);
+        barrasNom(document.getElementById('chartGerenciasDash'), @json($chartGerencias), true);
+        barrasNom(document.getElementById('chartLicenciasDash'), @json($chartLicencias), true);
+        barrasNom(document.getElementById('chartOrganizacionDash'), @json($chartOrganizacion), false);
+    }
+    var filtros = document.getElementById('dashFiltros');
+    if (filtros) {
+        var filtrosListos = false;
+        setTimeout(function () { filtrosListos = true; }, 700);
+        filtros.addEventListener('change', function (e) {
+            if (!filtrosListos || !e.target || e.target.tagName !== 'SELECT') return;
+            filtros.submit();
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootDashInformatica);
+    } else {
+        bootDashInformatica();
+    }
+})();
+</script>
+@endpush
+
+<style>
+    .dash-filtros {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1rem;
+        align-items: flex-end;
+        margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+    }
+    html.dark .dash-filtros,
+    .dark .dash-filtros {
+        background: rgba(15, 23, 42, 0.72);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+    .dash-filtro {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        flex: 1 1 190px;
+        min-width: 0;
+    }
+    .dash-filtro--wide { flex: 2 1 280px; }
+    .dash-filtro--acciones {
+        flex: 0 0 auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .dash-filtro > span {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+    .dash-filtros .select2-container { width: 100% !important; }
+    .dash-charts {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+    @media (min-width: 900px) {
+        .dash-charts { grid-template-columns: 1fr 1fr; }
+        .dash-chart--wide { grid-column: 1 / -1; }
+    }
+    .dash-chart {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        padding: 1rem 1rem 0.75rem;
+    }
+    .dash-chart h3 {
+        margin: 0 0 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+    html.dark .dash-chart h3, .dark .dash-chart h3 {
+        color: #94a3b8;
+    }
+    .dash-kpi--alerta { box-shadow: inset 3px 0 0 #ff5630; }
+    .dash-kpi--ok { box-shadow: inset 3px 0 0 #36b37e; }
+</style>
+
+<div class="dash-charts">
+    <div class="dash-chart">
+        <h3>Plantilla</h3>
+        <p class="dash-kpi__hint">Activos, plazas extraordinarias y personal sin equipo.</p>
+        <canvas id="chartPlantilla"></canvas>
+    </div>
+    <div class="dash-chart">
+        <h3>Líneas telefónicas</h3>
+        <p class="dash-kpi__hint">Disponibles del inventario y asignadas al filtro.</p>
+        <canvas id="chartLineasDash"></canvas>
+            </div>
+    <div class="dash-chart">
+        <h3>Asignación extra y propia</h3>
+        <p class="dash-kpi__hint">Extra, compartido y equipo del colaborador.</p>
+        <canvas id="chartExtraDash"></canvas>
         </div>
-        <div class="dash-stat flex items-center justify-between">
-            <span class="dash-stat__name">Gerencias</span>
-            <span class="dash-stat__value">{{ $stats['organizacion']['gerencias'] }}</span>
+    <div class="dash-chart">
+        <h3>Carga operativa</h3>
+        <p class="dash-kpi__hint">Tickets, tareas, solicitudes y auditorías del filtro.</p>
+        <canvas id="chartOperacionDash"></canvas>
+    </div>
+    <div class="dash-chart">
+        <h3>Mantenimiento {{ $anioDash }}</h3>
+        <p class="dash-kpi__hint">Programados frente a concluidos.</p>
+        <canvas id="chartMantenimientoDash"></canvas>
+</div>
+    <div class="dash-chart">
+        <h3>Personal por gerencia</h3>
+        <canvas id="chartGerenciasDash"></canvas>
         </div>
-        <div class="dash-stat flex items-center justify-between">
-            <span class="dash-stat__name">Unidades de negocio</span>
-            <span class="dash-stat__value">{{ $stats['organizacion']['unidades_negocio'] }}</span>
+    <div class="dash-chart">
+        <h3>Licencias en inventario</h3>
+        <canvas id="chartLicenciasDash"></canvas>
         </div>
+    <div class="dash-chart">
+        <h3>Estructura</h3>
+        <canvas id="chartOrganizacionDash"></canvas>
     </div>
 </div>
 

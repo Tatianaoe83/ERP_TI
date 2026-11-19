@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Gerencia;
 use App\Models\Gerencias_usuarios;
+use App\Models\PresupuestoInterno;
 use App\Helpers\PresupuestoHelper;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
@@ -47,7 +48,9 @@ class PresupuestoController extends Controller
             $genusuarios = Gerencia::orderBy('NombreGerencia')->get();
         }
 
-        return view('presupuesto.index', compact('genusuarios'));
+        $presupuestosInternos = PresupuestoInterno::visiblesPara(auth()->id());
+
+        return view('presupuesto.index', compact('genusuarios', 'presupuestosInternos'));
 
 
     }

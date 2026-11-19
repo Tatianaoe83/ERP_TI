@@ -17,6 +17,7 @@
     <div class="w-full max-w-xl">
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="p-6 md:p-8 text-center">
+                <img src="{{ asset('img/LogoAzul.png') }}" alt="Proser" class="h-10 w-auto mx-auto mb-5">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
                     <i class="fas fa-check-circle text-3xl text-emerald-600 dark:text-emerald-400"></i>
                 </div>

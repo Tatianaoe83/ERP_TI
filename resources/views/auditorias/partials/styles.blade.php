@@ -2,21 +2,21 @@
     /* Paleta Analytics Dashboard: azul de datos + ámbar de atención.
        Tokens semánticos, nunca hex suelto en los componentes. */
     .aud {
-        --aud-primary: #4F46E5;
-        --aud-primary-2: #6366F1;
-        --aud-primary-soft: #EEF0FF;
-        --aud-accent: #B45309;
-        --aud-accent-soft: #FEF3C7;
-        --aud-danger: #DC2626;
-        --aud-danger-soft: #FEE2E2;
-        --aud-ok: #059669;
-        --aud-ok-soft: #D1FAE5;
+        --aud-primary: #0052CC;
+        --aud-primary-2: #4C9AFF;
+        --aud-primary-soft: rgba(0, 82, 204, 0.1);
+        --aud-accent: #9a6700;
+        --aud-accent-soft: rgba(255, 171, 0, 0.16);
+        --aud-danger: #bf2600;
+        --aud-danger-soft: rgba(255, 86, 48, 0.12);
+        --aud-ok: #00875A;
+        --aud-ok-soft: rgba(54, 179, 126, 0.16);
 
         --aud-surface: #FFFFFF;
-        --aud-surface-2: #F8FAFC;
-        --aud-text: #0F172A;
-        --aud-text-muted: #64748B;
-        --aud-border: #E5E9F0;
+        --aud-surface-2: #F4F7FB;
+        --aud-text: #0A1628;
+        --aud-text-muted: #475569;
+        --aud-border: #E2E8F0;
 
         --aud-radius-sm: 0.55rem;
         --aud-radius: 0.9rem;
@@ -29,22 +29,23 @@
         color: var(--aud-text);
     }
 
+    html.dark .aud,
     .dark .aud {
-        --aud-primary: #818CF8;
-        --aud-primary-2: #A5B4FC;
-        --aud-primary-soft: rgba(99, 102, 241, 0.16);
-        --aud-accent: #FBBF24;
-        --aud-accent-soft: rgba(217, 119, 6, 0.18);
-        --aud-danger: #FCA5A5;
-        --aud-danger-soft: rgba(220, 38, 38, 0.18);
-        --aud-ok: #6EE7B7;
-        --aud-ok-soft: rgba(5, 150, 105, 0.18);
+        --aud-primary: #4C9AFF;
+        --aud-primary-2: #85B8FF;
+        --aud-primary-soft: rgba(76, 154, 255, 0.16);
+        --aud-accent: #FFC400;
+        --aud-accent-soft: rgba(255, 171, 0, 0.18);
+        --aud-danger: #FF7452;
+        --aud-danger-soft: rgba(255, 86, 48, 0.16);
+        --aud-ok: #57D9A3;
+        --aud-ok-soft: rgba(54, 179, 126, 0.18);
 
-        --aud-surface: #131B2E;
-        --aud-surface-2: #1B2540;
-        --aud-text: #E7ECF6;
-        --aud-text-muted: #98A6C2;
-        --aud-border: #2B3757;
+        --aud-surface: #0F1D32;
+        --aud-surface-2: #13233B;
+        --aud-text: #F8FAFC;
+        --aud-text-muted: #C5D0E0;
+        --aud-border: rgba(255, 255, 255, 0.14);
 
         --aud-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
         --aud-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);

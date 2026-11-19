@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<x-crud-page title="Editar departamento" icon="fa-tags" subtitle="Actualiza los datos" :back-url="route('departamentos.index')">
+<x-crud-page title="Editar área" icon="fa-tags" subtitle="Actualiza los datos" :back-url="route('departamentos.index')">
     @include('adminlte-templates::common.errors')
     {!! Form::model($departamentos, ['route' => ['departamentos.update', $departamentos->DepartamentoID], 'method' => 'patch']) !!}
 
