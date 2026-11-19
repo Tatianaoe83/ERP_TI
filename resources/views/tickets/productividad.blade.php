@@ -69,6 +69,28 @@
     #productividad-container .prod-kpi-icon i {
         font-size: 1rem;
     }
+    /* Mes y año van en una sola fila. Select2 los estiraba al 100% y, al abrir, añadía un buscador. */
+    #productividad-container .prod-periodo {
+        flex-wrap: nowrap;
+        width: max-content;
+        max-width: 100%;
+    }
+    #productividad-container .prod-periodo select,
+    html.dark #productividad-container .prod-periodo select,
+    html.dark #productividad-container .prod-periodo select:focus {
+        width: auto !important;
+        min-width: 4.5rem;
+        height: 1.85rem !important;
+        min-height: 0 !important;
+        margin: 0;
+        padding: 0 1.25rem 0 0.35rem !important;
+        background-color: transparent !important;
+        border: 0 !important;
+        border-radius: 0.4rem !important;
+        box-shadow: none !important;
+        line-height: 1.85rem;
+        font-size: 0.875rem;
+    }
 </style>
     <div class="prod-page__toolbar flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
@@ -239,10 +261,10 @@
 
             {{-- Filtro rango de meses (siempre visible) --}}
             <div
-                class="flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm flex-wrap">
+                class="prod-periodo flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] px-2 py-1 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Desde</span>
                 <select x-model.number="mesInicio" @change="cargarProductividad('inicio')" :disabled="cargando"
-                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = 1; $i <= 12; $i++)
                         <option value="{{ $i }}">
                             {{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}
@@ -250,7 +272,7 @@
                     @endfor
                 </select>
                 <select x-model.number="anioInicio" @change="cargarProductividad('inicio')" :disabled="cargando"
-                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = $anioActual + 1; $i >= $anioActual - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
@@ -258,7 +280,7 @@
                 <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Hasta</span>
                 <select x-model.number="mesFin" @change="cargarProductividad('fin')" :disabled="cargando"
-                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = 1; $i <= 12; $i++)
                         <option value="{{ $i }}">
                             {{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}
@@ -266,7 +288,7 @@
                     @endfor
                 </select>
                 <select x-model.number="anioFin" @change="cargarProductividad('fin')" :disabled="cargando"
-                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = $anioActual + 1; $i >= $anioActual - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor

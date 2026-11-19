@@ -30,6 +30,27 @@
         padding-bottom: 0.45rem;
     }
     #productividad-mantenimiento-container .text-3xl { font-size: 1.45rem; line-height: 1.2; }
+    #productividad-mantenimiento-container .prod-periodo {
+        flex-wrap: nowrap;
+        width: max-content;
+        max-width: 100%;
+    }
+    #productividad-mantenimiento-container .prod-periodo select,
+    html.dark #productividad-mantenimiento-container .prod-periodo select,
+    html.dark #productividad-mantenimiento-container .prod-periodo select:focus {
+        width: auto !important;
+        min-width: 4.5rem;
+        height: 1.85rem !important;
+        min-height: 0 !important;
+        margin: 0;
+        padding: 0 1.25rem 0 0.35rem !important;
+        background-color: transparent !important;
+        border: 0 !important;
+        border-radius: 0.4rem !important;
+        box-shadow: none !important;
+        line-height: 1.85rem;
+        font-size: 0.875rem;
+    }
 </style>
     <div class="prod-page__toolbar flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
@@ -83,26 +104,26 @@
                     .catch(() => { this.cargando = false; });
             }
         }">
-            <div class="flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm flex-wrap">
+            <div class="prod-periodo flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] px-2 py-1 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Desde</span>
-                <select x-model="mesInicio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="mesInicio" @change="cargarProductividad()" :disabled="cargando" class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = 1; $i <= 12; $i++)
                     <option value="{{ $i }}">{{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}</option>
                     @endfor
                 </select>
-                <select x-model="anioInicio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="anioInicio" @change="cargarProductividad()" :disabled="cargando" class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = $anioActual; $i >= $anioActual - 5; $i--)
                     <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
                 </select>
                 <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Hasta</span>
-                <select x-model="mesFin" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="mesFin" @change="cargarProductividad()" :disabled="cargando" class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = 1; $i <= 12; $i++)
                     <option value="{{ $i }}">{{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}</option>
                     @endfor
                 </select>
-                <select x-model="anioFin" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="anioFin" @change="cargarProductividad()" :disabled="cargando" class="sin-select2 border-0 bg-transparent py-1 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = $anioActual; $i >= $anioActual - 5; $i--)
                     <option value="{{ $i }}">{{ $i }}</option>
                     @endfor

@@ -282,14 +282,54 @@
             var meses = @json($chartMeses);
             var optsMes = UxCharts.barras(false);
             optsMes.plugins.legend.display = true;
+            optsMes.plugins.datalabels = { display: false };
+            optsMes.plugins.tooltip = optsMes.plugins.tooltip || {};
+            optsMes.plugins.tooltip.callbacks = {
+                label: function (ctx) {
+                    var n = Number(ctx.parsed && ctx.parsed.y != null ? ctx.parsed.y : ctx.raw);
+                    var signo = n < 0 ? '-' : '';
+                    return ' ' + ctx.dataset.label + ': ' + signo + '$' + Math.abs(n).toLocaleString('es-MX', { maximumFractionDigits: 0 });
+                }
+            };
+            var coloresTexto = ['#ffffff', '#1a1408', '#ffffff'];
+            var etiquetasMes = {
+                id: 'etiquetasPresupuestoMes',
+                afterDatasetsDraw: function (chart) {
+                    var ctx = chart.ctx;
+                    chart.data.datasets.forEach(function (ds, di) {
+                        if (!chart.isDatasetVisible(di)) return;
+                        var meta = chart.getDatasetMeta(di);
+                        meta.data.forEach(function (bar, i) {
+                            var valor = Number(ds.data[i] || 0);
+                            if (!valor || !bar) return;
+                            var alto = Math.abs(bar.base - bar.y);
+                            var texto = Math.round(valor).toLocaleString('es-MX');
+                            ctx.save();
+                            ctx.font = '700 10px Inter, sans-serif';
+                            if (ctx.measureText(texto).width > alto - 10 || alto < 28) {
+                                ctx.restore();
+                                return;
+                            }
+                            ctx.translate(bar.x, (bar.y + bar.base) / 2);
+                            ctx.rotate(-Math.PI / 2);
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillStyle = coloresTexto[di] || '#ffffff';
+                            ctx.fillText(texto, 0, 0);
+                            ctx.restore();
+                        });
+                    });
+                }
+            };
             nueva(presupuestoMes, {
                 type: 'bar',
+                plugins: [etiquetasMes],
                 data: {
                     labels: meses.map(function (f) { return f.nombre; }),
                     datasets: [
-                        { label: 'Presupuesto', data: meses.map(function (f) { return f.presupuesto; }), backgroundColor: '#0052CC', maxBarThickness: 18 },
-                        { label: 'Facturado', data: meses.map(function (f) { return f.facturado; }), backgroundColor: '#FFAB00', maxBarThickness: 18 },
-                        { label: 'Desviación', data: meses.map(function (f) { return f.desviacion; }), backgroundColor: '#FF5630', maxBarThickness: 18 }
+                        { label: 'Presupuesto', data: meses.map(function (f) { return f.presupuesto; }), backgroundColor: '#0052CC', maxBarThickness: 22 },
+                        { label: 'Facturado', data: meses.map(function (f) { return f.facturado; }), backgroundColor: '#FFAB00', maxBarThickness: 22 },
+                        { label: 'Desviación', data: meses.map(function (f) { return f.desviacion; }), backgroundColor: '#FF5630', maxBarThickness: 22 }
                     ]
                 },
                 options: optsMes
@@ -473,6 +513,13 @@
     @media (min-width: 900px) {
         .dash-charts { grid-template-columns: 1fr 1fr; }
         .dash-chart--wide { grid-column: 1 / -1; }
+    }
+    .dash-chart--wide .dash-chart__lienzo {
+        height: 340px !important;
+        max-height: 340px !important;
+    }
+    .dash-chart--wide canvas {
+        max-height: none !important;
     }
     .dash-chart {
         background: #fff;
