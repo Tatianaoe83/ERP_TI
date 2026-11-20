@@ -3205,7 +3205,7 @@
 
         const canvasCarga = document.getElementById('chartCargaResponsable');
         if (canvasCarga) {
-            const filas = metricasData.tickets_por_responsable || [];
+            const filas = Object.values(metricasData.tickets_por_responsable || {}).sort(function (a, b) { return b.total - a.total; }); // llega como objeto con llaves numéricas: JS pierde el orden
             const lista = filas.length ? filas : [{ nombre: 'Sin datos', cerrados: 0, en_progreso: 0, pendientes: 0 }];
             C.cargaResponsable = new Chart(canvasCarga, {
                 type: 'bar',
@@ -3224,7 +3224,7 @@
 
         const canvasGerencia = document.getElementById('chartGerenciaSolicitante');
         if (canvasGerencia) {
-            const filasG = (metricasData.tickets_por_gerencia_solicitante || []).slice(0, 10);
+            const filasG = Object.values(metricasData.tickets_por_gerencia_solicitante || {}).slice(0, 10);
             const listaG = filasG.length ? filasG : [{ gerencia: 'Sin datos', total: 0 }];
             C.gerenciaSolicitante = new Chart(canvasGerencia, {
                 type: 'bar',
