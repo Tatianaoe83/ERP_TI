@@ -727,6 +727,7 @@
                             <option value="Ticket">Ticket para soporte</option>
                             <option value="Solicitud">Compras de recursos tecnológicos</option>
                             <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option>
+                            <option value="Movimiento" data-area="control">Solicitud de movimientos en ERP</option>
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">

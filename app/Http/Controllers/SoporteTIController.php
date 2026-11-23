@@ -518,7 +518,7 @@ public function crearTickets(Request $request)
         }
 
         if ($type === 'Movimiento') {
-            return redirect()->back()->with('error', 'La solicitud de movimientos en ERP no está disponible.');
+            return $this->guardarMovimientoErp($request);
         }
 
         return redirect()->back()->with(['error' => 'Error inesperado'], 500);
