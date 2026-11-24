@@ -194,7 +194,8 @@ Route::get('/notificaciones-panel', function () {
     $verTI = $usuario && $usuario->can('ver-soporte');
     $verCompras = $usuario && ($usuario->can('ver-compras') || $usuario->can('ver-mantenimientos-compras'));
 
-    $contarFacturasSolicitud = function ($solicitud) {
+    // $cotsConFactura: CotizacionID con factura subida de esta solicitud (precargados en una sola query).
+    $contarFacturasSolicitud = function ($solicitud, array $cotsConFactura) {
         if (!$solicitud->cotizaciones || $solicitud->cotizaciones->isEmpty()) {
             return [0, 0];
         }
@@ -206,38 +207,13 @@ Route::get('/notificaciones-panel', function () {
         if ($totalNecesarias === 0) {
             return [0, 0];
         }
-        $cotIds = $sel->pluck('CotizacionID')->filter()->unique()->toArray();
-        if (empty($cotIds)) {
-            return [0, $totalNecesarias];
-        }
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('facturas', 'CotizacionID')) {
-            $facturasSubidas = \App\Models\Facturas::query()
-                ->where('SolicitudID', (int)$solicitud->SolicitudID)
-                ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
-                    ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
-                ->count();
-
-            return [min($facturasSubidas, $totalNecesarias), $totalNecesarias];
-        }
-        $facturas = \App\Models\Facturas::query()
-            ->where('SolicitudID', (int)$solicitud->SolicitudID)
-            ->whereIn('CotizacionID', $cotIds)
-            ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
-                ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
-            ->select('CotizacionID')
-            ->distinct()
-            ->get();
-        if ($facturas->isEmpty()) {
-            return [0, $totalNecesarias];
-        }
-        $cotsConFactura = $facturas->pluck('CotizacionID')->toArray();
         $provsConFactura = $sel->whereIn('CotizacionID', $cotsConFactura)
             ->pluck('Proveedor')->filter()->unique()->count();
         return [$provsConFactura, $totalNecesarias];
     };
 
-    $mapSolicitudFacturaPendiente = function ($solicitud) use ($contarFacturasSolicitud) {
-        [$facturasSubidas, $totalNecesarias] = $contarFacturasSolicitud($solicitud);
+    $mapSolicitudFacturaPendiente = function ($solicitud, array $conteo) {
+        [$facturasSubidas, $totalNecesarias] = $conteo;
         return [
             'SolicitudID' => $solicitud->SolicitudID,
             'Motivo' => $solicitud->Motivo,
@@ -354,17 +330,30 @@ Route::get('/notificaciones-panel', function () {
         ]);
 
     // 5. Solicitudes aprobadas con facturas pendientes de subir
-    $solicitudesFacturaPendienteFiltradas = !$verTI ? collect() : $querySolicitudesAprobadas()
+    $solicitudesAprobadas = !$verTI ? collect() : $querySolicitudesAprobadas()
         ->orderBy('updated_at', 'desc')
+        ->get();
+
+    // Una query para las facturas de todas las solicitudes (antes eran 2 por solicitud).
+    $cotsConFacturaPorSolicitud = $solicitudesAprobadas->isEmpty() ? collect() : \App\Models\Facturas::query()
+        ->whereIn('SolicitudID', $solicitudesAprobadas->pluck('SolicitudID'))
+        ->whereNotNull('CotizacionID')
+        ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
+            ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
+        ->select('SolicitudID', 'CotizacionID')
+        ->distinct()
         ->get()
-        ->filter(function ($s) use ($contarFacturasSolicitud) {
-            [$subidas, $necesarias] = $contarFacturasSolicitud($s);
-            return $necesarias > 0 && $subidas < $necesarias;
-        });
+        ->groupBy('SolicitudID')
+        ->map(fn ($filas) => $filas->pluck('CotizacionID')->all());
+
+    // Cada solicitud se cuenta una sola vez; el conteo viaja junto a ella hasta el map.
+    $solicitudesFacturaPendienteFiltradas = $solicitudesAprobadas
+        ->map(fn ($s) => [$s, $contarFacturasSolicitud($s, $cotsConFacturaPorSolicitud->get($s->SolicitudID, []))])
+        ->filter(fn ($par) => $par[1][1] > 0 && $par[1][0] < $par[1][1]);
 
     $solicitudesFacturaPendiente = $solicitudesFacturaPendienteFiltradas
         ->take(10)
-        ->map($mapSolicitudFacturaPendiente)
+        ->map(fn ($par) => $mapSolicitudFacturaPendiente($par[0], $par[1]))
         ->values();
 
     $solicitudesFacturaPendienteCount = $solicitudesFacturaPendienteFiltradas->count();
@@ -514,11 +503,10 @@ Route::get('/notificaciones-panel', function () {
         'movimientos_pendientes' => $movimientosPendientes,
         'movimientos_aplicados' => $movimientosAplicados,
         'mensajes_nuevos' => $mensajesNuevos,
-'mensajes_nuevos_count' => !$verTI ? 0 :
-\App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
-    ->get()
-    ->groupBy('ticket_id')
-    ->count(),        // Cambié el count de arriba por el SUM total para que refleje cuántos mensajes reales hay sin leer en el sistema global.
+        // Tickets distintos con mensajes sin leer, contados en SQL (antes traía todas las filas).
+        'mensajes_nuevos_count' => !$verTI ? 0 : \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
+            ->distinct()
+            ->count('ticket_id'),
     ]);
 });
     Route::post('/tickets/update', [TicketsController::class, 'update']);
