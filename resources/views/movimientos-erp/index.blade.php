@@ -3,7 +3,7 @@
 @section('content')
 @php $tabMov = request('tab') === 'productividad' ? 'productividad' : 'movimientos'; @endphp
 <div data-app-tabset>
-<x-index-page title="Movimientos ERP" icon="fa-exchange-alt" :show-count="false" subtitle="Solicitudes de cargo en Neodata. El folio se captura a mano, igual que en el ERP.">
+<x-index-page title="Movimientos ERP" icon="fa-exchange-alt" :show-count="false" :card="$tabMov !== 'productividad'" subtitle="Solicitudes de cargo en Neodata. El folio se captura a mano, igual que en el ERP.">
     <x-slot name="tabs">
         <div class="app-tabs" role="tablist">
             <a href="{{ route('movimientos-erp.index') }}" data-app-tab="movimientos" class="app-tabs__btn {{ $tabMov === 'movimientos' ? 'is-active' : '' }}">

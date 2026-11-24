@@ -371,14 +371,14 @@ class MovimientoErpService
             $anios->prepend((int) now()->year);
         }
 
-        $obraIds = SolicitudMovimiento::query()->whereNotNull('ObraID')->distinct()->pluck('ObraID');
         $obras = \App\Models\Obras::query()
-            ->whereIn('ObraID', $obraIds)
+            ->whereIn('ObraID', SolicitudMovimiento::query()->whereNotNull('ObraID')->select('ObraID'))
             ->orderBy('NombreObra')
             ->get(['ObraID', 'NombreObra']);
+        // El catálogo ya trae todas las obras con movimientos: de ahí sale el nombre de cada fila.
+        $obrasPorId = $obras->keyBy('ObraID');
 
         $filas = SolicitudMovimiento::query()
-            ->with(['obra:ObraID,NombreObra'])
             ->when($anio > 0, fn ($q) => $q->whereYear('created_at', $anio))
             ->when($mes >= 1 && $mes <= 12, fn ($q) => $q->whereMonth('created_at', $mes))
             ->when($obraId > 0, fn ($q) => $q->where('ObraID', $obraId))
@@ -442,7 +442,7 @@ class MovimientoErpService
             'horas_neodata' => $promedio($filas->where('Estatus', SolicitudMovimiento::APLICADA), 'autorizado_en', 'aplicado_en'),
             'meses' => $meses,
             'personas' => $agrupar($filas->where('Estatus', SolicitudMovimiento::APLICADA), fn ($fila) => $fila->aplicado_por ?: 'Sin registro'),
-            'obras' => $agrupar($filas, fn ($fila) => optional($fila->obra)->NombreObra ?: 'Sin proyecto'),
+            'obras' => $agrupar($filas, fn ($fila) => optional($obrasPorId->get($fila->ObraID))->NombreObra ?: 'Sin proyecto'),
             'estatus' => [
                 ['nombre' => SolicitudMovimiento::PENDIENTE, 'total' => $contar(SolicitudMovimiento::PENDIENTE)],
                 ['nombre' => SolicitudMovimiento::APROBADA, 'total' => $contar(SolicitudMovimiento::APROBADA)],

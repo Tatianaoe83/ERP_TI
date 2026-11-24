@@ -68,8 +68,11 @@ class MovimientoErpController extends Controller
         $estatus = $request->input('estatus');
         $buscar = trim((string) $request->input('q'));
 
-        $solicitudes = SolicitudMovimiento::query()
-            ->with(['solicitante', 'obra', 'cargo', 'autorizador', 'residente', 'lineas.cargo', 'pasos.approver', 'pasos.decidedBy'])
+        $tabProductividad = $request->input('tab') === 'productividad';
+
+        // El listado solo se pinta en la pestaña Movimientos; en Productividad no se consulta.
+        $solicitudes = $tabProductividad ? null : SolicitudMovimiento::query()
+            ->with(['solicitante', 'obra', 'cargo', 'lineas.cargo', 'pasos.approver', 'pasos.decidedBy'])
             ->when($estatus, fn ($q) => $q->where('Estatus', $estatus))
             ->when($buscar !== '', function ($q) use ($buscar) {
                 $q->where(function ($inner) use ($buscar) {
@@ -86,7 +89,7 @@ class MovimientoErpController extends Controller
             ->withQueryString();
 
         $productividad = null;
-        if ($request->input('tab') === 'productividad') {
+        if ($tabProductividad) {
             $productividad = app(MovimientoErpService::class)->productividad([
                 'anio' => (int) $request->input('anio', 0),
                 'mes' => (int) $request->input('mes', 0),
