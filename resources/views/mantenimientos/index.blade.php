@@ -22,7 +22,7 @@
         @endcan
     </x-slot>
 
-    @livewire('mantenimientos-table')
+    @livewire('mantenimientos-table', ['anios' => $aniosDisponibles->all()])
 
     @can('editar-mantenimientos')
     @php

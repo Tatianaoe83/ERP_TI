@@ -26,10 +26,20 @@ class MantenimientosTable extends Component
     public string $comentario = '';
     public array $detalle = [];
 
-    public function mount(): void
+    // Se calcula una vez: solo cambia al generar programación, y eso recarga la página.
+    public array $aniosDisponibles = [];
+
+    public function mount(?array $anios = null): void
     {
         Carbon::setLocale('es');
         $this->anio = (string) now()->year;
+        $this->aniosDisponibles = $anios ?? Mantenimiento::query()
+            ->whereNotNull('AnioProgramacion')
+            ->select('AnioProgramacion')
+            ->distinct()
+            ->orderByDesc('AnioProgramacion')
+            ->pluck('AnioProgramacion')
+            ->all();
     }
 
     public function updatedEstatus(): void
@@ -164,10 +174,7 @@ class MantenimientosTable extends Component
     public function render()
     {
         $query = Mantenimiento::query()
-            ->with([
-                'empleado.puestos.departamentos.gerencia',
-                'inventarioEquipo.empleados.puestos.departamentos.gerencia',
-            ])
+            ->with('inventarioEquipo.empleados.puestos.departamentos.gerencia')
             ->leftJoin('inventarioequipo as ie', 'ie.InventarioID', '=', 'mantenimientos.InventarioID')
             ->leftJoin('empleados as e', 'e.EmpleadoID', '=', 'ie.EmpleadoID')
             ->leftJoin('puestos as p', 'p.PuestoID', '=', 'e.PuestoID')
@@ -203,16 +210,15 @@ class MantenimientosTable extends Component
         }
 
         $mantenimientos = $query->paginate($this->perPage);
-        $aniosDisponibles = Mantenimiento::query()
-            ->whereNotNull('AnioProgramacion')
-            ->select('AnioProgramacion')
-            ->distinct()
-            ->orderByDesc('AnioProgramacion')
-            ->pluck('AnioProgramacion');
+
+        // El empleado directo solo se usa si el equipo no tiene empleado (Mantenimiento::empleadoAsignado):
+        // se carga únicamente para esas filas.
+        $mantenimientos->getCollection()
+            ->filter(fn ($m) => !optional($m->inventarioEquipo)->empleados)
+            ->load('empleado.puestos.departamentos.gerencia');
 
         return view('livewire.mantenimientos-table', [
             'mantenimientos' => $mantenimientos,
-            'aniosDisponibles' => $aniosDisponibles,
         ]);
     }
 }
