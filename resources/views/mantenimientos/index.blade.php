@@ -113,6 +113,17 @@
         right: 0;
         top: 0;
         z-index: 1050;
+        animation: mantBackdropIn .18s ease-out;
+    }
+
+    /* Keyframes mant* definidos en livewire/mantenimientos-table (misma página).
+       Pasar de display:none a flex reinicia la animación en cada apertura. */
+    .mant-modal-card { animation: mantModalIn .2s cubic-bezier(.2, .8, .3, 1); }
+    .mant-modal-backdrop.is-closing { animation: mantBackdropOut .14s ease-in forwards; }
+    .mant-modal-backdrop.is-closing .mant-modal-card { animation: mantModalOut .14s ease-in forwards; }
+    @media (prefers-reduced-motion: reduce) {
+        .mant-modal-card { animation-name: mantBackdropIn; }
+        .mant-modal-backdrop.is-closing .mant-modal-card { animation-name: mantBackdropOut; }
     }
 
     .mant-modal-card {
@@ -245,9 +256,13 @@
 
     window.cerrarModalProgramacionMantenimientos = function () {
         var modal = document.getElementById('modal-programacion-mantenimientos');
-        if (!modal) return;
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
+        if (!modal || modal.style.display === 'none' || modal.classList.contains('is-closing')) return;
+        modal.classList.add('is-closing');
+        setTimeout(function () {
+            modal.classList.remove('is-closing');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 140);
     };
 
     window.inicializarOrdenGerenciasMantenimiento = function () {

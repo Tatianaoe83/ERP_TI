@@ -19,12 +19,8 @@ class MantenimientosTable extends Component
     public string $anio = '';
     public int $perPage = 15;
     public array $columnasOcultas = [];
-    public bool $modalReprogramarAbierto = false;
-    public bool $modalDetalleAbierto = false;
-    public ?int $mantenimientoSeleccionadoId = null;
     public string $fechaReprogramada = '';
     public string $comentario = '';
-    public array $detalle = [];
 
     // Se calcula una vez: solo cambia al generar programación, y eso recarga la página.
     public array $aniosDisponibles = [];
@@ -102,52 +98,35 @@ class MantenimientosTable extends Component
         $this->resetPage();
     }
 
-    public function abrirReprogramar(int $mantenimientoId): void
+    // El modal de reprogramar se abre en el navegador; aquí solo se guarda.
+    public function guardarReprogramacion(int $mantenimientoId): void
     {
         $mantenimiento = Mantenimiento::findOrFail($mantenimientoId);
+        // Se queda en el año de su programación: el filtro por año y el Excel (una hoja por año) dependen de eso.
+        $anio = (int) ($mantenimiento->AnioProgramacion ?: optional($mantenimiento->FechaMantenimiento)->year);
 
-        $this->mantenimientoSeleccionadoId = $mantenimiento->id;
-        $this->fechaReprogramada = optional($mantenimiento->FechaReprogramada)->format('Y-m-d') ?? '';
-        $this->comentario = $mantenimiento->Comentario ?? '';
-        $this->modalReprogramarAbierto = true;
-    }
-
-    public function cerrarReprogramar(): void
-    {
-        $this->modalReprogramarAbierto = false;
-        $this->mantenimientoSeleccionadoId = null;
-        $this->fechaReprogramada = '';
-        $this->comentario = '';
-    }
-
-    public function guardarReprogramacion(): void
-    {
         $this->validate([
-            'fechaReprogramada' => ['required', 'date'],
+            'fechaReprogramada' => ['required', 'date', "after_or_equal:{$anio}-01-01", "before_or_equal:{$anio}-12-31"],
             'comentario' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'fechaReprogramada.after_or_equal' => "La fecha debe ser dentro de {$anio}.",
+            'fechaReprogramada.before_or_equal' => "La fecha debe ser dentro de {$anio}.",
         ]);
 
-        $mantenimiento = Mantenimiento::findOrFail($this->mantenimientoSeleccionadoId);
         $mantenimiento->update([
             'Comentario' => $this->comentario,
             'FechaReprogramada' => $this->fechaReprogramada,
         ]);
 
-        $this->cerrarReprogramar();
+        $this->fechaReprogramada = '';
+        $this->comentario = '';
         $this->dispatchBrowserEvent('mantenimiento-seguimiento-guardado');
     }
 
-    public function abrirDetalle(int $mantenimientoId): void
+    // Datos del modal de detalle; van en cada fila para abrirlo sin ir al servidor.
+    private function detalleDe(Mantenimiento $mantenimiento, $usuarios): array
     {
-        $mantenimiento = Mantenimiento::with([
-            'empleado.puestos.departamentos.gerencia',
-            'inventarioEquipo.empleados.puestos.departamentos.gerencia',
-        ])->findOrFail($mantenimientoId);
-        $usuarioRealizo = $mantenimiento->RealizadoPor
-            ? DB::table('users')->where('id', $mantenimiento->RealizadoPor)->value('name')
-            : null;
-
-        $this->detalle = [
+        return [
             'Empleado' => $mantenimiento->NombreEmpleado,
             'Gerencia' => $mantenimiento->NombreGerencia ?: '-',
             'Estatus' => $mantenimiento->EstatusMantenimiento,
@@ -157,18 +136,10 @@ class MantenimientosTable extends Component
             'Fecha compra' => $mantenimiento->FechaDeCompra ? Carbon::parse($mantenimiento->FechaDeCompra)->format('d/m/Y') : '-',
             'Fecha mantenimiento' => $mantenimiento->FechaMantenimiento ? Carbon::parse($mantenimiento->FechaMantenimiento)->translatedFormat('l, d \\d\\e F \\d\\e Y') : '-',
             'Fecha reprogramada' => $mantenimiento->FechaReprogramada ? Carbon::parse($mantenimiento->FechaReprogramada)->format('d/m/Y') : '-',
-            'Realizado por' => $usuarioRealizo ?: '-',
+            'Realizado por' => $usuarios[$mantenimiento->RealizadoPor] ?? '-',
             'Fecha realizado' => $mantenimiento->FechaRealizado ? Carbon::parse($mantenimiento->FechaRealizado)->format('d/m/Y H:i') : '-',
             'Comentario' => $mantenimiento->Comentario ?: '-',
         ];
-
-        $this->modalDetalleAbierto = true;
-    }
-
-    public function cerrarDetalle(): void
-    {
-        $this->modalDetalleAbierto = false;
-        $this->detalle = [];
     }
 
     public function render()
@@ -181,7 +152,8 @@ class MantenimientosTable extends Component
             ->leftJoin('departamentos as d', 'd.DepartamentoID', '=', 'p.DepartamentoID')
             ->leftJoin('gerencia as g', 'g.GerenciaID', '=', 'd.GerenciaID')
             ->select('mantenimientos.*')
-            ->orderBy('mantenimientos.FechaMantenimiento')
+            // Misma fecha que se muestra: la reprogramada si existe.
+            ->orderByRaw('COALESCE(mantenimientos.FechaReprogramada, mantenimientos.FechaMantenimiento)')
             ->orderBy('g.NombreGerencia')
             ->orderBy('e.NombreEmpleado');
 
@@ -216,6 +188,12 @@ class MantenimientosTable extends Component
         $mantenimientos->getCollection()
             ->filter(fn ($m) => !optional($m->inventarioEquipo)->empleados)
             ->load('empleado.puestos.departamentos.gerencia');
+
+        $realizadoPor = $mantenimientos->getCollection()->pluck('RealizadoPor')->filter()->unique();
+        $usuarios = $realizadoPor->isEmpty() ? [] : DB::table('users')->whereIn('id', $realizadoPor)->pluck('name', 'id')->all();
+        foreach ($mantenimientos as $mantenimiento) {
+            $mantenimiento->detalleModal = $this->detalleDe($mantenimiento, $usuarios);
+        }
 
         return view('livewire.mantenimientos-table', [
             'mantenimientos' => $mantenimientos,

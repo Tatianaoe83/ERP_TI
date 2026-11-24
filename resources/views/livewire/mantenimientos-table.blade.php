@@ -253,7 +253,8 @@
                                 <div class="index-actions">
                                     <button
                                         type="button"
-                                        wire:click="abrirDetalle({{ $item->id }})"
+                                        onclick="mantAbrirDetalle(this)"
+                                        data-detalle="{{ json_encode($item->detalleModal) }}"
                                         class="index-action index-action--view"
                                         title="Ver"
                                     >
@@ -264,7 +265,11 @@
                                         @if($item->Estatus !== 'Realizado')
                                             <button
                                                 type="button"
-                                                wire:click="abrirReprogramar({{ $item->id }})"
+                                                onclick="mantAbrirReprogramar(this)"
+                                                data-id="{{ $item->id }}"
+                                                data-anio="{{ $item->AnioProgramacion }}"
+                                                data-fecha="{{ optional($item->FechaReprogramada)->format('Y-m-d') }}"
+                                                data-comentario="{{ $item->Comentario }}"
                                                 class="index-action index-action--edit"
                                                 title="Reprogramar"
                                             >
@@ -303,13 +308,13 @@
     </div>
     </div>
 
-    @if($modalReprogramarAbierto)
-        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarReprogramar">
+    {{-- Se abre y cierra en el navegador (mantAbrirReprogramar); wire:ignore.self conserva el display. --}}
+        <div id="mant-modal-reprogramar" wire:ignore.self class="modal fade show mant-lw-modal" tabindex="-1" style="display: none; background: rgba(0, 0, 0, .45);" onclick="if (event.target === this) mantCerrarModal(this)">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header mant-modal-header">
                         <h5 class="modal-title">Reprogramar mantenimiento</h5>
-                        <button type="button" class="btn-close mant-modal-close" wire:click="cerrarReprogramar" aria-label="Cerrar"></button>
+                        <button type="button" class="btn-close mant-modal-close" onclick="mantCerrarModal(this)" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
@@ -340,57 +345,101 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="mant-modal-btn mant-modal-btn-secondary" wire:click="cerrarReprogramar">Cancelar</button>
-                        <button type="button" class="mant-modal-btn mant-modal-btn-primary" wire:click="guardarReprogramacion" wire:loading.attr="disabled">
+                        <button type="button" class="mant-modal-btn mant-modal-btn-secondary" onclick="mantCerrarModal(this)">Cancelar</button>
+                        <button type="button" class="mant-modal-btn mant-modal-btn-primary" onclick="mantGuardarReprogramacion(this)" wire:loading.attr="disabled" wire:target="guardarReprogramacion">
                             Guardar reprogramación
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-    @endif
 
-    @if($modalDetalleAbierto)
-        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarDetalle">
+    <div id="mant-modal-detalle" wire:ignore class="modal fade show mant-lw-modal" tabindex="-1" style="display: none; background: rgba(0, 0, 0, .45);" onclick="if (event.target === this) mantCerrarModal(this)">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-header mant-modal-header">
                         <h5 class="modal-title">Detalle del mantenimiento</h5>
-                        <button type="button" class="btn-close mant-modal-close" wire:click="cerrarDetalle" aria-label="Cerrar"></button>
+                        <button type="button" class="btn-close mant-modal-close" onclick="mantCerrarModal(this)" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="row">
-                            @foreach($detalle as $label => $valor)
-                                <div class="col-md-6 mb-3">
-                                    <div class="small text-muted">{{ $label }}</div>
-                                    @if($label === 'Estatus')
-                                        @php
-                                            $detalleClase = match ($valor) {
-                                                'Realizado' => 'erp-chip--ok',
-                                                'Baja' => 'erp-chip--alerta',
-                                                'Sin persona física' => 'erp-chip--acento',
-                                                default => 'erp-chip--aviso',
-                                            };
-                                        @endphp
-                                        <span class="erp-chip {{ $detalleClase }}">{{ $valor }}</span>
-                                    @else
-                                        <div class="font-weight-bold">{{ $valor }}</div>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
+                        <div class="row" data-detalle-cuerpo></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="mant-modal-btn mant-modal-btn-secondary" wire:click="cerrarDetalle">Cerrar</button>
+                        <button type="button" class="mant-modal-btn mant-modal-btn-secondary" onclick="mantCerrarModal(this)">Cerrar</button>
                     </div>
                 </div>
             </div>
         </div>
-    @endif
 
     @once
         @push('third_party_scripts')
             <script>
+                // Los modales de detalle y reprogramar abren en el navegador, sin esperar a Livewire.
+                function mantAbrirModal(modal) {
+                    modal.classList.remove('is-closing');
+                    modal.style.display = 'block';
+                }
+
+                function mantCerrarModal(el) {
+                    var modal = el.closest('.mant-lw-modal');
+                    if (!modal || modal.classList.contains('is-closing')) return;
+                    modal.classList.add('is-closing');
+                    setTimeout(function () {
+                        modal.classList.remove('is-closing');
+                        modal.style.display = 'none';
+                    }, 140);
+                }
+
+                function mantAbrirDetalle(boton) {
+                    var modal = document.getElementById('mant-modal-detalle');
+                    var cuerpo = modal.querySelector('[data-detalle-cuerpo]');
+                    var chips = { 'Realizado': 'erp-chip--ok', 'Baja': 'erp-chip--alerta', 'Sin persona física': 'erp-chip--acento' };
+                    var detalle = JSON.parse(boton.dataset.detalle);
+                    cuerpo.innerHTML = '';
+                    Object.keys(detalle).forEach(function (etiqueta) {
+                        var valor = detalle[etiqueta] == null ? '' : String(detalle[etiqueta]);
+                        var col = document.createElement('div');
+                        col.className = 'col-md-6 mb-3';
+                        var label = document.createElement('div');
+                        label.className = 'small text-muted';
+                        label.textContent = etiqueta;
+                        var dato = document.createElement(etiqueta === 'Estatus' ? 'span' : 'div');
+                        dato.className = etiqueta === 'Estatus' ? 'erp-chip ' + (chips[valor] || 'erp-chip--aviso') : 'font-weight-bold';
+                        dato.textContent = valor;
+                        col.appendChild(label);
+                        col.appendChild(dato);
+                        cuerpo.appendChild(col);
+                    });
+                    mantAbrirModal(modal);
+                }
+
+                function mantAbrirReprogramar(boton) {
+                    var modal = document.getElementById('mant-modal-reprogramar');
+                    modal.dataset.id = boton.dataset.id;
+                    // Quita errores de un intento anterior.
+                    modal.querySelectorAll('.invalid-feedback').forEach(function (e) { e.remove(); });
+                    modal.querySelectorAll('.is-invalid').forEach(function (e) { e.classList.remove('is-invalid'); });
+                    // El evento input deja el valor en wire:model.defer; se envía al guardar.
+                    [['fecha-reprogramada', boton.dataset.fecha], ['comentario-reprogramacion', boton.dataset.comentario]].forEach(function (par) {
+                        var campo = document.getElementById(par[0]);
+                        campo.value = par[1] || '';
+                        campo.dispatchEvent(new Event('input', { bubbles: true }));
+                    });
+                    // El calendario solo deja escoger días del año de la programación (el servidor también lo valida).
+                    var fecha = document.getElementById('fecha-reprogramada');
+                    fecha.min = boton.dataset.anio ? boton.dataset.anio + '-01-01' : '';
+                    fecha.max = boton.dataset.anio ? boton.dataset.anio + '-12-31' : '';
+                    mantAbrirModal(modal);
+                }
+
+                function mantGuardarReprogramacion(boton) {
+                    var modal = boton.closest('.mant-lw-modal');
+                    // Sin selector: "[wire:id]" necesita escapar los dos puntos y es fácil romperlo.
+                    var raiz = boton;
+                    while (raiz && !raiz.hasAttribute('wire:id')) raiz = raiz.parentElement;
+                    window.Livewire.find(raiz.getAttribute('wire:id')).call('guardarReprogramacion', parseInt(modal.dataset.id, 10));
+                }
+
                 function syncMantenimientosCount() {
                     var sync = document.getElementById('mant-count-sync');
                     var el = document.querySelector('#mantenimientos-page .index-page__count');
@@ -439,6 +488,8 @@
                 }
 
                 window.addEventListener('mantenimiento-seguimiento-guardado', function () {
+                    var modal = document.getElementById('mant-modal-reprogramar');
+                    if (modal) mantCerrarModal(modal);
                     if (typeof Swal === 'undefined') {
                         return;
                     }
@@ -521,6 +572,29 @@
             .mant-empty-state i {
                 color: #94a3b8;
                 font-size: 15px;
+            }
+
+            /* Misma entrada que los modales de tareas. Morphdom no recrea el nodo al
+               re-renderizar, así que solo se anima al abrir. */
+            @keyframes mantBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes mantModalIn {
+                from { opacity: 0; transform: translateY(10px) scale(.97); }
+                to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            /* Salida más corta que la entrada; la dispara mantCerrarModal(). */
+            @keyframes mantBackdropOut { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes mantModalOut {
+                from { opacity: 1; transform: translateY(0) scale(1); }
+                to   { opacity: 0; transform: translateY(6px) scale(.98); }
+            }
+            .mant-lw-modal { animation: mantBackdropIn .18s ease-out; }
+            .mant-lw-modal .modal-dialog { animation: mantModalIn .2s cubic-bezier(.2, .8, .3, 1); }
+            .mant-lw-modal.is-closing { animation: mantBackdropOut .14s ease-in forwards; }
+            .mant-lw-modal.is-closing .modal-dialog { animation: mantModalOut .14s ease-in forwards; }
+            /* Con "reducir movimiento" (Windows sin efectos de animación) queda solo el fade. */
+            @media (prefers-reduced-motion: reduce) {
+                .mant-lw-modal .modal-dialog { animation-name: mantBackdropIn; }
+                .mant-lw-modal.is-closing .modal-dialog { animation-name: mantBackdropOut; }
             }
 
             .mant-modal-header {
