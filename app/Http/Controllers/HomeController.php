@@ -134,18 +134,30 @@ class HomeController extends Controller
         $tiposOperativos = PresupuestoAsignacion::tiposPersonaInventario();
         $idsFiltro = $this->idsEmpleadosFiltrados($request);
 
-        $baseEmpleados = Empleados::query()->whereIn('tipo_persona', $tiposOperativos);
-        if ($idsFiltro !== null) {
-            $baseEmpleados->whereIn('EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
-        }
-        $totalEmpleados = (clone $baseEmpleados)->count();
-        $empleadosActivos = (clone $baseEmpleados)->where('Estado', true)->count();
+        // Total, activos y vacantes (EXTRAORDINARIO activos) en una sola query.
+        $enOperativos = 'tipo_persona IN (' . implode(',', array_fill(0, count($tiposOperativos), '?')) . ')';
+        $conteoEmpleados = Empleados::query()
+            ->whereIn('tipo_persona', array_merge($tiposOperativos, ['EXTRAORDINARIO']))
+            ->when($idsFiltro !== null, fn ($q) => $q->whereIn('EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro))
+            ->selectRaw(
+                "COALESCE(SUM($enOperativos), 0) as total,
+                 COALESCE(SUM($enOperativos AND Estado = 1), 0) as activos,
+                 COALESCE(SUM(tipo_persona = 'EXTRAORDINARIO' AND Estado = 1), 0) as vacantes",
+                array_merge($tiposOperativos, $tiposOperativos)
+            )
+            ->first();
+        $totalEmpleados = (int) $conteoEmpleados->total;
+        $empleadosActivos = (int) $conteoEmpleados->activos;
+        $vacantes = (int) $conteoEmpleados->vacantes;
 
         $totalEquipos = Equipos::count();
-        $equiposAsignados = $this->limitarPorEmpleados(
+        // Equipos asignados y empleados distintos con equipo salen de la misma consulta.
+        $conteoEquipos = $this->limitarPorEmpleados(
             $this->queryAsignadosOperativos('inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS),
             $idsFiltro
-        )->count();
+        )->selectRaw('COUNT(*) as asignados, COUNT(DISTINCT inventarioequipo.EmpleadoID) as personas')->first();
+        $equiposAsignados = (int) $conteoEquipos->asignados;
+        $conEquipo = (int) $conteoEquipos->personas;
 
         $totalInsumos = Insumos::count();
         $insumosAsignados = $this->limitarPorEmpleados(
@@ -153,16 +165,25 @@ class HomeController extends Controller
             $idsFiltro
         )->count();
 
-        $totalLineas = LineasTelefonicas::where('Activo', true)->count();
-        $lineasLibres = LineasTelefonicas::where('Activo', true)->where('Disponible', 1)->count();
+        $conteoLineas = LineasTelefonicas::where('Activo', true)
+            ->selectRaw('COUNT(*) as total, COALESCE(SUM(Disponible = 1), 0) as libres')
+            ->first();
+        $totalLineas = (int) $conteoLineas->total;
+        $lineasLibres = (int) $conteoLineas->libres;
         $lineasReferenciados = $this->lineasAsignadasOperativas('REFERENCIADO', $idsFiltro)->count();
         $lineasAsignadasPersonaFisica = $this->lineasAsignadasOperativas('FISICA', $idsFiltro)->count();
         $lineasAsignadas = $lineasAsignadasPersonaFisica + $lineasReferenciados;
         $lineasDisponibles = $lineasLibres;
 
-        $totalObras = Obras::where('Estado', true)->count();
-        $totalGerencias = Gerencia::where('Estado', true)->count();
-        $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
+        // Tres tablas, un solo viaje: subselects (los modelos aplican su soft delete).
+        $conteoOrg = DB::query()
+            ->selectSub(Obras::where('Estado', true)->selectRaw('COUNT(*)'), 'obras')
+            ->selectSub(Gerencia::where('Estado', true)->selectRaw('COUNT(*)'), 'gerencias')
+            ->selectSub(UnidadesDeNegocio::where('Estado', true)->selectRaw('COUNT(*)'), 'unidades')
+            ->first();
+        $totalObras = (int) $conteoOrg->obras;
+        $totalGerencias = (int) $conteoOrg->gerencias;
+        $totalUnidadesNegocio = (int) $conteoOrg->unidades;
 
         $anio = $this->anioFiltro($request);
         $mantenimientosAnio = ['pendientes' => 0, 'vencidos' => 0, 'realizados' => 0, 'anio' => $anio];
@@ -181,18 +202,17 @@ class HomeController extends Controller
                     ->orWhereNull('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS);
             });
 
-        $mantenimientosAnio['realizados'] = (clone $mantenimientosBase)
-            ->where('m.Estatus', 'Realizado')
-            ->count();
-
-        $mantenimientosAnio['pendientes'] = (clone $mantenimientosBase)
-            ->where('m.Estatus', 'Pendiente')
-            ->count();
-
-        $mantenimientosAnio['vencidos'] = (clone $mantenimientosBase)
-            ->where('m.Estatus', 'Pendiente')
-            ->whereRaw('COALESCE(m.FechaReprogramada, m.FechaMantenimiento) < ?', [now()->toDateString()])
-            ->count();
+        $conteoMant = $mantenimientosBase
+            ->selectRaw(
+                "COALESCE(SUM(m.Estatus = 'Realizado'), 0) as realizados,
+                 COALESCE(SUM(m.Estatus = 'Pendiente'), 0) as pendientes,
+                 COALESCE(SUM(m.Estatus = 'Pendiente' AND COALESCE(m.FechaReprogramada, m.FechaMantenimiento) < ?), 0) as vencidos",
+                [now()->toDateString()]
+            )
+            ->first();
+        $mantenimientosAnio['realizados'] = (int) $conteoMant->realizados;
+        $mantenimientosAnio['pendientes'] = (int) $conteoMant->pendientes;
+        $mantenimientosAnio['vencidos'] = (int) $conteoMant->vencidos;
 
         $estadisticasPorGerencia = DB::table('gerencia')
             ->leftJoin('departamentos', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
@@ -229,11 +249,6 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-        $vacantesQuery = Empleados::where('tipo_persona', 'EXTRAORDINARIO')->where('Estado', true);
-        if ($idsFiltro !== null) {
-            $vacantesQuery->whereIn('EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
-        }
-        $vacantes = $vacantesQuery->count();
         $equiposPropios = $this->contarSeguro(fn () => $this->limitarPorEmpleados(
             PresupuestoAsignacion::restringirPropios(DB::table('inventarioequipo')),
             $idsFiltro
@@ -265,35 +280,53 @@ class HomeController extends Controller
             $facturasBase->whereRaw('1 = 0');
         }
 
+        $ticketsEstatus = $this->contarSeguro(function () use ($ticketsBase) {
+            return (clone $ticketsBase)
+                ->select('Estatus', DB::raw('COUNT(*) as total'))
+                ->whereNotIn('Estatus', ['Cerrado', 'Cancelado', 'Cancelada', 'Resuelto'])
+                ->groupBy('Estatus')
+                ->orderByDesc('total')
+                ->get();
+        }, collect());
+        // Abiertos/pendientes/en progreso salen del mismo GROUP BY; la llave se normaliza
+        // porque MySQL agrupa sin distinguir mayúsculas ni espacios finales.
+        $porEstatus = $ticketsEstatus->groupBy(fn ($r) => mb_strtolower(trim((string) $r->Estatus)))
+            ->map(fn ($filas) => (int) $filas->sum('total'));
+        $ticketsDe = fn (array $estatus) => collect($estatus)->sum(fn ($e) => $porEstatus->get(mb_strtolower($e), 0));
+
+        $conteoFacturas = $this->contarSeguro(
+            fn () => (clone $facturasBase)->selectRaw('COUNT(*) as total, COALESCE(SUM(Costo), 0) as importe')->first(),
+            null
+        );
+
+        // Un viaje con subselects que reusan los scopes del modelo: la regla de cada tarjeta vive solo en TicketTarea.
+        $conteoTareas = $this->contarSeguro(function () use ($tareasBase) {
+            $contar = fn ($q) => $q->selectRaw('COUNT(*)');
+            return DB::query()
+                ->selectSub($contar((clone $tareasBase)->pendientes()), 'pendientes')
+                ->selectSub($contar((clone $tareasBase)->deHoy()), 'hoy')
+                ->selectSub($contar((clone $tareasBase)->atrasadas()), 'atrasadas')
+                ->selectSub($contar((clone $tareasBase)->proximas()), 'proximas')
+                ->selectSub($contar((clone $tareasBase)->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)), 'criticas')
+                ->first();
+        }, null);
+
         $operacion = [
-            'tickets_abiertos' => $this->contarSeguro(fn () => (clone $ticketsBase)->whereIn('Estatus', ['Pendiente', 'En progreso', 'Pausado'])->count()),
-            'tickets_pendientes' => $this->contarSeguro(fn () => (clone $ticketsBase)->where('Estatus', 'Pendiente')->count()),
-            'tickets_progreso' => $this->contarSeguro(fn () => (clone $ticketsBase)->where('Estatus', 'En progreso')->count()),
-            'tickets_estatus' => $this->contarSeguro(function () use ($ticketsBase) {
-                return (clone $ticketsBase)
-                    ->select('Estatus', DB::raw('COUNT(*) as total'))
-                    ->whereNotIn('Estatus', ['Cerrado', 'Cancelado', 'Cancelada', 'Resuelto'])
-                    ->groupBy('Estatus')
-                    ->orderByDesc('total')
-                    ->get();
-            }, collect()),
-            'tareas_pendientes' => $this->contarSeguro(fn () => (clone $tareasBase)->pendientes()->count()),
-            'tareas_hoy' => $this->contarSeguro(fn () => (clone $tareasBase)->deHoy()->count()),
-            'tareas_atrasadas' => $this->contarSeguro(fn () => (clone $tareasBase)->atrasadas()->count()),
-            'tareas_proximas' => $this->contarSeguro(fn () => (clone $tareasBase)->proximas()->count()),
-            'tareas_criticas' => $this->contarSeguro(fn () => (clone $tareasBase)->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count()),
+            'tickets_abiertos' => $ticketsDe(['Pendiente', 'En progreso', 'Pausado']),
+            'tickets_pendientes' => $ticketsDe(['Pendiente']),
+            'tickets_progreso' => $ticketsDe(['En progreso']),
+            'tickets_estatus' => $ticketsEstatus,
+            'tareas_pendientes' => (int) ($conteoTareas->pendientes ?? 0),
+            'tareas_hoy' => (int) ($conteoTareas->hoy ?? 0),
+            'tareas_atrasadas' => (int) ($conteoTareas->atrasadas ?? 0),
+            'tareas_proximas' => (int) ($conteoTareas->proximas ?? 0),
+            'tareas_criticas' => (int) ($conteoTareas->criticas ?? 0),
             'solicitudes_activas' => $this->contarSeguro(fn () => (clone $solicitudesBase)->whereNotIn('Estatus', ['Cancelada', 'Cancelado', 'Rechazada', 'Rechazado', 'Aprobada', 'Aprobado'])->count()),
             'auditorias_anio' => $this->contarSeguro(fn () => (clone $auditoriasBase)->whereYear('created_at', $anio)->count()),
-            'facturas_mes' => $this->contarSeguro(fn () => (clone $facturasBase)->count()),
-            'facturas_importe' => $this->contarSeguro(fn () => (float) (clone $facturasBase)->sum('Costo'), 0.0),
+            'facturas_mes' => $conteoFacturas ? (int) $conteoFacturas->total : 0,
+            'facturas_importe' => $conteoFacturas ? (float) $conteoFacturas->importe : 0.0,
         ];
 
-        $conEquipo = (int) $this->contarSeguro(function () use ($idsFiltro) {
-            return $this->limitarPorEmpleados(
-                $this->queryAsignadosOperativos('inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS),
-                $idsFiltro
-            )->distinct()->count('inventarioequipo.EmpleadoID');
-        });
         $decision = $this->resumenPresupuestoOficial($idsPresupuesto, $anio);
         $decision['sin_equipo'] = max(0, $empleadosActivos - $conEquipo);
         $decision['anio'] = $anio;
