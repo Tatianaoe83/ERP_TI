@@ -102,15 +102,22 @@ class MantenimientosTable extends Component
     public function guardarReprogramacion(int $mantenimientoId): void
     {
         $mantenimiento = Mantenimiento::findOrFail($mantenimientoId);
-        // Se queda en el año de su programación: el filtro por año y el Excel (una hoja por año) dependen de eso.
-        $anio = (int) ($mantenimiento->AnioProgramacion ?: optional($mantenimiento->FechaMantenimiento)->year);
 
+        // Desde hoy (puede caer en otro año) y en día hábil, lunes a sábado.
         $this->validate([
-            'fechaReprogramada' => ['required', 'date', "after_or_equal:{$anio}-01-01", "before_or_equal:{$anio}-12-31"],
+            'fechaReprogramada' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+                function ($atributo, $valor, $falla) {
+                    if (Carbon::parse($valor)->isSunday()) {
+                        $falla('No se puede reprogramar en domingo.');
+                    }
+                },
+            ],
             'comentario' => ['nullable', 'string', 'max:1000'],
         ], [
-            'fechaReprogramada.after_or_equal' => "La fecha debe ser dentro de {$anio}.",
-            'fechaReprogramada.before_or_equal' => "La fecha debe ser dentro de {$anio}.",
+            'fechaReprogramada.after_or_equal' => 'La fecha no puede ser anterior a hoy.',
         ]);
 
         $mantenimiento->update([

@@ -155,24 +155,19 @@ class MantenimientoAnioSheet implements FromArray, WithTitle, WithEvents
             return [$row, $styles];
         }
 
-        $mesOrig    = $fechaOriginal->month; // 1-12
-        $colIdxOrig = $mesOrig + 4;          // 0-based array: month 1 → index 5 (col F)
+        // Se marca la fecha que aplica: la reprogramada si existe, si no la original.
+        // La lista puede pasar al año siguiente (más equipos que días hábiles) y sigue en esta hoja:
+        // en ese caso se escribe la fecha completa en lugar del día.
+        $fecha = $fechaReprogramada ?: $fechaOriginal;
+        $mes   = $fecha->month;
+        $row[$mes + 4] = $fecha->year === $this->anio ? $fecha->day : $fecha->format('d/m/y');
 
-        if ($fechaReprogramada) {
-            // Only mark the reprogrammed date
-            $mesRep           = $fechaReprogramada->month;
-            $row[$mesRep + 4] = $fechaReprogramada->day;
-            $styles[$mesRep]  = $estatus === 'Realizado'
-                ? self::COLORS['realizado']
-                : self::COLORS['reprogramado'];
+        if ($estatus === 'Realizado') {
+            $styles[$mes] = self::COLORS['realizado'];
+        } elseif ($fechaReprogramada) {
+            $styles[$mes] = self::COLORS['reprogramado'];
         } else {
-            $row[$colIdxOrig] = $fechaOriginal->day;
-
-            if ($estatus === 'Realizado') {
-                $styles[$mesOrig] = self::COLORS['realizado'];
-            } else {
-                $styles[$mesOrig] = self::COLORS['pendiente'];
-            }
+            $styles[$mes] = self::COLORS['pendiente'];
         }
 
         return [$row, $styles];

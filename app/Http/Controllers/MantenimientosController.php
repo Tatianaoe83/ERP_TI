@@ -89,7 +89,7 @@ class MantenimientosController extends Controller
             ? Carbon::parse($request->input('fecha_inicio'))
             : Carbon::today();
 
-        if ($fechaCursor->isWeekend()) {
+        if ($fechaCursor->isSunday()) {
             $fechaCursor = $this->siguienteDiaHabil($fechaCursor);
         }
 
@@ -229,15 +229,16 @@ class MantenimientosController extends Controller
         return $compra->greaterThan($fechaCorte->copy()->subYear()) ? 'Sencillo' : 'Profundo';
     }
 
+    // Días hábiles: lunes a sábado.
     private function ajustarDiaHabil(Carbon $fecha): Carbon
     {
-        return $fecha->isWeekend() ? $this->siguienteDiaHabil($fecha) : $fecha;
+        return $fecha->isSunday() ? $this->siguienteDiaHabil($fecha) : $fecha;
     }
 
     private function siguienteDiaHabil(Carbon $fecha): Carbon
     {
         $cursor = $fecha->copy()->addDay();
-        while ($cursor->isWeekend()) {
+        while ($cursor->isSunday()) {
             $cursor->addDay();
         }
 

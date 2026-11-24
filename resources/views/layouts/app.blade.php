@@ -1232,6 +1232,8 @@
     $(function() {
         $('input, textarea').keyup(function() {
             if (this.hasAttribute('data-sin-mayusculas')) return;
+            // En fecha/hora el value vale '' mientras se teclea a medias; reasignarlo borra lo escrito.
+            if (/^(date|datetime-local|time|month|week)$/.test(this.type)) return;
             this.value = this.value.toUpperCase();
         });
     });

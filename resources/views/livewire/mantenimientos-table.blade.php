@@ -267,7 +267,6 @@
                                                 type="button"
                                                 onclick="mantAbrirReprogramar(this)"
                                                 data-id="{{ $item->id }}"
-                                                data-anio="{{ $item->AnioProgramacion }}"
                                                 data-fecha="{{ optional($item->FechaReprogramada)->format('Y-m-d') }}"
                                                 data-comentario="{{ $item->Comentario }}"
                                                 class="index-action index-action--edit"
@@ -321,6 +320,7 @@
                             <label for="fecha-reprogramada">Nueva fecha</label>
                             <input
                                 id="fecha-reprogramada"
+                                min="{{ now()->toDateString() }}"
                                 type="date"
                                 wire:model.defer="fechaReprogramada"
                                 class="form-control @error('fechaReprogramada') is-invalid @enderror"
@@ -334,6 +334,7 @@
                             <label for="comentario-reprogramacion">Comentario</label>
                             <textarea
                                 id="comentario-reprogramacion"
+                                data-sin-mayusculas
                                 wire:model.defer="comentario"
                                 class="form-control @error('comentario') is-invalid @enderror"
                                 rows="4"
@@ -425,10 +426,6 @@
                         campo.value = par[1] || '';
                         campo.dispatchEvent(new Event('input', { bubbles: true }));
                     });
-                    // El calendario solo deja escoger días del año de la programación (el servidor también lo valida).
-                    var fecha = document.getElementById('fecha-reprogramada');
-                    fecha.min = boton.dataset.anio ? boton.dataset.anio + '-01-01' : '';
-                    fecha.max = boton.dataset.anio ? boton.dataset.anio + '-12-31' : '';
                     mantAbrirModal(modal);
                 }
 
