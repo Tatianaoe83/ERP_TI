@@ -21,10 +21,12 @@ use App\Models\PresupuestoConfiguracion;
 use App\Models\PresupuestoInterno;
 use App\Helpers\PresupuestoAsignacion;
 use DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
+    private ?array $catalogoDashCache = null;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -65,29 +67,21 @@ class HomeController extends Controller
         }
 
         $tipoDashboard = $this->resolverTipoDashboard($user);
+        $anio = $this->anioFiltro($request);
 
         try {
-            $stats = null;
-            $statsCompras = null;
-
-            if (in_array($tipoDashboard, ['informatica', 'completo'], true)) {
-                $stats = $this->buildInformaticaStats($request);
-            }
-
-            if (in_array($tipoDashboard, ['compras', 'completo'], true)) {
-                $statsCompras = $this->buildComprasStats((int) ($request->input('anio') ?: now()->year));
-            }
-
-            if ($request->ajax()) {
-                return view('partials.insumos-licencia', compact('stats'))->render();
-            }
-
             $filtrosDash = $this->filtrosDash($request);
-            $catalogoDash = $this->catalogoDash();
-            $productividadMovimientos = app(\App\Services\MovimientoErpService::class)->productividad();
+            $tab = $this->tabActiva($request, $user, $tipoDashboard);
+
+            // Solo se calcula la pestaña visible; cambiar de pestaña recarga la página.
+            $stats = $tab === 'informatica' ? $this->buildInformaticaStats($request) : null;
+            $statsCompras = $tab === 'compras' ? $this->buildComprasStats($anio) : null;
+            $catalogoDash = $tab === 'informatica' ? $this->catalogoDash() : [];
+            $productividadMovimientos = $tab === 'control' ? app(\App\Services\MovimientoErpService::class)->productividad(['anio' => $anio]) : [];
 
             return view('home', compact('stats', 'statsCompras', 'tipoDashboard', 'filtrosDash', 'catalogoDash', 'productividadMovimientos'));
         } catch (\Exception $e) {
+            report($e);
             $stats = $this->statsInformaticaVacios();
             $statsCompras = $this->statsComprasVacios();
 
@@ -98,19 +92,8 @@ class HomeController extends Controller
                 'filtrosDash' => $this->filtrosDash($request),
                 'catalogoDash' => $this->catalogoDash(),
                 'productividadMovimientos' => [],
+                'errorDashboard' => true,
             ]);
-        }
-    }
-
-    public function insumosLicenciaPagination(Request $request)
-    {
-        try {
-            $insumosPorLicencia = $this->getInsumosPorLicencia($request);
-            $stats = ['insumos_por_licencia' => $insumosPorLicencia];
-
-            return view('partials.insumos-licencia', compact('stats'))->render();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al cargar los datos'], 500);
         }
     }
 
@@ -126,6 +109,20 @@ class HomeController extends Controller
         }
 
         if ($user->hasRole('COMPRAS')) {
+            return 'compras';
+        }
+
+        return 'informatica';
+    }
+
+    // Misma regla que home.blade.php usa para marcar la pestaña activa.
+    private function tabActiva(Request $request, $user, string $tipoDashboard): string
+    {
+        $tab = $request->input('tab');
+        if (in_array($tab, ['control', 'productividad'], true) && $user->can('ver-control')) {
+            return 'control';
+        }
+        if ($tipoDashboard === 'compras' || ($tipoDashboard === 'completo' && $tab === 'compras')) {
             return 'compras';
         }
 
@@ -167,35 +164,35 @@ class HomeController extends Controller
         $totalGerencias = Gerencia::where('Estado', true)->count();
         $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
 
-        $anio = (int) ($request->input('anio') ?: now()->year);
-        if ($anio < 2000 || $anio > 2100) {
-            $anio = (int) now()->year;
-        }
-        $mantenimientosAnio = ['pendientes' => 0, 'realizados' => 0, 'anio' => $anio];
+        $anio = $this->anioFiltro($request);
+        $mantenimientosAnio = ['pendientes' => 0, 'vencidos' => 0, 'realizados' => 0, 'anio' => $anio];
 
-        if (Schema::hasTable('mantenimientos') && Schema::hasColumn('mantenimientos', 'AnioProgramacion')) {
-            $mantenimientosBase = DB::table('mantenimientos as m')
-                ->leftJoin('inventarioequipo as ie', 'ie.InventarioID', '=', 'm.InventarioID')
-                ->leftJoin('empleados as e', 'e.EmpleadoID', '=', 'ie.EmpleadoID')
-                ->where('m.AnioProgramacion', $anio)
-                ->where('e.Estado', true)
-                ->whereIn('e.tipo_persona', $tiposOperativos)
-                ->when($idsFiltro !== null, function ($query) use ($idsFiltro) {
-                    $query->whereIn('e.EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
-                })
-                ->where(function ($q) {
-                    $q->whereIn('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS, array_map('strval', PresupuestoAsignacion::valoresOperativos()))
-                        ->orWhereNull('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS);
-                });
+        $mantenimientosBase = DB::table('mantenimientos as m')
+            ->leftJoin('inventarioequipo as ie', 'ie.InventarioID', '=', 'm.InventarioID')
+            ->leftJoin('empleados as e', 'e.EmpleadoID', '=', 'ie.EmpleadoID')
+            ->where('m.AnioProgramacion', $anio)
+            ->where('e.Estado', true)
+            ->whereIn('e.tipo_persona', $tiposOperativos)
+            ->when($idsFiltro !== null, function ($query) use ($idsFiltro) {
+                $query->whereIn('e.EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
+            })
+            ->where(function ($q) {
+                $q->whereIn('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS, array_map('strval', PresupuestoAsignacion::valoresOperativos()))
+                    ->orWhereNull('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS);
+            });
 
-            $mantenimientosAnio['realizados'] = (clone $mantenimientosBase)
-                ->where('m.Estatus', 'Realizado')
-                ->count();
+        $mantenimientosAnio['realizados'] = (clone $mantenimientosBase)
+            ->where('m.Estatus', 'Realizado')
+            ->count();
 
-            $mantenimientosAnio['pendientes'] = (clone $mantenimientosBase)
-                ->where('m.Estatus', 'Pendiente')
-                ->count();
-        }
+        $mantenimientosAnio['pendientes'] = (clone $mantenimientosBase)
+            ->where('m.Estatus', 'Pendiente')
+            ->count();
+
+        $mantenimientosAnio['vencidos'] = (clone $mantenimientosBase)
+            ->where('m.Estatus', 'Pendiente')
+            ->whereRaw('COALESCE(m.FechaReprogramada, m.FechaMantenimiento) < ?', [now()->toDateString()])
+            ->count();
 
         $estadisticasPorGerencia = DB::table('gerencia')
             ->leftJoin('departamentos', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
@@ -342,21 +339,22 @@ class HomeController extends Controller
         ];
     }
 
-    private function buildComprasStats(int $anio = 0): array
+    private function buildComprasStats(int $anio): array
     {
-        $anio = $anio > 0 ? $anio : (int) now()->year;
-        $mes = now()->month;
+        // Año en curso: movimiento del mes; años pasados: el año completo.
+        $mes = $anio === (int) now()->year ? (int) now()->month : null;
+        $delAnio = fn () => TicketMantenimiento::query()->whereYear('created_at', $anio);
 
         $porEstatus = [];
         foreach (TicketMantenimiento::ESTATUS as $estatus) {
-            $porEstatus[$estatus] = TicketMantenimiento::where('Estatus', $estatus)->count();
+            $porEstatus[$estatus] = $delAnio()->where('Estatus', $estatus)->count();
         }
 
         $activos = ($porEstatus['Pendiente'] ?? 0)
             + ($porEstatus['En proceso'] ?? 0)
             + ($porEstatus['Pausado'] ?? 0);
 
-        $porCategoria = TicketMantenimiento::query()
+        $porCategoria = $delAnio()
             ->select('Categoria', DB::raw('count(*) as total'))
             ->whereNotIn('Estatus', ['Atendido', 'Cancelado'])
             ->groupBy('Categoria')
@@ -364,7 +362,7 @@ class HomeController extends Controller
             ->limit(5)
             ->get();
 
-        $porPrioridad = TicketMantenimiento::query()
+        $porPrioridad = $delAnio()
             ->select('Prioridad', DB::raw('count(*) as total'))
             ->whereNotIn('Estatus', ['Atendido', 'Cancelado'])
             ->groupBy('Prioridad')
@@ -374,13 +372,13 @@ class HomeController extends Controller
         return [
             'anio' => $anio,
             'mes' => $mes,
-            'total' => TicketMantenimiento::count(),
+            'total' => array_sum($porEstatus),
             'activos' => $activos,
             'por_estatus' => $porEstatus,
-            'creados_mes' => TicketMantenimiento::whereYear('created_at', $anio)->whereMonth('created_at', $mes)->count(),
+            'creados_mes' => $delAnio()->when($mes, fn ($q) => $q->whereMonth('created_at', $mes))->count(),
             'atendidos_mes' => TicketMantenimiento::where('Estatus', 'Atendido')
                 ->whereYear('FechaFinProgreso', $anio)
-                ->whereMonth('FechaFinProgreso', $mes)
+                ->when($mes, fn ($q) => $q->whereMonth('FechaFinProgreso', $mes))
                 ->count(),
             'por_categoria' => $porCategoria,
             'por_prioridad' => $porPrioridad,
@@ -412,7 +410,7 @@ class HomeController extends Controller
                 'facturas_importe' => 0,
             ],
             'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
-            'mantenimientos' => ['pendientes' => 0, 'realizados' => 0, 'anio' => now()->year],
+            'mantenimientos' => ['pendientes' => 0, 'vencidos' => 0, 'realizados' => 0, 'anio' => now()->year],
             'insumos_por_licencia' => collect(),
             'equipos_por_categoria' => collect(),
             'estadisticas_gerencia' => collect(),
@@ -457,7 +455,8 @@ class HomeController extends Controller
         return $query
             ->groupBy('NombreInsumo')
             ->orderBy('total_inventario', 'desc')
-            ->paginate(7);
+            ->limit(8)
+            ->get();
     }
 
     private function getEquiposPorCategoria(?array $ids = null)
@@ -532,7 +531,7 @@ class HomeController extends Controller
     private function resumenPresupuestoOficial(array $idsPresupuesto, int $anio): array
     {
         $resumen = $this->resumenPresupuestoVacio($anio);
-        if ($idsPresupuesto === [] || !Schema::hasTable('cortes') || !Schema::hasTable('facturas')) {
+        if ($idsPresupuesto === []) {
             return $resumen;
         }
 
@@ -554,7 +553,7 @@ class HomeController extends Controller
             if ($mes < 1) {
                 continue;
             }
-            $key = 'p-' . (int) $row->PresupuestoInternoID . '|' . mb_strtolower(trim((string) $row->NombreInsumo)) . '|' . $mes;
+            $key = 'p-' . (int) $row->PresupuestoInternoID . '|' . $this->claveInsumo($row->NombreInsumo) . '|' . $mes;
             $bolsas[$key]['mes'] = $mes;
             $bolsas[$key]['presupuesto'] = ($bolsas[$key]['presupuesto'] ?? 0) + (float) ($row->CostoTotal ?? $row->Costo ?? 0);
             $bolsas[$key]['facturado'] = $bolsas[$key]['facturado'] ?? 0;
@@ -567,11 +566,15 @@ class HomeController extends Controller
             $alcance = (int) $row->PresupuestoInternoID > 0
                 ? 'p-' . (int) $row->PresupuestoInternoID
                 : 'g-' . (int) $row->GerenciaID;
-            $key = $alcance . '|' . mb_strtolower(trim((string) $row->InsumoNombre)) . '|' . $mes;
+            $key = $alcance . '|' . $this->claveInsumo($row->InsumoNombre) . '|' . $mes;
             $bolsas[$key]['mes'] = $mes;
             $bolsas[$key]['presupuesto'] = $bolsas[$key]['presupuesto'] ?? 0;
             $bolsas[$key]['facturado'] = ($bolsas[$key]['facturado'] ?? 0) + (float) ($row->Costo ?: $row->Importe ?: 0);
         }
+
+        // Meses que aún no llegan no cuentan como "sin consumir".
+        $hoy = now();
+        $mesCorte = $anio < $hoy->year ? 12 : ($anio > $hoy->year ? 0 : (int) $hoy->month);
 
         foreach ($bolsas as $bolsa) {
             $presupuesto = round((float) $bolsa['presupuesto'], 2);
@@ -582,7 +585,9 @@ class HomeController extends Controller
             $resumen['meses'][$mes]['presupuesto'] += $presupuesto;
             $resumen['meses'][$mes]['facturado'] += $facturado;
             if ($presupuesto > 0 && $facturado <= 0) {
-                $resumen['no_consumido'] += $presupuesto;
+                if ($mes <= $mesCorte) {
+                    $resumen['no_consumido'] += $presupuesto;
+                }
             } elseif ($facturado > $presupuesto) {
                 $desviacion = round($facturado - $presupuesto, 2);
                 $resumen['desviacion'] += $desviacion;
@@ -627,6 +632,19 @@ class HomeController extends Controller
         ];
     }
 
+    // Igual que la collation de MySQL: sin acentos, mayúsculas ni espacios dobles.
+    private function claveInsumo($nombre): string
+    {
+        return Str::lower(preg_replace('/\s+/', ' ', trim(Str::ascii((string) $nombre))));
+    }
+
+    private function anioFiltro(Request $request): int
+    {
+        $anio = (int) $request->input('anio');
+
+        return ($anio >= 2000 && $anio <= 2100) ? $anio : (int) now()->year;
+    }
+
     private function mesNumero($mes): int
     {
         if (is_numeric($mes)) {
@@ -648,18 +666,22 @@ class HomeController extends Controller
             'gerencia_id' => (int) $request->input('gerencia_id'),
             'centro_id' => (int) $request->input('centro_id'),
             'presupuesto_id' => (int) $request->input('presupuesto_id'),
-            'anio' => (int) ($request->input('anio') ?: now()->year),
+            'anio' => $this->anioFiltro($request),
         ];
     }
 
     private function catalogoDash(): array
     {
+        if ($this->catalogoDashCache !== null) {
+            return $this->catalogoDashCache;
+        }
+
         $asignados = DB::table('presupuesto_interno_usuarios')
             ->where('users_id', auth()->id())
             ->pluck('PresupuestoInternoID');
 
-        return [
-            'gerencias' => Gerencia::query()->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
+        return $this->catalogoDashCache = [
+            'gerencias' => Gerencia::query()->where('Estado', true)->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
             'centros' => CentroCosto::query()->orderBy('NombreCentro')->pluck('NombreCentro', 'CentroCostoID'),
             'presupuestos' => PresupuestoInterno::query()
                 ->when($asignados->isNotEmpty(), fn ($q) => $q->whereIn('PresupuestoInternoID', $asignados))
@@ -687,6 +709,7 @@ class HomeController extends Controller
         try {
             return $consulta();
         } catch (\Throwable $e) {
+            report($e);
             return $fallback;
         }
     }

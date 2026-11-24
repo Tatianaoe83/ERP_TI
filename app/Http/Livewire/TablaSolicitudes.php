@@ -104,13 +104,11 @@ class TablaSolicitudes extends Component
         'administracion' => 'Administración: ve ganadores y aprueba la solicitud',
     ];
 
-    private ?string $serialColumn            = null;
     private array   $checklistTemplatesCache = [];
 
     public function mount(bool $soloModal = false): void
     {
         $this->soloModal    = $soloModal;
-        $this->serialColumn = $this->detectSerialColumn();
     }
 
     // =========================================================================
@@ -672,7 +670,7 @@ class TablaSolicitudes extends Component
 
                     $xmlSavedPath = $rutasPorProveedor[$proveedor]['xml'] ?? '';
 
-                    $serialVal = ($activo && $this->serialColumn) ? (string)($activo->{$this->serialColumn} ?? '') : '';
+                    $serialVal = ($activo && $this->serialColumn()) ? (string)($activo->{$this->serialColumn()} ?? '') : '';
 
                     $unidades[] = [
                         'unidadIndex'             => $i,
@@ -1111,7 +1109,7 @@ class TablaSolicitudes extends Component
 
                         $dataUpdate = ['NumeroPropuesta' => (int)($p['numeroPropuesta'] ?? 0)];
                         if (!empty($u['fecha_entrega']))   $dataUpdate['FechaEntrega']   = $u['fecha_entrega'];
-                        if ($this->serialColumn)           $dataUpdate[$this->serialColumn] = (string)($u['serial'] ?? '');
+                        if ($this->serialColumn())           $dataUpdate[$this->serialColumn()] = (string)($u['serial'] ?? '');
 
                         // Verificar si cumple las 3 condiciones COMPLETAS (empleado + requiere_config + checklist)
                         $cumpleCondicionesCompletas = false;
@@ -1469,13 +1467,17 @@ class TablaSolicitudes extends Component
         $this->dispatchBrowserEvent('cerrar-modal-overlay');
     }
 
-    private function detectSerialColumn(): ?string
+    // Se detecta solo cuando una acción lo usa (no en cada carga de página), una vez por request.
+    private function serialColumn(): ?string
     {
-        if (!Schema::hasTable('solicitud_activos')) return null;
-        foreach (['serial','Serial','NumeroSerie','NumSerie'] as $col) {
-            if (Schema::hasColumn('solicitud_activos', $col)) return $col;
+        static $col = false;
+        if ($col !== false) return $col;
+        if (!Schema::hasTable('solicitud_activos')) return $col = null;
+        $columnas = Schema::getColumnListing('solicitud_activos');
+        foreach (['serial','Serial','NumeroSerie','NumSerie'] as $c) {
+            if (in_array($c, $columnas, true)) return $col = $c;
         }
-        return null;
+        return $col = null;
     }
 
     private function loadEmpleadosDeptMap(array $empleadoIds): array
@@ -1764,7 +1766,7 @@ class TablaSolicitudes extends Component
                     'DepartamentoID'          => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
                     'fecha_fin_configuracion' => now(),
                 ];
-                if ($this->serialColumn && !empty($unidad['serial'])) $dataUpdate[$this->serialColumn] = (string)$unidad['serial'];
+                if ($this->serialColumn() && !empty($unidad['serial'])) $dataUpdate[$this->serialColumn()] = (string)$unidad['serial'];
 
                 $activo = SolicitudActivo::updateOrCreate(
                     ['SolicitudID'=>(int)$this->asignacionSolicitudId,'CotizacionID'=>(int)($propuesta['cotizacionId']??0),'UnidadIndex'=>(int)($unidad['unidadIndex']??($uIndex+1))],

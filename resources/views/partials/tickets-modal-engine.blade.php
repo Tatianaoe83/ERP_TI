@@ -3320,7 +3320,8 @@
         }
 
         async function pollNotificaciones() {
-            if (document.hidden) return;
+            // Sin tarjetas de ticket en pantalla no hay badges que pintar: no gastes un request.
+            if (document.hidden || !document.querySelector('[data-ticket-id]')) return;
 
             try {
                 const response = await fetch('/tickets/notificaciones-pendientes', {
@@ -3346,9 +3347,11 @@
             }
         }
 
-        // Arrancar inmediatamente y luego cada 5 segundos
+        // Arrancar inmediatamente y luego cada 5 segundos. Este script se vuelve a correr en cada
+        // navegación SPA (y también vive en indexTicket): un solo intervalo global, no uno por visita.
         pollNotificaciones();
-        setInterval(pollNotificaciones, 5000);
+        clearInterval(window.__pollNotifTickets);
+        window.__pollNotifTickets = setInterval(pollNotificaciones, 5000);
     })();
 </script>
 

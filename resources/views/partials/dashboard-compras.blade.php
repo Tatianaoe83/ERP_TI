@@ -1,13 +1,15 @@
 @php
     $meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    $nombreMes = $meses[$statsCompras['mes']] ?? '';
     $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'anio' => (int) now()->year];
+    $anioCompras = (int) ($statsCompras['anio'] ?? now()->year);
+    $periodoCompras = !empty($statsCompras['mes']) ? $meses[$statsCompras['mes']] : $anioCompras;
+    $aniosCompras = collect(range((int) now()->year, (int) now()->year - 4))->push($anioCompras)->unique()->sortDesc();
     $estatusChart = collect($statsCompras['por_estatus'] ?? []);
     $categoriaChart = collect($statsCompras['por_categoria'] ?? []);
     $chartComprasMovimiento = [
         ['nombre' => 'Activas', 'total' => (int) ($statsCompras['activos'] ?? 0)],
-        ['nombre' => 'Atendidas en el mes', 'total' => (int) ($statsCompras['atendidos_mes'] ?? 0)],
-        ['nombre' => 'Nuevas en el mes', 'total' => (int) ($statsCompras['creados_mes'] ?? 0)],
+        ['nombre' => 'Atendidas en ' . $periodoCompras, 'total' => (int) ($statsCompras['atendidos_mes'] ?? 0)],
+        ['nombre' => 'Nuevas en ' . $periodoCompras, 'total' => (int) ($statsCompras['creados_mes'] ?? 0)],
     ];
     $chartComprasPrioridad = collect($statsCompras['por_prioridad'] ?? [])->map(fn ($p) => [
         'nombre' => $p->Prioridad ?: 'Sin prioridad',
@@ -32,9 +34,9 @@
     <div class="form-group">
         <label for="dash-compras-anio">Año</label>
         <select id="dash-compras-anio" name="anio" class="jz form-control" onchange="this.form.submit()">
-            @for($y = (int) now()->year; $y >= (int) now()->year - 4; $y--)
-                <option value="{{ $y }}" @if((int) $filtrosDash['anio'] === $y) selected @endif>{{ $y }}</option>
-            @endfor
+            @foreach($aniosCompras as $y)
+                <option value="{{ $y }}" @if($anioCompras === $y) selected @endif>{{ $y }}</option>
+            @endforeach
         </select>
     </div>
     <div class="form-group d-flex align-items-end">
@@ -54,7 +56,7 @@
         <canvas id="chartComprasCategoria"></canvas>
     </div>
     <div class="dash-chart">
-        <h3>Movimiento de {{ $nombreMes }}</h3>
+        <h3>Movimiento de {{ $periodoCompras }}</h3>
         <canvas id="chartComprasMovimiento"></canvas>
     </div>
     <div class="dash-chart">
@@ -64,8 +66,10 @@
 </div>
 
 @push('third_party_scripts')
+@once('dash-chart-libs')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
 <script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
+@endonce
 <script>
 (function () {
     function bootDashCompras() {
@@ -79,14 +83,19 @@
             estatus.dataset.listo = '1';
             var filas = @json($estatusChart);
             var labels = Object.keys(filas);
+            var sinSolicitudes = !labels.some(function (k) { return filas[k] > 0; });
+            if (sinSolicitudes) {
+                labels = ['Sin solicitudes'];
+                filas = { 'Sin solicitudes': 1 };
+            }
             nueva(estatus, {
                 type: 'doughnut',
-                plugins: [UxCharts.centro],
+                plugins: sinSolicitudes ? [] : [UxCharts.centro],
                 data: {
                     labels: labels,
                     datasets: [{
                         data: labels.map(function (k) { return filas[k]; }),
-                        backgroundColor: UxCharts.tonos(labels.length),
+                        backgroundColor: sinSolicitudes ? ['#E2E8F0'] : UxCharts.tonos(labels.length),
                         hoverOffset: 8
                     }]
                 },

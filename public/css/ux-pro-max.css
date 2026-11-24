@@ -641,6 +641,11 @@ html.dark .select2-container--default .select2-results__option[aria-selected="tr
     width: 100% !important;
 }
 
+/* El dropdown abierto vive en <body>: con el 100% de arriba se sale de la pantalla y saca scroll. */
+body > .select2-container {
+    width: auto !important;
+}
+
 .select2-container--default .select2-selection--single {
     height: 2.5rem !important;
     border-radius: 8px !important;

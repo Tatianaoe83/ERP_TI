@@ -116,17 +116,20 @@
         ['nombre' => 'Solicitudes', 'total' => (int) ($op['solicitudes_activas'] ?? 0)],
         ['nombre' => 'Auditorías', 'total' => (int) ($op['auditorias_anio'] ?? 0)],
     ];
+    $mantVencidos = (int) ($stats['mantenimientos']['vencidos'] ?? 0);
+    $mantPorVenir = max(0, (int) ($stats['mantenimientos']['pendientes'] ?? 0) - $mantVencidos);
     $chartMantenimiento = [
-        ['nombre' => 'Programados', 'total' => (int) ($stats['mantenimientos']['pendientes'] ?? 0)],
+        ['nombre' => 'Vencidos', 'total' => $mantVencidos],
+        ['nombre' => 'Por venir', 'total' => $mantPorVenir],
         ['nombre' => 'Concluidos', 'total' => (int) ($stats['mantenimientos']['realizados'] ?? 0)],
     ];
+    $aniosDash = collect(range((int) now()->year, (int) now()->year - 4))->push($anioDash)->unique()->sortDesc();
     $chartGerencias = collect($stats['estadisticas_gerencia'] ?? [])->map(fn ($g) => [
         'nombre' => $g->NombreGerencia,
         'total' => (int) $g->empleados_activos,
     ])->values();
     $licenciasDash = $stats['insumos_por_licencia'] ?? collect();
-    $chartLicencias = collect(is_object($licenciasDash) && method_exists($licenciasDash, 'items') ? $licenciasDash->items() : $licenciasDash)
-        ->take(8)
+    $chartLicencias = collect($licenciasDash)
         ->map(fn ($i) => [
             'nombre' => is_object($i) ? ($i->NombreInsumo ?: 'Sin nombre') : 'Sin nombre',
             'total' => is_object($i) ? (int) $i->total_inventario : 0,
@@ -169,9 +172,9 @@
     <div class="form-group">
         <label for="dash-anio">Año</label>
         <select id="dash-anio" name="anio" class="jz form-control">
-            @for($anioOpcion = (int) now()->year; $anioOpcion >= (int) now()->year - 2; $anioOpcion--)
+            @foreach($aniosDash as $anioOpcion)
                 <option value="{{ $anioOpcion }}" @if($anioDash === $anioOpcion) selected @endif>{{ $anioOpcion }}</option>
-            @endfor
+            @endforeach
         </select>
             </div>
     <div class="form-group d-flex align-items-end">
@@ -187,7 +190,7 @@
         <div class="dash-kpi__top">
             <div>
                 <p class="dash-kpi__label">Desviación {{ $anioDash }}</p>
-                <p class="dash-kpi__hint">Ahorro {{ $fmtMoney($decision['ahorro'] ?? 0) }} · Sin consumir {{ $fmtMoney($decision['no_consumido'] ?? 0) }}</p>
+                <p class="dash-kpi__hint">Ahorro {{ $fmtMoney($decision['ahorro'] ?? 0) }} · Sin consumir a la fecha {{ $fmtMoney($decision['no_consumido'] ?? 0) }}</p>
                 <p class="dash-kpi__value">{{ $fmtMoney($decision['desviacion'] ?? 0) }}</p>
             </div>
             <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-exclamation-triangle"></i></span>
@@ -226,9 +229,9 @@
     <div class="dash-kpi">
         <div class="dash-kpi__top">
             <div>
-                <p class="dash-kpi__label">Mantenimiento pendiente</p>
-                <p class="dash-kpi__hint">{{ $stats['mantenimientos']['realizados'] ?? 0 }} concluidos en {{ $anioDash }}</p>
-                <p class="dash-kpi__value">{{ $stats['mantenimientos']['pendientes'] ?? 0 }}</p>
+                <p class="dash-kpi__label">Mantenimiento vencido</p>
+                <p class="dash-kpi__hint">{{ $mantPorVenir }} por venir · {{ $stats['mantenimientos']['realizados'] ?? 0 }} concluidos en {{ $anioDash }}</p>
+                <p class="dash-kpi__value">{{ $mantVencidos }}</p>
             </div>
             <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-tools"></i></span>
         </div>
@@ -264,8 +267,10 @@
 </p>
 
 @push('third_party_scripts')
+@once('dash-chart-libs')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
 <script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
+@endonce
 <script>
 (function () {
     function bootDashInformatica() {
@@ -449,10 +454,15 @@
     }
     var filtros = document.getElementById('dashFiltros');
     if (filtros) {
-        var filtrosListos = false;
-        setTimeout(function () { filtrosListos = true; }, 700);
+        // Solo envía si el valor cambió de verdad (select2 puede disparar change al iniciar).
+        var iniciales = {};
+        filtros.querySelectorAll('select').forEach(function (s) { iniciales[s.name] = s.value; });
         filtros.addEventListener('change', function (e) {
-            if (!filtrosListos || !e.target || e.target.tagName !== 'SELECT') return;
+            if (!e.target || e.target.tagName !== 'SELECT' || iniciales[e.target.name] === e.target.value) return;
+            filtros.setAttribute('aria-busy', 'true');
+            document.body.style.cursor = 'progress';
+            var main = filtros.closest('main');
+            if (main) main.style.opacity = '0.6';
             filtros.submit();
         });
     }
@@ -565,7 +575,7 @@
     </div>
     <div class="dash-chart">
         <h3>Mantenimiento {{ $anioDash }}</h3>
-        <p class="dash-kpi__hint">Programados frente a concluidos.</p>
+        <p class="dash-kpi__hint">Vencidos, por venir y concluidos.</p>
         <canvas id="chartMantenimientoDash"></canvas>
 </div>
     <div class="dash-chart">

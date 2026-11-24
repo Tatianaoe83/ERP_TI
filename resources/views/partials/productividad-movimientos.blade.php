@@ -46,7 +46,7 @@
         <div class="dash-kpi__top">
             <div>
                 <p class="dash-kpi__label">Aplicadas</p>
-                <p class="dash-kpi__hint">{{ $p['total'] ?? 0 }} solicitudes en el filtro</p>
+                <p class="dash-kpi__hint">{{ $p['total'] ?? 0 }} solicitudes {{ !empty($p['filtros']['anio']) ? 'en ' . $p['filtros']['anio'] : 'en el filtro' }}</p>
                 <p class="dash-kpi__value">{{ $p['aplicadas'] ?? 0 }}</p>
             </div>
             <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-check"></i></span>
@@ -121,8 +121,10 @@
 </div>
 
 @push('third_party_scripts')
+@once('dash-chart-libs')
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
 <script src="{{ asset('js/ux-charts.js') }}?v=20261110b"></script>
+@endonce
 <script>
 (function () {
     var meses = @json(collect($p['meses'] ?? [])->values());

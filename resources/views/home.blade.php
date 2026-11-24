@@ -7,6 +7,12 @@
     $tabInicial = $tabHome === 'compras' ? 2 : (($puedeControl && in_array($tabHome, ['control', 'productividad'], true)) ? 3 : 1);
 @endphp
 
+@if(!empty($errorDashboard))
+<div class="alert alert-warning" role="alert">
+    <div>No se pudieron cargar los datos del dashboard. Las cifras en cero no son reales; recarga la página o avisa a sistemas.</div>
+</div>
+@endif
+
 @if($tipoDashboard === 'completo')
 <div data-app-tabset>
 <x-index-page
@@ -18,43 +24,42 @@
 >
     <x-slot name="tabs">
         <div class="app-tabs" role="tablist" aria-label="Secciones del dashboard">
-            <button type="button"
+            <a href="{{ route('home') }}"
                 data-app-tab="1"
                 class="app-tabs__btn {{ $tabInicial === 1 ? 'is-active' : '' }}"
                 role="tab">
                 <i class="fas fa-desktop"></i>
                 <span>Informática</span>
-            </button>
-            <button type="button"
+            </a>
+            <a href="{{ route('home', ['tab' => 'compras']) }}"
                 data-app-tab="2"
                 class="app-tabs__btn {{ $tabInicial === 2 ? 'is-active' : '' }}"
                 role="tab">
                 <i class="fas fa-wrench"></i>
                 <span>Compras</span>
-            </button>
+            </a>
             @can('ver-control')
-            <button type="button"
+            <a href="{{ route('home', ['tab' => 'control']) }}"
                 data-app-tab="3"
                 class="app-tabs__btn {{ $tabInicial === 3 ? 'is-active' : '' }}"
                 role="tab">
                 <i class="fas fa-clipboard-check"></i>
                 <span>Control</span>
-            </button>
+            </a>
             @endcan
         </div>
     </x-slot>
 
-    <div data-app-panel="1" role="tabpanel" @if($tabInicial !== 1) hidden @endif>
-        @include('partials.dashboard-informatica')
+    {{-- El controlador solo calcula la pestaña activa: cada pestaña es un link que recarga. --}}
+    <div data-app-panel="{{ $tabInicial }}" role="tabpanel">
+        @if($tabInicial === 3)
+            @include('partials.productividad-movimientos', ['tituloSeccion' => 'Control'])
+        @elseif($tabInicial === 2)
+            @include('partials.dashboard-compras')
+        @else
+            @include('partials.dashboard-informatica')
+        @endif
     </div>
-    <div data-app-panel="2" role="tabpanel" @if($tabInicial !== 2) hidden @endif>
-        @include('partials.dashboard-compras')
-    </div>
-    @can('ver-control')
-    <div data-app-panel="3" role="tabpanel" @if($tabInicial !== 3) hidden @endif>
-        @include('partials.productividad-movimientos', ['tituloSeccion' => 'Control'])
-    </div>
-    @endcan
 </x-index-page>
 </div>
 @elseif($tipoDashboard === 'compras')
