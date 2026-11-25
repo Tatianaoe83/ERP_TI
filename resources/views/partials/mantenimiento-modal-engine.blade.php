@@ -104,7 +104,9 @@ function mantenimientoModal(soloPanel = false) {
                 if (!select) return;
                 select.replaceChildren(...this.estatusDisponibles.map(est => new Option(est, est, false, est === this.ticketEstatus)));
                 select.value = this.ticketEstatus;
-                if (window.jQuery) jQuery(select).trigger('change.select2');
+                // Select2 no se entera cuando x-model cambia el valor por código: sin esto Prioridad
+                // y Categoría seguían mostrando lo del mantenimiento abierto antes.
+                if (window.jQuery) jQuery(select).closest('.mant-modal').find('select').trigger('change.select2');
             });
         },
 
@@ -258,6 +260,14 @@ function mantenimientoModal(soloPanel = false) {
             if (isNaN(f)) return '';
             const p = (n) => String(n).padStart(2, '0');
             return `${p(f.getDate())}/${p(f.getMonth() + 1)}/${f.getFullYear()} ${p(f.getHours())}:${p(f.getMinutes())}:${p(f.getSeconds())}`;
+        },
+
+        /** Esc cierra el modal solo si no hay algo encima (visor de archivo, Select2 abierto, Swal):
+         *  esos se cierran primero y marcan el evento con preventDefault. */
+        cerrarConEscape(e) {
+            if (!this.mostrar || e.defaultPrevented) return;
+            if (document.querySelector('.select2-container--open') || window.Swal?.isVisible()) return;
+            this.cerrarModal();
         },
 
         cerrarModal() {

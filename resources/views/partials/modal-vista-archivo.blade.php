@@ -66,7 +66,9 @@
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
         var abierto = Array.prototype.some.call(document.querySelectorAll('#modalVistaArchivo'), function (m) { return m.style.display === 'flex'; });
-        if (abierto) cerrarVistaArchivo();
+        if (!abierto) return;
+        e.preventDefault(); // que el modal de abajo no se cierre con el mismo Esc
+        cerrarVistaArchivo();
     });
     window.verArchivoEnPantalla = verArchivoEnPantalla;
     window.cerrarVistaArchivo = cerrarVistaArchivo;

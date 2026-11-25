@@ -55,6 +55,7 @@
     x-transition:leave-end="opacity-0 translate-y-10"
     class="mant-modal fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 md:p-0 bg-gray-900/60 backdrop-blur-sm mt-0"
     @click.self="cerrarModal"
+    @keydown.escape.window="cerrarConEscape($event)"
     x-cloak>
     {{-- relative: Select2 esconde el <select> original con position:absolute; sin esto se posicionaba
          contra el fondo fixed y alargaba su scroll con un espacio vacío.
@@ -249,7 +250,7 @@
 
                         <div>
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad <span class="text-red-500" x-show="ticketEstatus === 'En proceso' || estatusOriginal === 'En proceso'">*</span></label>
-                            <select x-model="ticketPrioridad" :disabled="esFinalizado"
+                            <select x-model="ticketPrioridad" :disabled="!estaPendiente"
                                 class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
                                 <option value="">Sin prioridad</option>
                                 @foreach(\App\Models\TicketMantenimiento::PRIORIDADES as $p)<option value="{{ $p }}">{{ $p }}</option>@endforeach
@@ -274,7 +275,7 @@
                         </div>
                         <div>
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoría <span class="text-red-500">*</span></label>
-                            <select x-model="ticketCategoria" :disabled="esFinalizado"
+                            <select x-model="ticketCategoria" :disabled="!estaPendiente"
                                 class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
                                 <option value="">Seleccione</option>
                                 @foreach(\App\Models\TicketMantenimiento::CATEGORIAS as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach

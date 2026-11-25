@@ -256,12 +256,16 @@ class TicketsMantenimientoController extends Controller
 
             $estatusAnterior = $ticket->Estatus;
 
-            if ($request->has('prioridad')) {
-                $ticket->Prioridad = $request->input('prioridad') ?: null;
-            }
+            // Prioridad y categoría se fijan al arrancar: fuera de "Pendiente" ya no se tocan
+            // (la prioridad define el SLA que ya está corriendo).
+            if ($estatusAnterior === 'Pendiente') {
+                if ($request->has('prioridad')) {
+                    $ticket->Prioridad = $request->input('prioridad') ?: null;
+                }
 
-            if ($request->has('categoria')) {
-                $ticket->Categoria = $request->input('categoria') ?: null;
+                if ($request->has('categoria')) {
+                    $ticket->Categoria = $request->input('categoria') ?: null;
+                }
             }
 
             if ($request->has('responsable')) {
@@ -271,9 +275,7 @@ class TicketsMantenimientoController extends Controller
             if ($request->has('estatus')) {
                 $nuevoEstatus = $request->input('estatus');
                 $actualEstatus = $ticket->Estatus;
-                $prioridadAsignada = $request->has('prioridad')
-                    ? ($request->input('prioridad') ?: null)
-                    : $ticket->Prioridad;
+                $prioridadAsignada = $ticket->Prioridad;
                 $responsableAsignado = $request->has('responsable')
                     ? ($request->input('responsable') ?: null)
                     : $ticket->ResponsableID;
@@ -299,7 +301,7 @@ class TicketsMantenimientoController extends Controller
                     ], 400);
                 }
 
-                if ($nuevoEstatus === 'En proceso' && empty($ticket->Categoria) && empty($request->input('categoria'))) {
+                if ($nuevoEstatus === 'En proceso' && empty($ticket->Categoria)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Para cambiar a "En proceso" es necesario asignar una Categoría',
