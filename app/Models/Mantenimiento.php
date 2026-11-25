@@ -76,24 +76,6 @@ class Mantenimiento extends Model
         return !$empleado->Estado || strtoupper((string) $empleado->tipo_persona) !== 'FISICA';
     }
 
-    public function getMotivoAsignacionPersonaFisicaAttribute(): string
-    {
-        $empleado = $this->empleadoAsignado();
-
-        if (!$empleado) {
-            return 'Equipo sin empleado asignado';
-        }
-
-        if (!$empleado->Estado) {
-            return 'Empleado dado de baja';
-        }
-
-        if (strtoupper((string) $empleado->tipo_persona) !== 'FISICA') {
-            return 'No está asignado a una persona física';
-        }
-
-        return '';
-    }
 
     public function getEstatusMantenimientoAttribute(): string
     {

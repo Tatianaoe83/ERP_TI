@@ -77,11 +77,6 @@ class MantenimientosTable extends Component
         $this->columnasOcultas[] = $columna;
     }
 
-    public function limpiarBusqueda(): void
-    {
-        $this->search = '';
-        $this->resetPage();
-    }
 
     public function limpiarFiltros(): void
     {
@@ -92,11 +87,6 @@ class MantenimientosTable extends Component
         $this->resetPage();
     }
 
-    public function verTodos(): void
-    {
-        $this->estatus = 'todos';
-        $this->resetPage();
-    }
 
     // El modal de reprogramar se abre en el navegador; aquí solo se guarda.
     public function guardarReprogramacion(int $mantenimientoId): void

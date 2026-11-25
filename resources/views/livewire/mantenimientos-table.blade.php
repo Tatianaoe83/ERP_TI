@@ -50,44 +50,6 @@
             background: #2563eb !important;
             color: #fff !important;
         }
-        .mant-filters {
-            display: grid !important;
-            grid-template-columns: repeat(3, minmax(140px, 1fr));
-            gap: 0.75rem 1rem;
-            align-items: start;
-            padding: 0.9rem 1rem 0.35rem;
-            margin-bottom: 0;
-        }
-        .mant-filters .form-group {
-            display: flex !important;
-            flex-direction: column;
-            float: none !important;
-            width: 100%;
-            min-width: 0;
-            margin-bottom: 0.65rem;
-        }
-        .mant-filters label {
-            display: block !important;
-            float: none !important;
-            position: static !important;
-            width: auto !important;
-            margin: 0 0 0.3rem !important;
-            color: #64748b !important;
-            font-size: 0.75rem !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-        html.dark .mant-filters label,
-        .dark .mant-filters label {
-            color: #f3f4f6 !important;
-        }
-        html.dark .mant-filters .form-control,
-        .dark .mant-filters .form-control {
-            background-color: #111827;
-            border-color: #374151;
-            color: #f9fafb;
-        }
         html.dark #mantenimientos-page .index-table thead th,
         .dark #mantenimientos-page .index-table thead th {
             color: #e5e7eb !important;
@@ -103,11 +65,6 @@
         }
         .index-page__dt-footer .erp-page {
             margin: 0 !important;
-        }
-        @media (max-width: 768px) {
-            .mant-filters {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
     @endpush
@@ -513,45 +470,11 @@
                 line-height: 1.35;
             }
 
-            .mant-assignment-alert {
-                background: #fff7ed;
-                border: 1px solid #fed7aa;
-                border-radius: 10px;
-                color: #9a3412;
-                padding: 8px 10px;
-            }
 
-            .mant-alert-title {
-                font-size: 12px;
-                font-weight: 700;
-                line-height: 1.25;
-            }
 
-            .mant-alert-text {
-                color: #c2410c;
-                font-size: 12px;
-                line-height: 1.25;
-                margin-top: 2px;
-            }
 
-            .mant-actions {
-                align-items: flex-start;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
 
-            .mant-action-link {
-                font-size: 13px;
-                font-weight: 700;
-                line-height: 1.25;
-            }
 
-            .mant-table-summary {
-                color: #64748b;
-                font-size: 13px;
-                font-weight: 600;
-            }
 
             .mant-empty-state {
                 align-items: center;
@@ -671,10 +594,6 @@
                 color: #fff;
             }
 
-            .dark .mant-assignment-alert {
-                background: rgba(154, 52, 18, .18);
-                border-color: rgba(251, 146, 60, .35);
-            }
 
             .dark .mant-empty-state {
                 background: rgba(15, 23, 42, .35);
@@ -682,13 +601,7 @@
                 color: #cbd5e1;
             }
 
-            .dark .mant-table-summary {
-                color: #cbd5e1;
-            }
 
-            .dark .mant-modal-close {
-                filter: invert(1) grayscale(100%) brightness(200%);
-            }
 
             .dark .mant-modal-btn-secondary {
                 background: #64748b !important;
