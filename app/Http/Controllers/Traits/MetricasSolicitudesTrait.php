@@ -71,7 +71,7 @@ trait MetricasSolicitudesTrait
             ->all();
 
         // 1. Obtener solicitudes con actividad del periodo.
-        $solicitudes = Solicitud::with(['cotizaciones', 'pasoSupervisor', 'pasoAdministracion', 'empleadoid', 'gerenciaid'])
+        $solicitudes = Solicitud::with(['cotizaciones', 'pasoSupervisor', 'pasoAdministracion', 'empleadoid:EmpleadoID,NombreEmpleado', 'gerenciaid'])
             ->where(function ($query) use ($fechaInicioMes, $fechaFinMes, $solicitudesConFacturasPeriodo) {
                 $query->whereBetween('created_at', [$fechaInicioMes, $fechaFinMes])
                     ->orWhereBetween('fecha_cancelacion', [$fechaInicioMes, $fechaFinMes])
@@ -97,27 +97,20 @@ trait MetricasSolicitudesTrait
 
         // 2. Traer las fechas de configuración de los activos de esas solicitudes
         $solicitudIds = $solicitudes->pluck('SolicitudID')->toArray();
-        $activos = SolicitudActivo::with(['empleadoAsignado', 'departamentos', 'checklists'])
+        $activos = SolicitudActivo::with(['empleadoAsignado:EmpleadoID,NombreEmpleado', 'departamentos'])
+            ->withCount('checklists')
             ->whereIn('SolicitudID', $solicitudIds)
             ->get()
             ->groupBy('SolicitudID');
 
         // 3. Traer facturas subidas desde la tabla oficial de facturas
-        $facturasTieneCotizacion = \Illuminate\Support\Facades\Schema::hasColumn('facturas', 'CotizacionID');
-        $facturasSelect = ['SolicitudID', 'FacturasID', 'created_at', 'updated_at'];
-        if ($facturasTieneCotizacion) {
-            $facturasSelect[] = 'CotizacionID';
-        }
-
         $facturasPorSolicitud = \App\Models\Facturas::whereIn('SolicitudID', $solicitudIds)
             ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
                 ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
-            ->get($facturasSelect)
+            ->get(['SolicitudID', 'FacturasID', 'CotizacionID', 'created_at', 'updated_at'])
             ->groupBy('SolicitudID');
 
-        $activosConFactura = $facturasTieneCotizacion
-            ? $facturasPorSolicitud->map(fn($rows) => $rows->whereNotNull('CotizacionID')->unique('CotizacionID')->values())
-            : $facturasPorSolicitud;
+        $cotizacionesConFactura = $facturasPorSolicitud->map(fn($rows) => $rows->pluck('CotizacionID')->filter()->unique()->all());
 
         $desglose = [];
         $totalCotizacionHoras = $totalConfiguracionHoras = 0;
@@ -149,7 +142,7 @@ trait MetricasSolicitudesTrait
 
             $fechaConfiguracion = null;
             $tieneConfiguracion = isset($activos[$sol->SolicitudID])
-                && $activos[$sol->SolicitudID]->contains(fn($activo) => $activo->checklists && $activo->checklists->isNotEmpty());
+                && $activos[$sol->SolicitudID]->contains(fn($activo) => $activo->checklists_count > 0);
 
             if ($fechaAprobacion && isset($activos[$sol->SolicitudID])) {
                 $ultimaConfig = $activos[$sol->SolicitudID]
@@ -180,14 +173,9 @@ trait MetricasSolicitudesTrait
             $cotSeleccionadas = $sol->cotizaciones->where('Estatus', 'Seleccionada');
             $totalNecesarias  = $cotSeleccionadas->pluck('Proveedor')->filter()->unique()->count();
             $facturasSubidas  = 0;
-            if ($totalNecesarias > 0 && isset($activosConFactura[$sol->SolicitudID])) {
-                if ($facturasTieneCotizacion) {
-                    $cotsConFactura = $activosConFactura[$sol->SolicitudID]->pluck('CotizacionID')->toArray();
-                    $facturasSubidas = $cotSeleccionadas->whereIn('CotizacionID', $cotsConFactura)
-                        ->pluck('Proveedor')->filter()->unique()->count();
-                } else {
-                    $facturasSubidas = min($activosConFactura[$sol->SolicitudID]->count(), $totalNecesarias);
-                }
+            if ($totalNecesarias > 0 && isset($cotizacionesConFactura[$sol->SolicitudID])) {
+                $facturasSubidas = $cotSeleccionadas->whereIn('CotizacionID', $cotizacionesConFactura[$sol->SolicitudID])
+                    ->pluck('Proveedor')->filter()->unique()->count();
             }
 
             $ultimaFacturaFecha = null;

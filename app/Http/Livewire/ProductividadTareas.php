@@ -91,21 +91,18 @@ class ProductividadTareas extends Component
             ->get(['EmpleadoID', 'NombreEmpleado']);
 
         $tareas = TicketTarea::query()
-            ->with('asignado')
             ->get(['id', 'asignado_id', 'asignados_ids', 'estatus', 'prioridad', 'fecha_compromiso', 'completada_at', 'tipo']);
 
-        $rendimiento = $empleados->map(function ($empleado) use ($tareas) {
+        $completadaEsteMes = fn ($t) => $t->estatus === TicketTarea::ESTATUS_COMPLETADA
+            && $t->completada_at
+            && $t->completada_at->isSameMonth(now());
+
+        $rendimiento = $empleados->map(function ($empleado) use ($tareas, $completadaEsteMes) {
             $delEmpleado = $tareas->filter(
                 fn ($t) => in_array((int) $empleado->EmpleadoID, $t->idsAsignados(), true)
             );
             $pendientes = $delEmpleado->where('estatus', TicketTarea::ESTATUS_PENDIENTE);
-            $completadasMes = $delEmpleado
-                ->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->filter(function ($t) {
-                    return $t->completada_at
-                        && (int) $t->completada_at->month === (int) now()->month
-                        && (int) $t->completada_at->year === (int) now()->year;
-                });
+            $completadasMes = $delEmpleado->filter($completadaEsteMes);
 
             return [
                 'empleado' => $empleado,
@@ -127,31 +124,23 @@ class ProductividadTareas extends Component
                 'hoy' => $pendientesSinAsignar->filter(fn ($t) => $t->fecha_compromiso?->isToday())->count(),
                 'criticas' => $pendientesSinAsignar->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
                 'sin_fecha' => $pendientesSinAsignar->filter(fn ($t) => ! $t->fecha_compromiso)->count(),
-                'completadas_mes' => $sinAsignar
-                    ->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                    ->filter(function ($t) {
-                        return $t->completada_at
-                            && (int) $t->completada_at->month === (int) now()->month
-                            && (int) $t->completada_at->year === (int) now()->year;
-                    })
-                    ->count(),
+                'completadas_mes' => $sinAsignar->filter($completadaEsteMes)->count(),
                 'total' => $sinAsignar->count(),
             ]);
         }
 
-        $kpis = [
-            'pendientes' => TicketTarea::pendientes()->count(),
-            'hoy' => TicketTarea::deHoy()->count(),
-            'criticas' => TicketTarea::pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
-            'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereMonth('completada_at', now()->month)
-                ->whereYear('completada_at', now()->year)
-                ->count(),
-            'sin_fecha' => TicketTarea::pendientes()->whereNull('fecha_compromiso')->count(),
-            'metricas_activas' => TicketTareaMetrica::where('activo', true)->count(),
-        ];
-
         $metricas = TicketTareaMetrica::query()->with('creador')->orderBy('nombre')->get();
+
+        // KPIs desde las tareas ya cargadas: mismas reglas que los scopes pendientes()/deHoy().
+        $pendientes = $tareas->where('estatus', TicketTarea::ESTATUS_PENDIENTE);
+        $kpis = [
+            'pendientes' => $pendientes->count(),
+            'hoy' => $pendientes->filter(fn ($t) => $t->fecha_compromiso?->isToday())->count(),
+            'criticas' => $pendientes->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
+            'completadas_mes' => $tareas->filter($completadaEsteMes)->count(),
+            'sin_fecha' => $pendientes->filter(fn ($t) => ! $t->fecha_compromiso)->count(),
+            'metricas_activas' => $metricas->where('activo', true)->count(),
+        ];
 
         return view('livewire.productividad-tareas', compact('rendimiento', 'kpis', 'metricas'));
     }

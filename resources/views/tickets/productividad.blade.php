@@ -488,9 +488,23 @@
                                 encuesta(s) completada(s)
                             </p>
                         </div>
+                        @php
+                            $calSat = $metricasProductividad['calificacion_promedio'];
+                            $calGeneral = round(($calSat['fastness'] + $calSat['attention'] + $calSat['resolution']) / 3, 1);
+                        @endphp
+                        <div class="text-right" aria-label="Calificación general {{ $calGeneral }} de 5">
+                            <p class="text-3xl font-bold leading-none text-gray-900 dark:text-white">
+                                {{ number_format($calGeneral, 1) }}<span class="text-sm font-medium text-gray-400"> / 5</span>
+                            </p>
+                            <div class="mt-1 text-yellow-500 text-sm" aria-hidden="true">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="{{ $calGeneral >= $i ? 'fas fa-star' : ($calGeneral >= $i - 0.5 ? 'fas fa-star-half-alt' : 'far fa-star') }}"></i>
+                                @endfor
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="h-[220px]">
+                    <div class="h-[170px]">
                         <canvas id="chartSatisfaccion" role="img" aria-label="Calificación de satisfacción"></canvas>
                     </div>
                 </div>
@@ -509,14 +523,15 @@
                 </div>
 
                 <div
-                    class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
+                    class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-indigo-200/90 dark:hover:border-indigo-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
-                        <h3 class="text-lg font-semibold dark:text-white">Tickets Creados vs Resueltos</h3>
+                        <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y
+                            Cerrados)</h3>
                     </div>
                     <div
                         class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
-                        <canvas id="chartResueltosPorDia" role="img"
-                            aria-label="Tickets creados y resueltos por día"></canvas>
+                        <canvas id="chartClasificacion" role="img"
+                            aria-label="Distribución por clasificación de ticket"></canvas>
                     </div>
                 </div>
             </div>
@@ -539,15 +554,14 @@
             </div>
 
             <div
-                class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-indigo-200/90 dark:hover:border-indigo-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/25">
+                class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
                 <div class="flex items-center justify-between gap-2 mb-3">
-                    <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y
-                        Cerrados)</h3>
+                    <h3 class="text-lg font-semibold dark:text-white">Tickets Creados vs Resueltos</h3>
                 </div>
                 <div
                     class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
-                    <canvas id="chartClasificacion" role="img"
-                        aria-label="Distribución por clasificación de ticket"></canvas>
+                    <canvas id="chartResueltosPorDia" role="img"
+                        aria-label="Tickets creados y resueltos por día"></canvas>
                 </div>
             </div>
 
@@ -577,7 +591,7 @@
 
             <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
                 <h3 class="text-lg font-semibold mb-3 dark:text-white">Carga por responsable</h3>
-                <div class="h-[280px]">
+                <div class="h-80">
                     <canvas id="chartCargaResponsable" role="img" aria-label="Carga por responsable"></canvas>
                 </div>
             </div>
@@ -1969,6 +1983,18 @@
         return partes.join(', ');
     }
 
+    // Versión corta para etiquetas y ejes donde no cabe el texto largo ("1d 3h", "3h 20m", "45m").
+    function formatearDuracionCorta(horas) {
+        const totalMinutos = Math.round(Math.max(0, Number(horas) || 0) * 60);
+        if (totalMinutos === 0) return '0m';
+        const dias = Math.floor(totalMinutos / 480);
+        const h = Math.floor((totalMinutos % 480) / 60);
+        const m = totalMinutos % 60;
+        if (dias > 0) return dias + 'd' + (h > 0 ? ' ' + h + 'h' : '');
+        if (h > 0) return h + 'h' + (m > 0 ? ' ' + m + 'm' : '');
+        return m + 'm';
+    }
+
     function obtenerDatosFrescos() {
         const rawData = document.getElementById('productividad-json-data');
         if (!rawData) return null;
@@ -1996,7 +2022,6 @@
         }
         destruir(C.estado);
         destruir(C.resueltos);
-        destruir(C.tendencias);
         destruir(C.prioridad);
         destruir(C.clasificacion);
         destruir(C.tipoTicket);
@@ -2007,7 +2032,6 @@
         destruir(C.gerenciaSolicitante);
         C.estado = null;
         C.resueltos = null;
-        C.tendencias = null;
         C.prioridad = null;
         C.clasificacion = null;
         C.tipoTicket = null;
@@ -2405,7 +2429,6 @@
         // Destruir gráficas existentes si ya están creadas
         if (C.estado) C.estado.destroy();
         if (C.resueltos) C.resueltos.destroy();
-        if (C.tendencias) C.tendencias.destroy();
         if (C.prioridad) C.prioridad.destroy();
         if (C.clasificacion) C.clasificacion.destroy();
         if (C.tipoTicket) C.tipoTicket.destroy();
@@ -2419,27 +2442,11 @@
         const distribucionEstado = metricasData.distribucion_estado || {};
         const resueltosPorDia = metricasData.resueltos_por_dia || {};
         const creadosPorDia = metricasData.creados_por_dia || {};
-        const tendenciasSemanales = metricasData.tendencias_semanales || {};
         const ticketsPorPrioridad = metricasData.tickets_por_prioridad || {};
         const ticketsPorClasificacion = metricasData.tickets_por_clasificacion || {};
         const ticketsPorTipo = metricasData.tickets_por_tipo || {};
         const ticketsPorGerenciaSolicitante = metricasData.tickets_por_gerencia_solicitante || {};
-        const ticketsPorGerenciaResponsable = metricasData.tickets_por_gerencia_responsable || {};
 
-        // Datos KPIs Operativos
-        const backlogAcumulado = metricasData.backlog_acumulado || {};
-        const cargaActualResponsable = metricasData.carga_actual_responsable || {};
-        const slaRespuesta = metricasData.sla_respuesta || {
-            cumplido: 0,
-            incumplido: 0
-        };
-        const slaResolucion = metricasData.sla_resolucion || {
-            cumplido: 0,
-            incumplido: 0
-        };
-        const edadBacklog = metricasData.edad_backlog || {};
-        const prioridadAbiertos = metricasData.prioridad_abiertos || {};
-        const tendenciaEficiencia = metricasData.tendencia_eficiencia || {};
         const comparacionTiempos6Meses = metricasData.comparacion_tiempos_6_meses || {};
         const matrizIncidenciasData = metricasData.matriz_incidencias_responsable || {};
         const responsablesTIList = metricasData.responsables_ti_list || {};
@@ -2874,6 +2881,8 @@
             const tiemposResolucion = mesesLabels.map(mes => comparacionTiempos6Meses[mes].resolucion);
             const tiemposTotal = mesesLabels.map(mes => comparacionTiempos6Meses[mes].total);
             const hayDatos = mesesLabels.length > 0;
+            // Con muchos meses las 3 barras por mes quedan angostas: etiqueta vertical para que no se encimen.
+            const etiquetasVerticales = mesesLabels.length > 3;
 
             C.comparacionTiempos6Meses = new Chart(ctxComparacionTiempos.getContext('2d'), {
                 type: 'bar',
@@ -2926,16 +2935,20 @@
                         mode: 'index',
                         intersect: false
                     },
+                    layout: {
+                        padding: { top: 8 }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
+                            grace: etiquetasVerticales ? '22%' : '12%',
                             ticks: {
                                 color: colores.textoSecundario,
                                 font: {
                                     size: 11
                                 },
                                 callback: function (value) {
-                                    return formatearDuracionHoras(value);
+                                    return formatearDuracionCorta(value);
                                 }
                             },
                             grid: {
@@ -3012,18 +3025,19 @@
                             textStrokeWidth: 2,
                             font: {
                                 weight: 'bold',
-                                size: 10
+                                size: etiquetasVerticales ? 9 : 10
                             },
                             formatter: function (value) {
                                 const n = Number(value);
                                 if (isNaN(n) || n <= 0) {
                                     return '';
                                 }
-                                return formatearDuracionHoras(n);
+                                return formatearDuracionCorta(n);
                             },
                             anchor: 'end',
-                            align: 'top',
-                            offset: 6,
+                            align: etiquetasVerticales ? 'end' : 'top',
+                            rotation: etiquetasVerticales ? -90 : 0,
+                            offset: 4,
                             clip: false
                         }
                     }
@@ -3185,40 +3199,185 @@
         const canvasSat = document.getElementById('chartSatisfaccion');
         if (canvasSat) {
             const cal = metricasData.calificacion_promedio || {};
-            const optsSat = optsBarras(false);
-            if (optsSat.scales && optsSat.scales.y) optsSat.scales.y.max = 5;
+            const valoresSat = [Number(cal.fastness) || 0, Number(cal.attention) || 0, Number(cal.resolution) || 0];
+            const coloresSat = ['#4C9AFF', '#36B37E', '#6554C0'];
             C.satisfaccion = new Chart(canvasSat, {
                 type: 'bar',
                 data: {
                     labels: ['Rapidez', 'Atención', 'Resolución'],
                     datasets: [{
-                        label: 'Promedio sobre 5',
-                        data: [Number(cal.fastness) || 0, Number(cal.attention) || 0, Number(cal.resolution) || 0],
-                        backgroundColor: ['#4C9AFF', '#36B37E', '#6554C0'],
-                        borderRadius: 8,
-                        maxBarThickness: 42
+                        label: 'Promedio',
+                        data: valoresSat,
+                        backgroundColor: coloresSat,
+                        borderRadius: 999,
+                        borderSkipped: false,
+                        barThickness: 14,
+                        order: 1,
+                        datalabels: { display: false }
+                    }, {
+                        // Riel de fondo hasta 5: da la referencia de qué tan lejos está del máximo.
+                        label: 'Máximo',
+                        data: [5, 5, 5],
+                        backgroundColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.06)',
+                        hoverBackgroundColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.06)',
+                        borderRadius: 999,
+                        borderSkipped: false,
+                        barThickness: 14,
+                        order: 2
                     }]
                 },
-                options: optsSat
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    // Barra y riel en el mismo carril, encimados.
+                    datasets: { bar: { grouped: false } },
+                    animation: animacionGraficas,
+                    layout: { padding: { right: 56 } },
+                    scales: {
+                        x: { min: 0, max: 5, display: false },
+                        y: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: { color: colores.texto, font: { size: 12, weight: '600' }, padding: 10 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: tooltipEstiloBase(colores, {
+                            filter: function (item) { return item.datasetIndex === 0; },
+                            callbacks: {
+                                label: function (ctx) { return ' ' + Number(ctx.raw).toFixed(1) + ' de 5'; }
+                            }
+                        }),
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 0,
+                            clip: false,
+                            // Se dibuja sobre el riel (termina en 5) para que el valor quede alineado a la derecha.
+                            formatter: function (value, ctx) { return valoresSat[ctx.dataIndex].toFixed(1) + ' / 5'; },
+                            color: dark ? '#F8FAFC' : '#0F172A',
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    }
+                }
             });
         }
 
         const canvasCarga = document.getElementById('chartCargaResponsable');
         if (canvasCarga) {
             const filas = Object.values(metricasData.tickets_por_responsable || {}).sort(function (a, b) { return b.total - a.total; }); // llega como objeto con llaves numéricas: JS pierde el orden
-            const lista = filas.length ? filas : [{ nombre: 'Sin datos', cerrados: 0, en_progreso: 0, pendientes: 0 }];
-            C.cargaResponsable = new Chart(canvasCarga, {
+            const hayDatosCarga = filas.length > 0;
+            const lista = hayDatosCarga ? filas : [{ nombre: 'Sin datos' }];
+            const estadosCarga = [
+                { label: 'Cerrados', campo: 'cerrados', color: '#36B37E' },
+                { label: 'En progreso', campo: 'en_progreso', color: '#4C9AFF' },
+                { label: 'Pausados', campo: 'pausados', color: '#FFAB00' },
+                { label: 'Pendientes', campo: 'pendientes', color: '#FF5630' }
+            ];
+            C.cargaResponsable = new Chart(canvasCarga.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: lista.map(function (f) { return f.nombre; }),
-                    datasets: [
-                        { label: 'Cerrados', data: lista.map(function (f) { return f.cerrados || 0; }), backgroundColor: '#36B37E', borderRadius: 6, maxBarThickness: 16 },
-                        { label: 'En progreso', data: lista.map(function (f) { return f.en_progreso || 0; }), backgroundColor: '#4C9AFF', borderRadius: 6, maxBarThickness: 16 },
-                        { label: 'Pausados', data: lista.map(function (f) { return f.pausados || 0; }), backgroundColor: '#FFAB00', borderRadius: 6, maxBarThickness: 16 },
-                        { label: 'Pendientes', data: lista.map(function (f) { return f.pendientes || 0; }), backgroundColor: '#FF5630', borderRadius: 6, maxBarThickness: 16 }
-                    ]
+                    datasets: estadosCarga.map(function (e) {
+                        return {
+                            label: e.label,
+                            // null en vez de 0 + skipNull: el estado sin tickets no deja hueco en el grupo.
+                            data: lista.map(function (f) { return (f[e.campo] || 0) > 0 ? f[e.campo] : null; }),
+                            backgroundColor: e.color + 'CC',
+                            hoverBackgroundColor: e.color,
+                            borderColor: e.color,
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            maxBarThickness: 56
+                        };
+                    })
                 },
-                options: optsBarras(true)
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: animacionGraficas,
+                    onHover: cursorSobreGrafica,
+                    skipNull: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    layout: {
+                        padding: { top: 8 }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grace: '12%',
+                            ticks: {
+                                color: colores.textoSecundario,
+                                font: { size: 11 },
+                                precision: 0
+                            },
+                            grid: {
+                                color: colores.grid,
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: colores.textoSecundario,
+                                font: { size: 11, weight: '500' }
+                            },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'center',
+                            onHover: cursorLeyendaPointer,
+                            onLeave: cursorLeyendaDefault,
+                            labels: {
+                                color: colores.texto,
+                                padding: 20,
+                                font: { size: 13, weight: 'bold' },
+                                usePointStyle: true,
+                                pointStyle: 'rect',
+                                boxWidth: 12,
+                                boxHeight: 12
+                            }
+                        },
+                        tooltip: tooltipEstiloBase(colores, {
+                            enabled: hayDatosCarga,
+                            displayColors: true,
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            boxPadding: 5,
+                            intersect: false,
+                            position: 'nearest',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            filter: function (item) { return item.raw !== null; },
+                            callbacks: {
+                                label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + ctx.raw; },
+                                footer: function (items) {
+                                    return items.length ? 'Total: ' + (lista[items[0].dataIndex].total || 0) : '';
+                                }
+                            }
+                        }),
+                        datalabels: {
+                            display: function (ctx) { return ctx.dataset.data[ctx.dataIndex] !== null; },
+                            color: dark ? '#F8FAFC' : '#0F172A',
+                            textStrokeColor: dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.95)',
+                            textStrokeWidth: 2,
+                            font: { weight: 'bold', size: 11 },
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 4,
+                            clip: false
+                        }
+                    }
+                }
             });
         }
 
@@ -3596,25 +3755,6 @@
                 ch.resize();
             }
         });
-    }
-
-    // Función para forzar reinicialización de gráficas de empleados
-    function reinicializarGraficasEmpleados() {
-        const metricasData = obtenerDatosFrescos();
-        if (!metricasData) return;
-        const metricasEmpleados = metricasData.metricas_por_empleado || [];
-
-        if (metricasEmpleados) {
-            metricasEmpleados.forEach(empleado => {
-                const chartKey = 'chartEmpleado' + empleado.empleado_id;
-                if (window[chartKey]) {
-                    window[chartKey].destroy();
-                    window[chartKey] = null;
-                }
-            });
-        }
-        // Reinicializar
-        setTimeout(inicializarGraficasEmpleados, 100);
     }
 
     // Escuchar cuando se hace clic en el tab de productividad
