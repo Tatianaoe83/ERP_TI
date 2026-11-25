@@ -14,12 +14,6 @@
     @media (min-width: 1024px) {
         .dash-top-grid { grid-template-columns: 1fr 1fr; }
     }
-    .dash-top-col {
-        display: flex;
-        flex-direction: column;
-        gap: 0.55rem;
-        min-height: 0;
-    }
     .dash-kpi--fill {
         flex: 1 1 auto;
         display: flex;
@@ -34,16 +28,6 @@
     }
     @media (min-width: 768px) {
         .dash-kpi--fill .dash-equipos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    .dash-kpi--fill .dash-stat {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        gap: 0.35rem;
-        min-height: 5.5rem;
     }
     .dash-kpi-grid {
         display: grid;
@@ -500,12 +484,6 @@
         min-width: 0;
     }
     .dash-filtro--wide { flex: 2 1 280px; }
-    .dash-filtro--acciones {
-        flex: 0 0 auto;
-        flex-direction: row;
-        align-items: center;
-        gap: 0.5rem;
-    }
     .dash-filtro > span {
         font-size: 0.72rem;
         font-weight: 600;

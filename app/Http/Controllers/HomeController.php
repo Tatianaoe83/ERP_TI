@@ -16,7 +16,6 @@ use App\Models\Tickets;
 use App\Models\TicketTarea;
 use App\Models\Solicitud;
 use App\Models\Auditoria;
-use App\Models\Facturas;
 use App\Models\PresupuestoConfiguracion;
 use App\Models\PresupuestoInterno;
 use App\Helpers\PresupuestoAsignacion;
@@ -272,13 +271,7 @@ class HomeController extends Controller
             $auditoriasBase->whereIn('EmpleadoID', $lista);
         }
 
-        $facturasBase = Facturas::query()->where('Anio', $anio);
         $idsPresupuesto = $this->idsPresupuestoDecision($request, $idsFiltro);
-        if ($idsPresupuesto !== []) {
-            $facturasBase->whereIn('PresupuestoInternoID', $idsPresupuesto);
-        } else {
-            $facturasBase->whereRaw('1 = 0');
-        }
 
         $ticketsEstatus = $this->contarSeguro(function () use ($ticketsBase) {
             return (clone $ticketsBase)
@@ -294,19 +287,12 @@ class HomeController extends Controller
             ->map(fn ($filas) => (int) $filas->sum('total'));
         $ticketsDe = fn (array $estatus) => collect($estatus)->sum(fn ($e) => $porEstatus->get(mb_strtolower($e), 0));
 
-        $conteoFacturas = $this->contarSeguro(
-            fn () => (clone $facturasBase)->selectRaw('COUNT(*) as total, COALESCE(SUM(Costo), 0) as importe')->first(),
-            null
-        );
-
         // Un viaje con subselects que reusan los scopes del modelo: la regla de cada tarjeta vive solo en TicketTarea.
         $conteoTareas = $this->contarSeguro(function () use ($tareasBase) {
             $contar = fn ($q) => $q->selectRaw('COUNT(*)');
             return DB::query()
-                ->selectSub($contar((clone $tareasBase)->pendientes()), 'pendientes')
                 ->selectSub($contar((clone $tareasBase)->deHoy()), 'hoy')
                 ->selectSub($contar((clone $tareasBase)->atrasadas()), 'atrasadas')
-                ->selectSub($contar((clone $tareasBase)->proximas()), 'proximas')
                 ->selectSub($contar((clone $tareasBase)->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)), 'criticas')
                 ->first();
         }, null);
@@ -316,15 +302,11 @@ class HomeController extends Controller
             'tickets_pendientes' => $ticketsDe(['Pendiente']),
             'tickets_progreso' => $ticketsDe(['En progreso']),
             'tickets_estatus' => $ticketsEstatus,
-            'tareas_pendientes' => (int) ($conteoTareas->pendientes ?? 0),
             'tareas_hoy' => (int) ($conteoTareas->hoy ?? 0),
             'tareas_atrasadas' => (int) ($conteoTareas->atrasadas ?? 0),
-            'tareas_proximas' => (int) ($conteoTareas->proximas ?? 0),
             'tareas_criticas' => (int) ($conteoTareas->criticas ?? 0),
             'solicitudes_activas' => $this->contarSeguro(fn () => (clone $solicitudesBase)->whereNotIn('Estatus', ['Cancelada', 'Cancelado', 'Rechazada', 'Rechazado', 'Aprobada', 'Aprobado'])->count()),
             'auditorias_anio' => $this->contarSeguro(fn () => (clone $auditoriasBase)->whereYear('created_at', $anio)->count()),
-            'facturas_mes' => $conteoFacturas ? (int) $conteoFacturas->total : 0,
-            'facturas_importe' => $conteoFacturas ? (float) $conteoFacturas->importe : 0.0,
         ];
 
         $decision = $this->resumenPresupuestoOficial($idsPresupuesto, $anio);
@@ -351,7 +333,6 @@ class HomeController extends Controller
                     'total' => $totalLineas,
                     'asignadas' => $lineasAsignadas,
                     'disponibles' => $lineasDisponibles,
-                    'libres' => $lineasLibres,
                     'referenciados' => $lineasReferenciados,
                     'fisicas' => $lineasAsignadasPersonaFisica,
                 ],
@@ -425,22 +406,18 @@ class HomeController extends Controller
             'inventario' => [
                 'equipos' => ['total' => 0, 'asignados' => 0, 'propios' => 0],
                 'insumos' => ['total' => 0, 'asignados' => 0],
-                'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0, 'fisicas' => 0],
+                'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'referenciados' => 0, 'fisicas' => 0],
             ],
             'presupuestados' => ['equipos' => 0, 'insumos' => 0, 'lineas' => 0, 'total' => 0],
             'operacion' => [
                 'tickets_abiertos' => 0,
                 'tickets_pendientes' => 0,
                 'tickets_progreso' => 0,
-                'tareas_pendientes' => 0,
                 'tareas_hoy' => 0,
                 'tareas_atrasadas' => 0,
-                'tareas_proximas' => 0,
                 'tareas_criticas' => 0,
                 'solicitudes_activas' => 0,
                 'auditorias_anio' => 0,
-                'facturas_mes' => 0,
-                'facturas_importe' => 0,
             ],
             'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
             'mantenimientos' => ['pendientes' => 0, 'vencidos' => 0, 'realizados' => 0, 'anio' => now()->year],
