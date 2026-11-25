@@ -140,7 +140,15 @@ class MantenimientoTicketsTablaUpdater extends Component
         )->toArray();
     }
 
+    /** El refresco emite el payload y luego render() lo vuelve a pedir: se arma una vez por petición. */
+    private ?array $payloadMemo = null;
+
     private function obtenerPayloadActualizacion()
+    {
+        return $this->payloadMemo ??= $this->armarPayload();
+    }
+
+    private function armarPayload(): array
     {
         $query = $this->queryFiltrada();
 

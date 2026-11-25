@@ -896,17 +896,18 @@ class TicketsController extends Controller
                 return response()->json(['success' => false, 'message' => 'Ticket ID es requerido'], 400);
             }
 
-            $ultimoMensaje = TicketChat::where('ticket_id', $ticketId)->orderBy('id', 'desc')->first();
+            // Último id y total en una sola consulta.
+            $resumen = TicketChat::where('ticket_id', $ticketId)->selectRaw('MAX(id) as ultimo, COUNT(*) as total')->first();
 
-            if (!$ultimoMensaje) {
+            if (!$resumen->ultimo) {
                 return response()->json(['success' => true, 'tiene_nuevos' => false, 'ultimo_mensaje_id' => 0]);
             }
 
             return response()->json([
                 'success'          => true,
-                'tiene_nuevos'     => $ultimoMensaje->id > (int)$ultimoMensajeId,
-                'ultimo_mensaje_id' => $ultimoMensaje->id,
-                'total_mensajes'   => TicketChat::where('ticket_id', $ticketId)->count(),
+                'tiene_nuevos'     => (int) $resumen->ultimo > (int)$ultimoMensajeId,
+                'ultimo_mensaje_id' => (int) $resumen->ultimo,
+                'total_mensajes'   => (int) $resumen->total,
             ]);
         } catch (\Exception $e) {
             Log::error("Error verificando mensajes nuevos: " . $e->getMessage());
@@ -1051,17 +1052,10 @@ class TicketsController extends Controller
 
         $ticketId = $request->input('ticket_id');
 
+        // Un solo UPDATE: las dos columnas son NOT NULL, así que da lo mismo que los dos de antes.
         TicketChat::where('ticket_id', $ticketId)
-            ->where('leido', false)
-            ->update([
-                'leido' => true
-            ]);
-
-        TicketChat::where('ticket_id', $ticketId)
-            ->where('notificaciones_pendientes', '>', 0)
-            ->update([
-                'notificaciones_pendientes' => 0
-            ]);
+            ->where(fn ($q) => $q->where('leido', false)->orWhere('notificaciones_pendientes', '>', 0))
+            ->update(['leido' => true, 'notificaciones_pendientes' => 0]);
 
         return response()->json([
             'success' => true,
@@ -1258,13 +1252,19 @@ class TicketsController extends Controller
                 return response()->json(['success' => false, 'message' => 'ID de ticket requerido'], 400);
             }
 
+            // Los cuatro conteos en una sola pasada sobre los correos del chat.
+            $conteo = TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->selectRaw(
+                "COUNT(*) as total, COALESCE(SUM(remitente = 'soporte'), 0) as enviados, "
+                . "COALESCE(SUM(remitente = 'usuario'), 0) as recibidos, COALESCE(SUM(leido = 0), 0) as no_leidos"
+            )->first();
+
             return response()->json([
                 'success'      => true,
                 'estadisticas' => [
-                    'correos_enviados'  => TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->where('remitente', 'soporte')->count(),
-                    'correos_recibidos' => TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->where('remitente', 'usuario')->count(),
-                    'correos_no_leidos' => TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->where('leido', false)->count(),
-                    'total_correos'     => TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->count(),
+                    'correos_enviados'  => (int) $conteo->enviados,
+                    'correos_recibidos' => (int) $conteo->recibidos,
+                    'correos_no_leidos' => (int) $conteo->no_leidos,
+                    'total_correos'     => (int) $conteo->total,
                 ],
             ]);
         } catch (\Exception $e) {

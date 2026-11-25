@@ -99,5 +99,48 @@
         }, 300);
     });
     @endif
+
+    // Las columnas del kanban miden justo lo que queda de pantalla: así solo scrollean por dentro
+    // y la vista no. La variable va en el contenedor (fuera de Livewire) para que el refresco no la borre.
+    (function () {
+        function ajustarColumnasMantenimiento() {
+            var raiz = document.getElementById('mantenimiento-tabset');
+            var main = document.getElementById('app-main');
+            if (!raiz || !main) return;
+            var grid = raiz.querySelector('[data-vista-panel="kanban"]:not([hidden]) .tk-col');
+            // Con menos de 5 columnas por fila se apilan y el scroll de la página es inevitable.
+            if (!grid || !window.matchMedia('(min-width: 1280px)').matches) {
+                raiz.style.removeProperty('--mant-col-alto');
+                return;
+            }
+            grid = grid.parentElement;
+            var cajaMain = main.getBoundingClientRect();
+            var arriba = grid.getBoundingClientRect().top - cajaMain.top + main.scrollTop;
+            // Lo que va debajo del tablero: paddings, bordes y márgenes inferiores de sus contenedores.
+            var debajo = 0;
+            for (var e = grid; e && e !== main.parentElement; e = e.parentElement) {
+                var cs = getComputedStyle(e);
+                debajo += parseFloat(cs.marginBottom) || 0;
+                if (e !== grid) debajo += (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+            }
+            var alto = Math.max(320, Math.floor(main.clientHeight - arriba - debajo));
+            raiz.style.setProperty('--mant-col-alto', alto + 'px');
+        }
+
+        window.ajustarColumnasMantenimiento = ajustarColumnasMantenimiento;
+        if (!window.__mantColumnasListo) {
+            window.__mantColumnasListo = true;
+            window.addEventListener('resize', function () { window.ajustarColumnasMantenimiento(); });
+            document.addEventListener('app-tab-change', function () { setTimeout(window.ajustarColumnasMantenimiento, 40); });
+            document.addEventListener('livewire:load', function () {
+                window.Livewire.hook('message.processed', function () { window.ajustarColumnasMantenimiento(); });
+            });
+            if (window.Livewire && window.Livewire.hook) {
+                window.Livewire.hook('message.processed', function () { window.ajustarColumnasMantenimiento(); });
+            }
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ajustarColumnasMantenimiento);
+        else ajustarColumnasMantenimiento();
+    })();
 </script>
 @endpush

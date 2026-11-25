@@ -35,9 +35,7 @@ class TicketsMantenimientoController extends Controller
         $metricasProductividad = [];
 
         if ($tab === 'productividad') {
-            $tickets = TicketMantenimiento::with('responsable')->orderBy('created_at', 'desc')->get();
             $metricasProductividad = $this->obtenerMetricasProductividad(
-                $tickets,
                 $mes,
                 $anio,
                 $modoRango ? $mesInicio : null,
@@ -70,8 +68,7 @@ class TicketsMantenimientoController extends Controller
         $mesFin     = $esRango ? (int) $request->input('mes_fin') : null;
         $anioFin    = $esRango ? (int) $request->input('anio_fin') : null;
 
-        $tickets = TicketMantenimiento::with('responsable')->orderBy('created_at', 'desc')->get();
-        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
+        $metricasProductividad = $this->obtenerMetricasProductividad($mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $html = view('tickets-mantenimiento.productividad', [
             'metricasProductividad' => $metricasProductividad,
@@ -87,7 +84,7 @@ class TicketsMantenimientoController extends Controller
         return response()->json(['success' => true, 'html' => $html, 'mes' => $mes, 'anio' => $anio]);
     }
 
-    private function obtenerMetricasProductividad($tickets, $mes = null, $anio = null, $mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null): array
+    private function obtenerMetricasProductividad($mes = null, $anio = null, $mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null): array
     {
         $esRango = $mesInicio !== null && $anioInicio !== null && $mesFin !== null && $anioFin !== null;
 
@@ -100,6 +97,19 @@ class TicketsMantenimientoController extends Controller
             $fechaInicioMes = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
             $fechaFinMes    = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
         }
+
+        // Solo lo que puede entrar en alguna cohorte (creados, resueltos o abiertos). Los filtros
+        // de abajo siguen siendo los que deciden; esto solo evita traer el histórico completo.
+        $tickets = TicketMantenimiento::with(['responsable', 'empleado.obras', 'empleado.puestos.departamentos'])
+            ->where(function ($q) use ($fechaInicioMes, $fechaFinMes) {
+                $q->whereBetween('created_at', [$fechaInicioMes, $fechaFinMes])
+                    ->orWhereBetween('FechaFinProgreso', [$fechaInicioMes, $fechaFinMes])
+                    ->orWhereNull('Estatus')
+                    // BINARY: igual que el in_array estricto de $abiertos (mayúsculas y espacios cuentan).
+                    ->orWhereRaw("BINARY Estatus NOT IN ('Atendido', 'Cancelado')");
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Tres cohortes distintas, porque responden preguntas distintas:
         // - creados:   demanda del periodo (por created_at).
@@ -352,17 +362,18 @@ class TicketsMantenimientoController extends Controller
                 return response()->json(['success' => false, 'message' => 'ID de solicitud requerido'], 400);
             }
 
-            $ultimoMensaje = MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->orderBy('id', 'desc')->first();
+            // Último id y total en una sola consulta.
+            $resumen = MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->selectRaw('MAX(id) as ultimo, COUNT(*) as total')->first();
 
-            if (!$ultimoMensaje) {
+            if (!$resumen->ultimo) {
                 return response()->json(['success' => true, 'tiene_nuevos' => false, 'ultimo_mensaje_id' => 0]);
             }
 
             return response()->json([
                 'success'           => true,
-                'tiene_nuevos'      => $ultimoMensaje->id > (int) $ultimoMensajeId,
-                'ultimo_mensaje_id' => $ultimoMensaje->id,
-                'total_mensajes'    => MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->count(),
+                'tiene_nuevos'      => (int) $resumen->ultimo > (int) $ultimoMensajeId,
+                'ultimo_mensaje_id' => (int) $resumen->ultimo,
+                'total_mensajes'    => (int) $resumen->total,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error verificando mensajes: ' . $e->getMessage()], 500);
@@ -463,13 +474,10 @@ class TicketsMantenimientoController extends Controller
         try {
             $mantenimientoId = $request->input('mantenimiento_id');
 
+            // Un solo UPDATE: las dos columnas son NOT NULL, así que da lo mismo que los dos de antes.
             MantenimientoChat::where('mantenimiento_id', $mantenimientoId)
-                ->where('leido', false)
-                ->update(['leido' => true]);
-
-            MantenimientoChat::where('mantenimiento_id', $mantenimientoId)
-                ->where('notificaciones_pendientes', '>', 0)
-                ->update(['notificaciones_pendientes' => 0]);
+                ->where(fn ($q) => $q->where('leido', false)->orWhere('notificaciones_pendientes', '>', 0))
+                ->update(['leido' => true, 'notificaciones_pendientes' => 0]);
 
             return response()->json(['success' => true, 'message' => 'Mensajes marcados como leídos']);
         } catch (\Exception $e) {
@@ -485,13 +493,19 @@ class TicketsMantenimientoController extends Controller
                 return response()->json(['success' => false, 'message' => 'ID de solicitud requerido'], 400);
             }
 
+            // Los cuatro conteos en una sola pasada sobre los correos del chat.
+            $conteo = MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('es_correo', true)->selectRaw(
+                "COUNT(*) as total, COALESCE(SUM(remitente = 'soporte'), 0) as enviados, "
+                . "COALESCE(SUM(remitente = 'usuario'), 0) as recibidos, COALESCE(SUM(leido = 0), 0) as no_leidos"
+            )->first();
+
             return response()->json([
                 'success' => true,
                 'estadisticas' => [
-                    'correos_enviados'  => MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('es_correo', true)->where('remitente', 'soporte')->count(),
-                    'correos_recibidos' => MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('es_correo', true)->where('remitente', 'usuario')->count(),
-                    'correos_no_leidos' => MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('es_correo', true)->where('leido', false)->count(),
-                    'total_correos'     => MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('es_correo', true)->count(),
+                    'correos_enviados'  => (int) $conteo->enviados,
+                    'correos_recibidos' => (int) $conteo->recibidos,
+                    'correos_no_leidos' => (int) $conteo->no_leidos,
+                    'total_correos'     => (int) $conteo->total,
                 ],
             ]);
         } catch (\Exception $e) {

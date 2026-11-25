@@ -50,8 +50,12 @@
     class="mant-modal fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 md:p-0 bg-gray-900/60 backdrop-blur-sm mt-0"
     @click.self="cerrarModal"
     x-cloak>
+    {{-- relative: Select2 esconde el <select> original con position:absolute; sin esto se posicionaba
+         contra el fondo fixed y alargaba su scroll con un espacio vacío.
+         max-height: 95vh más el padding del fondo (2rem) no cabía en ventanas bajas. --}}
     <div
-        class="flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 bg-gray-50 dark:bg-[#1A1D24] border border-transparent dark:border-gray-700 max-h-[calc(100vh-1.5rem)] md:max-h-[95vh] mt-0 min-h-0"
+        style="max-height: min(95vh, calc(100vh - 2rem));"
+        class="relative flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 bg-gray-50 dark:bg-[#1A1D24] border border-transparent dark:border-gray-700 max-h-[calc(100vh-1.5rem)] md:max-h-[95vh] mt-0 min-h-0"
         @click.stop>
 
         <div class="flex justify-between items-center p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1A1D24] flex-shrink-0">
@@ -184,8 +188,9 @@
                         </div>
                         <div>
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Responsable</label>
-                            <input type="text" readonly value="{{ $responsableNombre }}"
-                                class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-100 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 cursor-not-allowed">
+                            {{-- Mismo padding (12px) y alto (42px) que los selects con Select2 de al lado. --}}
+                            <input type="text" readonly disabled value="{{ $responsableNombre }}" style="height: 42px; padding: 0 12px;"
+                                class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-100 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 cursor-not-allowed disabled:opacity-50">
                         </div>
                         <div>
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoría <span class="text-red-500">*</span></label>

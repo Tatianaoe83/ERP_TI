@@ -18,13 +18,23 @@
     function esImagenArchivo(nombre) {
         return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(nombre || '');
     }
+    // El modal se mueve a <body> al abrirlo, fuera de #app-shell-extras: la navegación interna
+    // trae uno nuevo pero el viejo se queda ahí. Con dos del mismo id, cerrar agarraba el que
+    // no estaba abierto y la vista se quedaba trabada. Se deja solo el más reciente.
+    function obtenerModalVistaArchivo() {
+        var modales = document.querySelectorAll('#modalVistaArchivo');
+        var actual = document.querySelector('#app-shell-extras #modalVistaArchivo') || modales[modales.length - 1];
+        modales.forEach(function (m) { if (m !== actual) m.remove(); });
+        return actual;
+    }
     function verArchivoEnPantalla(url, nombre) {
         if (!url || url === '#') return;
-        var modal = document.getElementById('modalVistaArchivo');
-        var frame = document.getElementById('vistaArchivoFrame');
-        var img = document.getElementById('vistaArchivoImg');
-        var titulo = document.getElementById('vistaArchivoTitulo');
-        if (!modal || !frame || !img) return;
+        var modal = obtenerModalVistaArchivo();
+        if (!modal) return;
+        var frame = modal.querySelector('#vistaArchivoFrame');
+        var img = modal.querySelector('#vistaArchivoImg');
+        var titulo = modal.querySelector('#vistaArchivoTitulo');
+        if (!frame || !img) return;
         if (modal.parentElement !== document.body) document.body.appendChild(modal);
         if (titulo) titulo.textContent = nombre || 'Archivo';
         if (esImagenArchivo(nombre) || esImagenArchivo(url)) {
@@ -43,19 +53,20 @@
         modal.style.display = 'flex';
     }
     function cerrarVistaArchivo() {
-        var modal = document.getElementById('modalVistaArchivo');
-        var frame = document.getElementById('vistaArchivoFrame');
-        var img = document.getElementById('vistaArchivoImg');
-        if (frame) frame.src = 'about:blank';
-        if (img) img.removeAttribute('src');
-        if (!modal) return;
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
+        // Cierra todas las copias, por si quedó alguna abierta de antes.
+        document.querySelectorAll('#modalVistaArchivo').forEach(function (modal) {
+            var frame = modal.querySelector('#vistaArchivoFrame');
+            var img = modal.querySelector('#vistaArchivoImg');
+            if (frame) frame.src = 'about:blank';
+            if (img) img.removeAttribute('src');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        });
     }
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
-        var modal = document.getElementById('modalVistaArchivo');
-        if (modal && modal.style.display === 'flex') cerrarVistaArchivo();
+        var abierto = Array.prototype.some.call(document.querySelectorAll('#modalVistaArchivo'), function (m) { return m.style.display === 'flex'; });
+        if (abierto) cerrarVistaArchivo();
     });
     window.verArchivoEnPantalla = verArchivoEnPantalla;
     window.cerrarVistaArchivo = cerrarVistaArchivo;

@@ -135,24 +135,40 @@ class TicketMantenimiento extends Model
      */
     public static function obtenerColumnas(array $paginas = []): array
     {
+        $paginadas = array_intersect_key(self::ESTATUS_COLUMNA, array_flip(self::COLUMNAS_PAGINADAS));
+        $abiertas = array_diff_key(self::ESTATUS_COLUMNA, $paginadas);
+
+        // Las columnas abiertas salen de una sola consulta y se reparten en PHP.
+        $abiertos = self::whereIn('Estatus', array_values($abiertas))->orderBy('created_at', 'desc')->get();
+        $conteos = self::whereIn('Estatus', array_values($paginadas))
+            ->selectRaw('Estatus, COUNT(*) as total')
+            ->groupBy('Estatus')
+            ->pluck('total', 'Estatus')
+            ->mapWithKeys(fn ($total, $estatus) => [mb_strtolower(rtrim($estatus)) => (int) $total]);
+
         $grupos = [];
         $totales = [];
-
         foreach (self::ESTATUS_COLUMNA as $key => $estatus) {
-            $query = self::queryConRelaciones()
-                ->where('Estatus', $estatus)
-                ->orderBy('created_at', 'desc');
-
-            if (!in_array($key, self::COLUMNAS_PAGINADAS, true)) {
-                $grupos[$key] = $query->get();
+            if (isset($abiertas[$key])) {
+                // Misma comparación que MySQL: sin distinguir mayúsculas ni espacios finales.
+                $grupos[$key] = $abiertos
+                    ->filter(fn ($ticket) => strcasecmp(rtrim((string) $ticket->Estatus), $estatus) === 0)
+                    ->values();
                 $totales[$key] = $grupos[$key]->count();
                 continue;
             }
 
-            $totales[$key] = self::where('Estatus', $estatus)->count();
+            $totales[$key] = $conteos[mb_strtolower($estatus)] ?? 0;
             $pagina = max(1, (int) ($paginas[$key] ?? 1));
-            $grupos[$key] = $query->forPage($pagina, self::POR_PAGINA_FINALIZADOS)->get();
+            $grupos[$key] = self::where('Estatus', $estatus)
+                ->orderBy('created_at', 'desc')
+                ->forPage($pagina, self::POR_PAGINA_FINALIZADOS)
+                ->get();
         }
+
+        // Relaciones una sola vez para todo el tablero, no por columna.
+        (new \Illuminate\Database\Eloquent\Collection(collect($grupos)->flatten(1)->all()))
+            ->load(self::RELACIONES_VISTA);
 
         return ['grupos' => $grupos, 'totales' => $totales];
     }
@@ -270,9 +286,19 @@ class TicketMantenimiento extends Model
         return $this->belongsTo(Empleados::class, 'ResponsableID', 'EmpleadoID');
     }
 
+    /** Todo lo que lee formatearTicketParaVista: así su loadMissing no consulta ticket por ticket. */
+    public const RELACIONES_VISTA = [
+        'empleado.obras',
+        'empleado.centroCosto',
+        'empleado.jefeDirecto',
+        'empleado.puestos.departamentos.gerencia.direccion',
+        'empleado.puestos.departamentos.gerencia.unidadesdenegocio.division',
+        'responsable',
+    ];
+
     public static function queryConRelaciones()
     {
-        return static::with(['empleado.obras', 'empleado.puestos.departamentos', 'responsable']);
+        return static::with(self::RELACIONES_VISTA);
     }
 
     public function chat()
@@ -564,14 +590,7 @@ class TicketMantenimiento extends Model
 
     public static function formatearTicketParaVista(TicketMantenimiento $ticket): array
     {
-        $ticket->loadMissing([
-            'empleado.obras',
-            'empleado.centroCosto',
-            'empleado.jefeDirecto',
-            'empleado.puestos.departamentos.gerencia.direccion',
-            'empleado.puestos.departamentos.gerencia.unidadesdenegocio.division',
-            'responsable',
-        ]);
+        $ticket->loadMissing(self::RELACIONES_VISTA);
         $contacto = $ticket->empleado ? $ticket->empleado->datosContacto() : [];
 
         return [

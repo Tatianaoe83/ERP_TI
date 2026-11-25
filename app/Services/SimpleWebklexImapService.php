@@ -641,7 +641,7 @@ class SimpleWebklexImapService
                 try {
                     $ticketChat->increment('notificaciones_pendientes', 1);
                 } catch (\Exception $e) {
-                    \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
+                    // El contador de notificaciones es secundario: si falla, el mensaje ya quedó guardado.
                 }
 
                 event(new TicketUpdatedEvent());

@@ -18,7 +18,8 @@
 
         @foreach (\App\Models\TicketMantenimiento::COLUMNAS_VISTA as $key => $titulo)
 
-        <div class="tk-col flex flex-col h-full max-h-[80vh]">
+        {{-- --mant-col-alto lo calcula tickets-mantenimiento/index: el alto que queda de pantalla. --}}
+        <div class="tk-col flex flex-col h-full" style="max-height: var(--mant-col-alto, 80vh);">
 
             <div class="tk-col__head">
                 <div class="flex items-center gap-2">
