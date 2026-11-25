@@ -23,6 +23,12 @@
     .dark .mant-modal select { background-color: #374151 !important; color: #ffffff !important; border-color: #4b5563 !important; }
     .swal2-container { z-index: 20000 !important; }
 
+    /* Skeleton del modal: brillo que recorre la barra, en claro y oscuro. */
+    .mant-sk { border-radius: 9999px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: mant-sk 1.4s ease-in-out infinite; }
+    .dark .mant-sk { background-image: linear-gradient(90deg, #1f242d 25%, #2a303b 50%, #1f242d 75%); }
+    @keyframes mant-sk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { .mant-sk { animation: none; } }
+
     /* Las tablas pegadas desde Excel traen el color de texto en línea (casi siempre negro)
        pero no el fondo, así que en modo oscuro quedaban negro sobre negro.
        Se le da fondo claro a la tabla; las celdas que sí traen su propio color lo conservan. */
@@ -68,7 +74,82 @@
             </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[35%_65%] min-h-0 flex-1 rounded-2xl overflow-hidden">
+        <div class="relative grid grid-cols-1 md:grid-cols-[35%_65%] min-h-0 flex-1 rounded-2xl overflow-hidden">
+            {{-- Skeleton: tapa el cuerpo hasta que llegan mensajes y datos del empleado.
+                 Usa los títulos reales de cada sección para que se lea como el modal llenándose. --}}
+            <div x-show="cargandoDetalle" x-cloak role="status" aria-busy="true"
+                x-transition:leave="transition-opacity ease-out duration-300"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="absolute inset-0 z-30 grid grid-cols-1 md:grid-cols-[35%_65%] bg-gray-50 dark:bg-[#0F1116]">
+                <span class="sr-only">Cargando mantenimiento...</span>
+
+                <div class="p-4 md:p-6 space-y-5 overflow-hidden border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm font-semibold uppercase text-gray-900 dark:text-gray-100">Propiedades del Mantenimiento</h3>
+
+                    <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+                        <h3 class="text-xs font-semibold uppercase mb-3 text-gray-500 dark:text-gray-400">Descripción de la solicitud</h3>
+                        <div class="space-y-2.5">
+                            <div class="mant-sk h-3 w-full"></div>
+                            <div class="mant-sk h-3 w-11/12"></div>
+                            <div class="mant-sk h-3 w-3/5"></div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+                        <h3 class="text-xs font-semibold uppercase mb-4 text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                            <i class="fas fa-address-card"></i> Información de Contacto
+                        </h3>
+                        <div class="space-y-3.5">
+                            <template x-for="fila in [['fa-user','w-1/2'],['fa-envelope','w-3/4'],['fa-briefcase','w-2/3'],['fa-sitemap','w-3/5'],['fa-building','w-1/2']]" :key="fila[0]">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas text-gray-300 dark:text-gray-600 w-4" :class="fila[0]"></i>
+                                    <div class="mant-sk h-3" :class="fila[1]"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="mant-sk h-2.5 w-20"></div>
+                        <div class="mant-sk h-10 w-full !rounded-lg"></div>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex flex-col p-6 gap-6 overflow-hidden">
+                    <h3 class="text-sm font-semibold uppercase text-gray-900 dark:text-gray-100">Area de Conversaciones</h3>
+
+                    <div class="flex gap-4">
+                        <div class="mant-sk h-10 w-10 shrink-0 !rounded-full"></div>
+                        <div class="flex-1 max-w-[60%] space-y-2">
+                            <div class="flex gap-2"><div class="mant-sk h-3 w-28"></div><div class="mant-sk h-3 w-20 opacity-60"></div></div>
+                            <div class="rounded-lg p-4 space-y-2.5 border border-gray-200 dark:bg-[#1C1F26] dark:border-[#2A2F3A]">
+                                <div class="mant-sk h-3 w-full"></div>
+                                <div class="mant-sk h-3 w-4/5"></div>
+                                <div class="mant-sk h-3 w-2/5"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 flex-row-reverse">
+                        <div class="mant-sk h-10 w-10 shrink-0 !rounded-full"></div>
+                        <div class="flex-1 max-w-[50%] space-y-2 flex flex-col items-end">
+                            <div class="flex gap-2"><div class="mant-sk h-3 w-20 opacity-60"></div><div class="mant-sk h-3 w-24"></div></div>
+                            <div class="w-full rounded-lg p-4 space-y-2.5 border bg-blue-50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-800">
+                                <div class="mant-sk h-3 w-full"></div>
+                                <div class="mant-sk h-3 w-3/5"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto rounded-lg border border-gray-200 dark:bg-[#1F2937] dark:border-[#2A2F3A] overflow-hidden">
+                        <div class="flex items-center gap-2 px-3 h-10 border-b border-gray-200 dark:border-[#2A2F3A] bg-gray-100 dark:bg-[#1C1F26]">
+                            <template x-for="i in 7" :key="i"><div class="mant-sk h-4 w-4 !rounded"></div></template>
+                        </div>
+                        <div class="h-24 dark:bg-[#0F1115]"></div>
+                    </div>
+                </div>
+            </div>
+
             <aside class="p-4 md:p-6 flex flex-col overflow-y-auto min-h-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0F1116]">
                 <h3 class="text-sm font-semibold mb-4 uppercase text-gray-900 dark:text-gray-100">Propiedades del Mantenimiento</h3>
                 <div class="space-y-5 text-sm flex-1">

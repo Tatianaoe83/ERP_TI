@@ -29,6 +29,7 @@ function mantenimientoModal(soloPanel = false) {
         nuevoMensaje: '',
         archivosAdjuntos: [],
         cargando: false,
+        cargandoDetalle: false,
         guardando: false,
         ultimoMensajeId: 0,
         verificacionInterval: null,
@@ -148,11 +149,17 @@ function mantenimientoModal(soloPanel = false) {
             this.archivosAdjuntos = [];
             this.mensajes = [];
             this.estadisticas = null;
+            // El contenido se oculta hasta tener mensajes y datos del empleado de ESTE mantenimiento.
+            this.cargandoDetalle = true;
             this.mostrar = true;
 
-            this.cargarMensajes();
+            Promise.allSettled([
+                this.cargarMensajes(),
+                datos.completo ? null : this.cargarDatosEmpleado(id),
+            ]).then(() => {
+                if (String(this.selected?.id) === String(id)) this.cargandoDetalle = false;
+            });
             this.iniciarVerificacionMensajes();
-            if (!datos.completo) this.cargarDatosEmpleado(id);
             this.$nextTick(() => {
                 if (!this.tinyMCEInstance) this.inicializarTinyMCE();
                 else this.actualizarEstadoEditor();
@@ -271,10 +278,13 @@ function mantenimientoModal(soloPanel = false) {
         },
 
         async cargarMensajes() {
-            if (!this.selected.id) return;
+            const id = this.selected.id;
+            if (!id) return;
             try {
-                const response = await fetch(`/tickets-mantenimiento/chat-messages?mantenimiento_id=${this.selected.id}`);
+                const response = await fetch(`/tickets-mantenimiento/chat-messages?mantenimiento_id=${id}`);
                 const data = await response.json();
+                // Se abrió otro mantenimiento mientras llegaba la respuesta: no pisar su chat.
+                if (String(this.selected?.id) !== String(id)) return;
                 if (data.success) {
                     this.mensajes = data.messages;
                     this.ultimoMensajeId = this.mensajes.length ? Math.max(...this.mensajes.map(m => m.id)) : 0;
