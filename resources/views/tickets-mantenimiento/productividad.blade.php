@@ -11,25 +11,16 @@
     #productividad-mantenimiento-container.prod-page > .rounded-xl {
         margin-top: 0.7rem;
     }
-    #productividad-mantenimiento-container h3.text-lg,
     #productividad-mantenimiento-container h3 {
         font-size: 0.95rem;
         line-height: 1.3;
     }
-    #productividad-mantenimiento-container .gap-6 { gap: 0.7rem; }
     #productividad-mantenimiento-container .gap-4 { gap: 0.65rem; }
-    #productividad-mantenimiento-container .mb-6 { margin-bottom: 0.65rem; }
-    #productividad-mantenimiento-container .mb-4 { margin-bottom: 0.5rem; }
-    #productividad-mantenimiento-container .mt-6 { margin-top: 0.7rem; }
-    #productividad-mantenimiento-container .p-6 { padding: 0.8rem 0.95rem; }
-    #productividad-mantenimiento-container .h-\[300px\],
-    #productividad-mantenimiento-container .h-\[260px\] { height: 210px; }
     #productividad-mantenimiento-container table th,
     #productividad-mantenimiento-container table td {
         padding-top: 0.45rem;
         padding-bottom: 0.45rem;
     }
-    #productividad-mantenimiento-container .text-3xl { font-size: 1.45rem; line-height: 1.2; }
     #productividad-mantenimiento-container .prod-periodo {
         flex-wrap: nowrap;
         width: max-content;
@@ -63,7 +54,6 @@
             $anioInicioInit = $anioInicio ?? ($anio ?? now()->year);
             $mesFinInit = $mesFin ?? ($mes ?? now()->month);
             $anioFinInit = $anioFin ?? ($anio ?? now()->year);
-            $mesActual = now()->month;
             $anioActual = now()->year;
         @endphp
 

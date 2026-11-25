@@ -49,7 +49,6 @@ class TicketsMantenimientoController extends Controller
             'metricasProductividad',
             'mes',
             'anio',
-            'modoRango',
             'mesInicio',
             'anioInicio',
             'mesFin',
@@ -208,7 +207,6 @@ class TicketsMantenimientoController extends Controller
             // De lo que ENTRÓ en el periodo, cuánto ya está cerrado. Es subconjunto de
             // total_tickets, así que su porcentaje nunca puede pasar de 100%.
             'recibidas_ya_cerradas'      => $creados->whereIn('Estatus', ['Atendido', 'Cancelado'])->count(),
-            'tickets_en_progreso'        => $abiertos->whereIn('Estatus', ['En proceso', 'Pausado'])->count(),
             'distribucion_estado'        => $distribucionEstado,
             'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
             'tiempo_promedio_respuesta'  => $tiempoPromedioRespuesta,
@@ -218,8 +216,6 @@ class TicketsMantenimientoController extends Controller
             'tickets_por_area'           => $porArea,
             'resueltos_por_dia'          => $resueltosPorDia,
             'creados_por_dia'            => $creadosPorDia,
-            'fecha_inicio_periodo'       => $fechaInicioMes->format('Y-m-d'),
-            'fecha_fin_periodo'          => $fechaFinMes->format('Y-m-d'),
             'metricas_sla'               => TicketMantenimiento::calcularMetricasSla($universoSla),
         ];
     }

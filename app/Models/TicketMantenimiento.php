@@ -83,14 +83,6 @@ class TicketMantenimiento extends Model
         return in_array($estatus, ['Atendido', 'Cancelado'], true);
     }
 
-    public static function estatusPermitidos(string $actual): array
-    {
-        if (self::esFinalizado($actual)) {
-            return [$actual];
-        }
-
-        return array_values(array_unique(array_merge([$actual], self::TRANSICIONES[$actual] ?? [])));
-    }
 
     public static function puedeTransicionar(string $actual, string $nuevo): bool
     {
@@ -101,16 +93,6 @@ class TicketMantenimiento extends Model
         return in_array($nuevo, self::TRANSICIONES[$actual] ?? [], true);
     }
 
-    public static function agruparPorColumnas($tickets): array
-    {
-        return [
-            'pendiente'  => $tickets->where('Estatus', 'Pendiente')->values(),
-            'en_proceso' => $tickets->where('Estatus', 'En proceso')->values(),
-            'pausado'    => $tickets->where('Estatus', 'Pausado')->values(),
-            'atendido'   => $tickets->where('Estatus', 'Atendido')->values(),
-            'cancelado'  => $tickets->where('Estatus', 'Cancelado')->values(),
-        ];
-    }
 
     /** Estatus real detrás de cada columna del tablero. */
     public const ESTATUS_COLUMNA = [
@@ -235,11 +217,6 @@ class TicketMantenimiento extends Model
         return $area ? "{$nombreCompleto} ({$area})" : $nombreCompleto;
     }
 
-    /** @deprecated Use formatearNombreEmpleado */
-    public static function formatearNombreResponsable(?string $nombreCompleto): string
-    {
-        return self::formatearNombreEmpleado($nombreCompleto);
-    }
 
     public function getAsuntoAttribute(): string
     {
@@ -271,10 +248,6 @@ class TicketMantenimiento extends Model
         return $this->MantenimientoID;
     }
 
-    public function getEstadoAttribute(): string
-    {
-        return $this->Estatus ?? '';
-    }
 
     public function empleado()
     {
@@ -367,30 +340,8 @@ class TicketMantenimiento extends Model
         return self::SLA_PRIORIDAD[$prioridad] ?? null;
     }
 
-    public function horasSlaMin(): ?float
-    {
-        $config = self::slaConfig($this->Prioridad);
 
-        return $config ? $config['min_dias'] * self::HORAS_LABORALES_DIA : null;
-    }
 
-    public function horasSlaMax(): ?float
-    {
-        $config = self::slaConfig($this->Prioridad);
-
-        return $config ? $config['max_dias'] * self::HORAS_LABORALES_DIA : null;
-    }
-
-    public function tiempoTranscurridoLaboral(?\Carbon\Carbon $hasta = null): float
-    {
-        if (!$this->FechaInicioProgreso) {
-            return 0;
-        }
-
-        $fin = $hasta ?? now();
-
-        return $this->calcularHorasLaborales($this->FechaInicioProgreso, $fin);
-    }
 
     /** Horas laborales pausadas: las ya cerradas más la pausa en curso, si la hay. */
     public function horasPausadasHasta(?\Carbon\Carbon $referencia = null): float
@@ -552,10 +503,6 @@ class TicketMantenimiento extends Model
         return implode(', ', $partes);
     }
 
-    public static function formatearDuracionSlaLaboral(float $dias): string
-    {
-        return self::formatearDuracionLaboral($dias * self::HORAS_LABORALES_DIA);
-    }
 
     public static function colorPrioridad(?string $prioridad): string
     {

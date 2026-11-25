@@ -81,11 +81,6 @@ function mantenimientoModal(soloPanel = false) {
             window.Livewire?.emit('mantenimiento-vista-activada', this.vista);
         },
 
-        activarVista(vista) {
-            this.vista = vista;
-            localStorage.setItem('mantenimientoVista', vista);
-            this.avisarVistaActiva();
-        },
 
         procesarActualizacion(datos) {
             if (!datos?.ticketsStatus) return;
@@ -101,12 +96,15 @@ function mantenimientoModal(soloPanel = false) {
             });
         },
 
-        /** Alinea el <select> con el estado real: x-for reconstruye las <option>
-         *  y el navegador deja seleccionada la primera sin disparar change. */
+        /** Arma las <option> del estatus aquí y no con <template x-for>: iniciarSelects
+         *  se salta los selects con <template> dentro y este quedaba sin Select2. */
         sincronizarSelectEstatus() {
             this.$nextTick(() => {
                 const select = document.getElementById('mant-select-estatus');
-                if (select) select.value = this.ticketEstatus;
+                if (!select) return;
+                select.replaceChildren(...this.estatusDisponibles.map(est => new Option(est, est, false, est === this.ticketEstatus)));
+                select.value = this.ticketEstatus;
+                if (window.jQuery) jQuery(select).trigger('change.select2');
             });
         },
 

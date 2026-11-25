@@ -254,17 +254,16 @@
                                 <option value="">Sin prioridad</option>
                                 @foreach(\App\Models\TicketMantenimiento::PRIORIDADES as $p)<option value="{{ $p }}">{{ $p }}</option>@endforeach
                             </select>
-                            <p x-show="estaPendiente && !ticketPrioridad" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Asigne prioridad al cambiar el estado a "En proceso" para iniciar el SLA.
+                            {{-- Solo cuando hace falta: un aviso fijo en cada Pendiente abría un hueco entre Prioridad y Estado. --}}
+                            <p x-show="ticketEstatus === 'En proceso' && !ticketPrioridad" x-cloak class="text-xs text-red-500 dark:text-red-400 mt-1">
+                                Asigne prioridad para iniciar el SLA.
                             </p>
                         </div>
                         <div>
                             <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</label>
                             <select id="mant-select-estatus" x-model="ticketEstatus" @change="actualizarEstadoEditor()" :disabled="esFinalizado"
                                 class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
-                                <template x-for="est in estatusDisponibles">
-                                    <option :value="est" x-text="est"></option>
-                                </template>
+                                {{-- Las opciones las arma sincronizarSelectEstatus() (motor del modal). --}}
                             </select>
                         </div>
                         <div>
