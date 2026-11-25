@@ -1,6 +1,4 @@
 <div class="prod-tareas space-y-4 pt-3">
-    @include('partials.tareas-alerta', ['mensaje' => session('prod_tareas_mensaje')])
-
     <div class="grid grid-cols-2 lg:grid-cols-6 gap-2.5">
         <div class="tareas-kpi">
             <span class="tareas-kpi__label">Pendientes</span>
@@ -282,4 +280,5 @@
     </style>
 
     @include('partials.tareas-modal-js')
+    @include('partials.tareas-alerta')
 </div>

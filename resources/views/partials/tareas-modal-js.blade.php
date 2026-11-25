@@ -30,8 +30,13 @@
                     if (!this.abierto) return;   // evita doble disparo
                     this.abierto = false;
 
-                    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                    setTimeout(() => this.$wire.set(propiedad, false), reducido ? 0 : 150);
+                    // La espera sale del CSS de salida (.is-closing): así no se desfasa si
+                    // cambia la duración o si aplica la variante de movimiento reducido.
+                    this.$nextTick(() => {
+                        const dur = (el) => el ? parseFloat(getComputedStyle(el).animationDuration) || 0 : 0;
+                        const ms = Math.max(dur(this.$el), dur(this.$el.querySelector('.tareas-modal'))) * 1000;
+                        setTimeout(() => this.$wire.set(propiedad, false), ms);
+                    });
                 },
             };
         };

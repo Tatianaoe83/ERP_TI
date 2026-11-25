@@ -74,14 +74,14 @@ class ProductividadTareas extends Component
         }
 
         $this->modalMetricaAbierto = false;
-        session()->flash('prod_tareas_mensaje', 'Métrica mensual guardada. Se creará sola el día indicado de cada mes.');
+        $this->alerta('Métrica mensual guardada. Se creará sola el día indicado de cada mes.');
     }
 
     public function generarMetricasAhora(TicketTareaService $service): void
     {
         $this->authorizeGestion();
         $creadas = $service->generarTareasMetricas();
-        session()->flash('prod_tareas_mensaje', "Se generaron {$creadas} tarea(s) de métricas pendientes del mes.");
+        $this->alerta("Se generaron {$creadas} tarea(s) de métricas pendientes del mes.");
     }
 
     public function render()
@@ -110,12 +110,7 @@ class ProductividadTareas extends Component
             return [
                 'empleado' => $empleado,
                 'pendientes' => $pendientes->count(),
-                'hoy' => $pendientes->filter(function ($t) {
-                    if (! $t->fecha_compromiso) {
-                        return true;
-                    }
-                    return $t->fecha_compromiso->isToday();
-                })->count(),
+                'hoy' => $pendientes->filter(fn ($t) => $t->fecha_compromiso?->isToday())->count(),
                 'criticas' => $pendientes->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
                 'sin_fecha' => $pendientes->filter(fn ($t) => ! $t->fecha_compromiso)->count(),
                 'completadas_mes' => $completadasMes->count(),
@@ -129,12 +124,7 @@ class ProductividadTareas extends Component
             $rendimiento->push([
                 'empleado' => null,
                 'pendientes' => $pendientesSinAsignar->count(),
-                'hoy' => $pendientesSinAsignar->filter(function ($t) {
-                    if (! $t->fecha_compromiso) {
-                        return true;
-                    }
-                    return $t->fecha_compromiso->isToday();
-                })->count(),
+                'hoy' => $pendientesSinAsignar->filter(fn ($t) => $t->fecha_compromiso?->isToday())->count(),
                 'criticas' => $pendientesSinAsignar->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
                 'sin_fecha' => $pendientesSinAsignar->filter(fn ($t) => ! $t->fecha_compromiso)->count(),
                 'completadas_mes' => $sinAsignar
@@ -151,12 +141,7 @@ class ProductividadTareas extends Component
 
         $kpis = [
             'pendientes' => TicketTarea::pendientes()->count(),
-            'hoy' => TicketTarea::pendientes()
-                ->where(function ($q) {
-                    $q->whereDate('fecha_compromiso', now()->toDateString())
-                        ->orWhereNull('fecha_compromiso');
-                })
-                ->count(),
+            'hoy' => TicketTarea::deHoy()->count(),
             'criticas' => TicketTarea::pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
             'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
                 ->whereMonth('completada_at', now()->month)
@@ -174,5 +159,11 @@ class ProductividadTareas extends Component
     private function authorizeGestion(): void
     {
         abort_unless(auth()->user()?->can('tickets.gestionar-tareas'), 403);
+    }
+
+    /** Alerta SweetAlert2; el listener vive en partials/tareas-alerta. */
+    private function alerta(string $mensaje, string $icono = 'success'): void
+    {
+        $this->dispatchBrowserEvent('tareas-alerta', ['icono' => $icono, 'mensaje' => $mensaje]);
     }
 }

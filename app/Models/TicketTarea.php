@@ -183,10 +183,12 @@ class TicketTarea extends Model
 
     public function scopeDeHoy($query)
     {
-        return $query->pendientes()->where(function ($q) {
-            $q->whereDate('fecha_compromiso', Carbon::today()->toDateString())
-                ->orWhereNull('fecha_compromiso');
-        });
+        return $query->pendientes()->whereDate('fecha_compromiso', Carbon::today()->toDateString());
+    }
+
+    public function scopeSinFecha($query)
+    {
+        return $query->pendientes()->whereNull('fecha_compromiso');
     }
 
     public function estaVencida(): bool

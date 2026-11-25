@@ -1,18 +1,19 @@
 <div class="tareas-module" wire:poll.60s>
-    @include('partials.tareas-alerta', ['mensaje' => session('tareas_mensaje')])
-    @include('partials.tareas-alerta', ['mensaje' => session('tareas_error'), 'tipo' => 'error'])
-
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <button type="button" wire:click="filtrarKpi('hoy')" class="tareas-kpi tareas-kpi--hoy {{ $filtroEstatus === 'hoy' ? 'is-active' : '' }}">
             <span class="tareas-kpi__label">Pendientes de hoy</span>
             <span class="tareas-kpi__value">{{ $kpis['hoy'] }}</span>
+        </button>
+        <button type="button" wire:click="filtrarKpi('sinfecha')" class="tareas-kpi tareas-kpi--muted {{ $filtroEstatus === 'sinfecha' ? 'is-active' : '' }}">
+            <span class="tareas-kpi__label">Sin fecha asignada</span>
+            <span class="tareas-kpi__value">{{ $kpis['sinfecha'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('atrasadas')" class="tareas-kpi tareas-kpi--warn {{ $filtroEstatus === 'atrasadas' ? 'is-active' : '' }}">
             <span class="tareas-kpi__label">No realizadas</span>
             <span class="tareas-kpi__value">{{ $kpis['atrasadas'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('completadas')" class="tareas-kpi tareas-kpi--ok {{ $filtroEstatus === 'completadas' ? 'is-active' : '' }}">
-            <span class="tareas-kpi__label">Completadas ({{ ucfirst($etiquetaMesCompletadas) }})</span>
+            <span class="tareas-kpi__label">Completadas ({{ $tituloMes }})</span>
             <span class="tareas-kpi__value">{{ $kpis['completadas_mes'] }}</span>
         </button>
     </div>
@@ -23,10 +24,7 @@
             <div class="tareas-section-bar__tabs">
                 <span class="tareas-section-title">
                     <i class="fas fa-tasks"></i>
-                    @if($filtroEstatus === 'completadas') Completadas
-                    @elseif($filtroEstatus === 'atrasadas') No realizadas
-                    @else Pendientes
-                    @endif
+                    {{ $tituloSeccion }}
                 </span>
             </div>
             <div class="tareas-section-bar__actions">
@@ -43,7 +41,7 @@
                 <div class="tareas-cal-toolbar__nav">
                     <button type="button" wire:click="mesAnterior" class="tarea-btn" title="Mes anterior"><i class="fas fa-chevron-left"></i></button>
                     <div class="tareas-cal-nav__title">
-                        <strong>{{ ucfirst($tituloMes) }}</strong>
+                        <strong>{{ $tituloMes }}</strong>
                         @if($fechaSel === $hoy)
                         <span class="tarea-badge tarea-badge--pendiente ml-2">Hoy</span>
                         @endif
@@ -113,7 +111,7 @@
                             <i class="fas fa-list"></i>
                             {{ $tituloLista }}
                         </h4>
-                        @if($soloDia && $filtroEstatus !== 'hoy')
+                        @if($soloDia)
                         <button type="button" wire:click="verTodas" class="index-page__btn-secondary">Ver todas</button>
                         @endif
                     </div>
@@ -188,7 +186,8 @@
          x-data="tareasModalCerrable('modalTareaAbierto')"
          :class="{ 'is-closing': !abierto }"
          @click.self="cerrar()"
-         @keydown.escape.window="cerrar()">
+         @keydown.escape.window="cerrar()"
+         @tareas-modal-cerrar.window="cerrar()">
         <div class="tareas-modal">
             <div class="tareas-modal__head">
                 <h3>
@@ -264,7 +263,8 @@
          x-data="tareasModalCerrable('modalReagendarAbierto')"
          :class="{ 'is-closing': !abierto }"
          @click.self="cerrar()"
-         @keydown.escape.window="cerrar()">
+         @keydown.escape.window="cerrar()"
+         @tareas-modal-cerrar.window="cerrar()">
         <div class="tareas-modal">
             <div class="tareas-modal__head">
                 <h3>Reagendar tarea</h3>
@@ -297,7 +297,8 @@
          x-data="tareasModalCerrable('modalDetalleAbierto')"
          :class="{ 'is-closing': !abierto }"
          @click.self="cerrar()"
-         @keydown.escape.window="cerrar()">
+         @keydown.escape.window="cerrar()"
+         @tareas-modal-cerrar.window="cerrar()">
         <div class="tareas-modal tareas-modal--wide">
             <div class="tareas-modal__head">
                 <h3>Detalle de la tarea</h3>
@@ -400,7 +401,8 @@
          x-data="tareasModalCerrable('modalTextoAbierto')"
          :class="{ 'is-closing': !abierto }"
          @click.self="cerrar()"
-         @keydown.escape.window="cerrar()">
+         @keydown.escape.window="cerrar()"
+         @tareas-modal-cerrar.window="cerrar()">
         <div class="tareas-modal">
             <div class="tareas-modal__head">
                 <h3>Editar título y descripción</h3>
@@ -435,9 +437,10 @@
         .tareas-kpi--warn { border-bottom-color:#f59e0b; }
         .tareas-kpi--warn .tareas-kpi__value { color:#f59e0b; }
         .tareas-kpi--warn.is-active { border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.28); }
-        .tareas-kpi--danger { border-bottom-color:#ef4444; }
-        .tareas-kpi--danger .tareas-kpi__value { color:#ef4444; }
-        .tareas-kpi--danger.is-active { border-color:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.28); }
+        .tareas-kpi--muted { border-bottom-color:#94a3b8; }
+        .tareas-kpi--muted .tareas-kpi__value { color:#64748b; }
+        .dark .tareas-kpi--muted .tareas-kpi__value { color:#94a3b8; }
+        .tareas-kpi--muted.is-active { border-color:#94a3b8; box-shadow:0 0 0 2px rgba(148,163,184,.3); }
         .tareas-kpi--ok { border-bottom-color:#22c55e; }
         .tareas-kpi--ok .tareas-kpi__value { color:#16a34a; }
         .tareas-kpi--ok.is-active { border-color:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.28); }
@@ -451,21 +454,7 @@
         .tareas-cal-toolbar { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:.75rem 1rem; border-radius:12px; background:rgba(148,163,184,.08); border:1px solid rgba(148,163,184,.2); flex:0 0 auto; }
         .dark .tareas-cal-toolbar { background:rgba(30,41,59,.5); border-color:#334155; }
         .tareas-cal-toolbar__nav { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
-        .tareas-cal-toolbar__vista, .tareas-view-bar__vista { display:flex; align-items:center; gap:.5rem; }
-        .tareas-cal-toolbar__label { font-size:.78rem; opacity:.65; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
-        .tareas-dia-nav { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; padding:.6rem 1.25rem; border-bottom:1px solid rgba(148,163,184,.2); }
-        /* Sin flex-grow: el texto de la fecha se queda pegado a sus flechas
-           en lugar de estirarse y empujar la de "día siguiente" al otro extremo. */
-        .tareas-dia-nav__info { display:flex; align-items:center; gap:.4rem; flex:0 1 auto; font-size:.8rem; white-space:nowrap; }
-        .tareas-dia-nav__date { width:auto; display:inline-block; min-width:0; flex:0 0 auto; margin-left:.5rem; font-size:.8rem; padding:.3rem .5rem; min-height:0; height:34px; }
-        .tareas-dia-nav .tarea-badge { font-size:.68rem; padding:.15rem .45rem; }
-        .tareas-dia-nav__toggle { font-size:.78rem; padding:.35rem .7rem; }
 
-        @media (max-width: 640px) {
-            .tareas-dia-nav { justify-content:center; }
-            .tareas-dia-nav__info { order:-1; flex:1 1 100%; justify-content:center; white-space:normal; text-align:center; }
-            .tareas-dia-nav__date { margin-left:0; flex:1 1 100%; width:100%; }
-        }
         .tareas-view-bar { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:space-between; align-items:center; padding:.75rem 1.25rem; border-bottom:1px solid rgba(148,163,184,.2); background:rgba(148,163,184,.05); }
         .dark .tareas-view-bar { background:rgba(30,41,59,.35); }
         .tareas-view-bar__filters { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; flex:1 1 auto; }
@@ -480,75 +469,7 @@
             .tareas-view-bar__filters .form-control { width:100%; }
             .tareas-select, .tareas-search { flex:1 1 100%; max-width:none; }
         }
-        .tareas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; }
-        /* ── Tarjeta de tarea ─────────────────────────────────────────────
-           Franja lateral de color = estado (se lee de un vistazo, y no depende
-           solo del color: el badge de arriba lo repite en texto).
-           Hover/press solo con transform+opacity para no provocar reflow.     */
-        .tarea-card {
-            position:relative;
-            border:1px solid rgba(148,163,184,.3);
-            border-radius:14px;
-            padding:1rem 1rem 1rem 1.15rem;
-            background:#fff;
-            display:flex; flex-direction:column; gap:.6rem;
-            box-shadow:0 1px 2px rgba(15,23,42,.05);
-            transition:transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
-        }
-        .tarea-card::before {
-            content:''; position:absolute; left:0; top:0; bottom:0;
-            width:3px; border-radius:14px 0 0 14px;
-            background:#cbd5e1;
-        }
-        .tarea-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(15,23,42,.1); }
-        .dark .tarea-card { background:#0f172a; border-color:#334155; box-shadow:none; }
-        .dark .tarea-card:hover { box-shadow:0 8px 20px rgba(0,0,0,.45); }
 
-        .tarea-card--critica { border-color:rgba(239,68,68,.5); }
-        .tarea-card--critica::before { background:#ef4444; }
-        .tarea-card--vencida { border-color:rgba(245,158,11,.5); }
-        .tarea-card--vencida::before { background:#f59e0b; }
-        .tarea-card--normal::before { background:#3b82f6; }
-        /* Completada: se atenúa y el título va tachado, para que no compita
-           visualmente con lo que sigue pendiente. */
-        .tarea-card--completada { opacity:.72; }
-        .tarea-card--completada::before { background:#10b981; }
-        .tarea-card--completada .tarea-card__title { text-decoration:line-through; text-decoration-thickness:1px; }
-        .tarea-card--completada:hover { opacity:1; }
-
-        .tarea-card__head { display:flex; justify-content:space-between; gap:.6rem; align-items:flex-start; }
-        .tarea-card__tipo {
-            display:inline-block; font-size:.65rem; font-weight:700;
-            text-transform:uppercase; letter-spacing:.06em;
-            color:#64748b; background:rgba(148,163,184,.16);
-            padding:.15rem .45rem; border-radius:5px;
-        }
-        .dark .tarea-card__tipo { color:#94a3b8; background:rgba(148,163,184,.14); }
-        .tarea-card__title {
-            font-size:.98rem; font-weight:650; line-height:1.35;
-            margin:.4rem 0 0; color:#0f172a;
-            /* wrap antes que truncar: el título trae el mes y se pierde al cortar */
-            overflow-wrap:anywhere;
-        }
-        .dark .tarea-card__title { color:#f1f5f9; }
-        .tarea-card__razon {
-            font-size:.83rem; line-height:1.5; margin:0; color:#475569;
-            padding-left:.7rem; border-left:2px solid rgba(148,163,184,.3);
-        }
-        .dark .tarea-card__razon { color:#94a3b8; border-left-color:#334155; }
-        .tarea-card__meta {
-            display:grid; gap:.3rem; font-size:.8rem; color:#475569;
-            padding-top:.55rem; border-top:1px dashed rgba(148,163,184,.3);
-        }
-        .dark .tarea-card__meta { color:#94a3b8; border-top-color:#334155; }
-        .tarea-card__meta > div { display:flex; align-items:center; gap:.45rem; }
-        .tarea-card__meta i { width:13px; text-align:center; opacity:.6; flex:0 0 auto; }
-        .tarea-card__actions {
-            display:flex; gap:.35rem; margin-top:auto;
-            padding-top:.6rem; border-top:1px solid rgba(148,163,184,.18);
-            justify-content:flex-end;
-        }
-        .dark .tarea-card__actions { border-top-color:rgba(51,65,85,.7); }
         /* 36px visuales, pero el ::after extiende el área táctil a 44px (regla de
            touch target) sin alterar el layout de la fila de acciones. */
         .tarea-btn {
@@ -570,10 +491,6 @@
         .tarea-btn--ok { color:#10b981; border-color:rgba(16,185,129,.45); }
         .tarea-btn--ok:hover { background:rgba(16,185,129,.14); color:#059669; }
         .dark .tarea-btn--ok { color:#34d399; border-color:rgba(16,185,129,.4); }
-        /* Resalta el botón de asignar cuando la tarea todavía no tiene dueño */
-        .tarea-btn--alerta { color:#6366f1; border-color:rgba(99,102,241,.45); background:rgba(99,102,241,.08); }
-        .tarea-btn--alerta:hover { background:rgba(99,102,241,.18); color:#4f46e5; }
-        .dark .tarea-btn--alerta { color:#a5b4fc; border-color:rgba(99,102,241,.4); background:rgba(99,102,241,.12); }
 
         /* Nota informativa dentro del modal (por qué una métrica no se edita entera) */
         .tareas-nota {
@@ -595,35 +512,40 @@
         .tarea-badge--warn { background:#fef3c7; color:#b45309; }
         .tarea-badge--ok { background:#d1fae5; color:#047857; }
         .tarea-badge--pendiente { background:#dbeafe; color:#1d4ed8; }
-        .tarea-badge--muted { background:#e2e8f0; color:#475569; }
 
-        /* Sin responsable asignado: se atenúa para distinguirlo de una tarea con dueño */
-        .tarea-card__sin-asignar { opacity:.6; font-style:italic; }
-
-        .tareas-empty { text-align:center; padding:3rem 1rem; color:#64748b; }
-        .tareas-empty i { font-size:2rem; margin-bottom:.5rem; display:block; }
         /* ── Modales ──────────────────────────────────────────────────────
-           Entrada: backdrop en fade y caja con scale+translate (200ms ease-out).
-           Solo transform/opacity, nada que provoque reflow.                   */
-        @keyframes tareasBackdropIn { from { opacity:0; } to { opacity:1; } }
+           Entrada tipo resorte: la caja sube, se pasa apenas (-3px / 1.008) y se
+           asienta; el fondo se oscurece y difumina a la par, y el contenido entra
+           escalonado detrás de la caja. Solo transform/opacity/filter: sin reflow. */
+        @keyframes tareasBackdropIn {
+            from { opacity:0; backdrop-filter:blur(0); }
+            to   { opacity:1; backdrop-filter:blur(4px); }
+        }
         @keyframes tareasModalIn {
-            from { opacity:0; transform:translateY(10px) scale(.97); }
-            to   { opacity:1; transform:translateY(0)    scale(1);   }
+            0%   { opacity:0; transform:translateY(28px) scale(.94); }
+            60%  { opacity:1; transform:translateY(-3px) scale(1.008); }
+            100% { opacity:1; transform:translateY(0) scale(1); }
+        }
+        @keyframes tareasModalContentIn {
+            from { opacity:0; transform:translateY(8px); }
+            to   { opacity:1; transform:translateY(0); }
         }
 
         .tareas-modal-backdrop {
             position:fixed; inset:0; z-index:1050;
             background:rgba(15,23,42,.55);
-            backdrop-filter:blur(2px);
+            backdrop-filter:blur(4px);
             display:flex; align-items:center; justify-content:center; padding:1rem;
-            animation:tareasBackdropIn .18s ease-out;
+            animation:tareasBackdropIn .3s ease-out both;
         }
         .tareas-modal {
             width:100%; max-width:520px;
             background:#fff; border-radius:16px; overflow:hidden;
             box-shadow:0 20px 50px rgba(0,0,0,.25);
-            animation:tareasModalIn .2s cubic-bezier(.2,.8,.3,1);
+            animation:tareasModalIn .45s cubic-bezier(.22,1,.36,1) both;
         }
+        .tareas-modal__head { animation:tareasModalContentIn .35s .08s cubic-bezier(.22,1,.36,1) both; }
+        .tareas-modal__body { animation:tareasModalContentIn .35s .14s cubic-bezier(.22,1,.36,1) both; }
         .dark .tareas-modal { background:#101010; color:#f8fafc; box-shadow:0 20px 50px rgba(0,0,0,.6); }
         .tareas-modal--wide { max-width:680px; }
 
@@ -677,7 +599,6 @@
         .tareas-asignados__item input {
             width:1rem; height:1rem; margin:0; accent-color:#1d4ed8; flex:0 0 auto;
         }
-        .tarea-card__meta { word-break:break-word; }
 
         .tareas-modal__foot {
             display:flex; justify-content:flex-end; gap:.5rem;
@@ -686,31 +607,37 @@
         }
         .dark .tareas-modal__foot { border-top-color:#334155; }
 
-        /* Salida: más corta que la entrada (140 vs 200ms) para que se sienta ágil */
-        @keyframes tareasBackdropOut { from { opacity:1; } to { opacity:0; } }
-        @keyframes tareasModalOut {
-            from { opacity:1; transform:translateY(0)   scale(1);   }
-            to   { opacity:0; transform:translateY(6px) scale(.98); }
+        /* Salida: más corta que la entrada (220 vs 450ms) y acelerando, como algo que
+           se suelta y cae. Debe durar menos que la espera de tareasModalCerrable (240ms). */
+        @keyframes tareasBackdropOut {
+            from { opacity:1; backdrop-filter:blur(4px); }
+            to   { opacity:0; backdrop-filter:blur(0); }
         }
-        .tareas-modal-backdrop.is-closing { animation:tareasBackdropOut .14s ease-in forwards; }
-        .tareas-modal-backdrop.is-closing .tareas-modal { animation:tareasModalOut .14s ease-in forwards; }
+        @keyframes tareasModalOut {
+            from { opacity:1; transform:translateY(0) scale(1); }
+            to   { opacity:0; transform:translateY(16px) scale(.95); }
+        }
+        .tareas-modal-backdrop.is-closing { animation:tareasBackdropOut .22s ease-in forwards; pointer-events:none; }
+        .tareas-modal-backdrop.is-closing .tareas-modal { animation:tareasModalOut .2s cubic-bezier(.4,0,1,1) forwards; }
 
         /* Accesibilidad: si el sistema pide menos movimiento, se quita la animación */
+        /* Movimiento reducido (p. ej. Windows con "Efectos de animación" apagado): sin
+           desplazamiento ni rebote, pero con un fundido corto para que abrir y cerrar
+           no se sienta brusco ni se quede el modal congelado esperando al servidor. */
+        @keyframes tareasFadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes tareasFadeOut { from { opacity:1; } to { opacity:0; } }
         @media (prefers-reduced-motion: reduce) {
-            .tareas-modal-backdrop, .tareas-modal,
-            .tareas-modal-backdrop.is-closing, .tareas-modal-backdrop.is-closing .tareas-modal { animation:none; }
-            .tarea-card, .tarea-btn { transition:none; }
-            .tarea-card:hover { transform:none; }
+            .tareas-modal-backdrop, .tareas-modal { animation:tareasFadeIn .18s ease-out both; }
+            .tareas-modal__head, .tareas-modal__body { animation:none; }
+            .tareas-modal-backdrop.is-closing,
+            .tareas-modal-backdrop.is-closing .tareas-modal { animation:tareasFadeOut .14s ease-in forwards; }
+            .tarea-btn { transition:none; }
         }
         .tareas-timeline { position:relative; padding-left:1rem; }
         .tareas-timeline__item { position:relative; padding-left:1.25rem; padding-bottom:1rem; border-left:2px solid rgba(148,163,184,.35); }
         .tareas-timeline__item:last-child { border-left-color:transparent; padding-bottom:0; }
         .tareas-timeline__dot { position:absolute; left:-6px; top:.2rem; width:10px; height:10px; border-radius:50%; background:#2563eb; }
         .tareas-timeline__title { font-weight:600; margin-bottom:.25rem; display:flex; justify-content:space-between; gap:.5rem; flex-wrap:wrap; }
-        .tareas-vista-toggle { display:flex; gap:2px; padding:2px; border-radius:10px; background:rgba(148,163,184,.15); }
-        .tareas-vista-btn { border:none; background:transparent; border-radius:8px; padding:.4rem .75rem; font-size:.8rem; opacity:.75; transition:.15s; }
-        .tareas-vista-btn.is-active { background:#fff; opacity:1; box-shadow:0 1px 3px rgba(0,0,0,.12); font-weight:600; }
-        .dark .tareas-vista-btn.is-active { background:#1e293b; color:#f8fafc; }
         .tareas-module {
             width:100%;
             display:flex;
@@ -736,7 +663,6 @@
         .tareas-dot--hoy { background:#38bdf8; box-shadow:0 0 0 2px rgba(56,189,248,.35); }
         .tareas-dot--seleccionado { background:#c084fc; box-shadow:0 0 0 2px rgba(192,132,252,.35); }
         .tareas-dot--pendiente { background:#60a5fa; box-shadow:0 0 0 2px rgba(96,165,250,.45); }
-        .tareas-dot--metrica { background:#2dd4bf; }
         .tareas-dot--vencida { background:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.4); }
         .tareas-dot--critica { background:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.4); }
         .tareas-dot--hecha { background:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.35); }
@@ -802,8 +728,8 @@
         .tareas-dia-panel--side { min-height:100%; max-height:none; height:100%; overflow:hidden; display:flex; flex-direction:column; }
         .tareas-dia-panel__head { display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; margin-bottom:.5rem; flex:0 0 auto; }
         .tareas-dia-panel__title { margin:0; font-size:.95rem; font-weight:700; display:flex; align-items:center; gap:.45rem; }
-        .tareas-dia-panel__hint { margin:0 0 .75rem; font-size:.75rem; opacity:.7; }
-        .tareas-dia-list { display:grid; gap:.5rem; flex:1 1 auto; overflow:auto; min-height:0; }
+        /* align-content:start: sin él la fila única del grid se estira a todo el panel. */
+        .tareas-dia-list { display:grid; align-content:start; gap:.5rem; flex:1 1 auto; overflow:auto; min-height:0; }
         .tareas-dia-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.65rem .75rem; border-radius:10px; background:#fff; border:1px solid #e2e8f0; border-left-width:4px; }
         .tareas-dia-item > div:first-child { min-width:0; flex:1; }
         .tareas-dia-item__titulo {
@@ -873,4 +799,5 @@
     </style>
 
     @include('partials.tareas-modal-js')
+    @include('partials.tareas-alerta')
 </div>

@@ -8,6 +8,7 @@ use App\Models\TicketTarea;
 use App\Services\TicketTareaService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -16,8 +17,8 @@ class TablaTareas extends Component
 {
     use WithPagination;
 
-    public string $vista = 'tareas';
-    public string $filtroEstatus = 'hoy';
+    /** '' = sin filtro: tareas con fecha en el día elegido, cualquier estatus. 'sinfecha' = pendientes sin fecha. */
+    public string $filtroEstatus = '';
     public string $filtroTipo = '';
     public string $search = '';
     public int $calMes = 1;
@@ -30,6 +31,9 @@ class TablaTareas extends Component
      * Al pulsar un día del calendario se acota a esa fecha.
      */
     public bool $soloDia = false;
+
+    /** IDs de empleados que coinciden con la búsqueda; se resuelve una vez por request. */
+    private ?array $idsBusqueda = null;
 
     public bool $modalTareaAbierto = false;
     public bool $modalReagendarAbierto = false;
@@ -57,8 +61,7 @@ class TablaTareas extends Component
     public string $reagendar_motivo = '';
 
     protected $queryString = [
-        'vista' => ['except' => 'tareas'],
-        'filtroEstatus' => ['except' => 'hoy'],
+        'filtroEstatus' => ['except' => ''],
         'filtroTipo' => ['except' => ''],
         'search' => ['except' => ''],
     ];
@@ -69,24 +72,30 @@ class TablaTareas extends Component
         $this->calMes = max(1, min(12, (int) (request('calMes') ?: now()->month)));
         $this->calAnio = max(2000, (int) (request('calAnio') ?: now()->year));
         $this->fechaSeleccionada = now()->format('Y-m-d');
-        if ($this->filtroEstatus === 'criticas') {
-            $this->filtroEstatus = 'atrasadas';
-        }
+        $this->filtroEstatus = $this->normalizarFiltro($this->filtroEstatus);
         app(TicketTareaService::class)->actualizarPrioridades();
     }
 
     public function filtrarKpi(string $estatus): void
     {
-        if ($estatus === 'criticas') {
-            $estatus = 'atrasadas';
-        }
-        $this->filtroEstatus = in_array($estatus, ['hoy', 'atrasadas', 'completadas'], true) ? $estatus : 'hoy';
+        $estatus = $this->normalizarFiltro($estatus);
+        // Pulsar el KPI activo otra vez quita el filtro.
+        $this->filtroEstatus = $estatus === $this->filtroEstatus ? '' : $estatus;
         $this->soloDia = false;
         $this->resetPage();
 
         if ($this->filtroEstatus === 'hoy') {
             $this->irHoy();
         }
+    }
+
+    private function normalizarFiltro(string $estatus): string
+    {
+        if ($estatus === 'criticas') {
+            $estatus = 'atrasadas';
+        }
+
+        return in_array($estatus, ['hoy', 'sinfecha', 'atrasadas', 'completadas'], true) ? $estatus : '';
     }
 
     public function mesAnterior(): void
@@ -120,7 +129,8 @@ class TablaTareas extends Component
         $this->fechaSeleccionada = $carbon->format('Y-m-d');
         $this->calMes = (int) $carbon->month;
         $this->calAnio = (int) $carbon->year;
-        $this->soloDia = $this->filtroEstatus !== 'hoy';
+        // No realizadas y completadas son listados globales: elegir un día los acota a esa fecha.
+        $this->soloDia = in_array($this->filtroEstatus, ['atrasadas', 'completadas'], true);
         $this->resetPage();
     }
 
@@ -235,9 +245,8 @@ class TablaTareas extends Component
                     // $notificaciones->notificarAsignacion($tarea);
                 }
 
-                $this->modalTareaAbierto = false;
-                $this->resetFormTarea();
-                session()->flash('tareas_mensaje', 'Responsable actualizado.');
+                $this->cerrarModal();
+                $this->alerta('Responsable actualizado.');
 
                 return;
             }
@@ -278,9 +287,8 @@ class TablaTareas extends Component
             ]);
         }
 
-        $this->modalTareaAbierto = false;
-        $this->resetFormTarea();
-        session()->flash('tareas_mensaje', 'Tarea guardada correctamente.');
+        $this->cerrarModal();
+        $this->alerta('Tarea guardada correctamente.');
     }
 
     public function abrirReagendar(int $id): void
@@ -307,8 +315,8 @@ class TablaTareas extends Component
         $tarea = TicketTarea::findOrFail($this->tareaReagendarId);
         $service->reagendar($tarea, $this->reagendar_fecha, $this->reagendar_motivo);
 
-        $this->modalReagendarAbierto = false;
-        session()->flash('tareas_mensaje', 'Tarea reagendada.');
+        $this->cerrarModal();
+        $this->alerta('Tarea reagendada.');
     }
 
     public function completarTarea(int $id, TicketTareaService $service): void
@@ -318,20 +326,20 @@ class TablaTareas extends Component
 
         // Sin responsable no se completa: si no, no queda registro de quién la hizo.
         if (! $tarea->tieneResponsable()) {
-            session()->flash('tareas_error', 'Asigna un responsable antes de completar la tarea.');
+            $this->alerta('Asigna un responsable antes de completar la tarea.', 'error');
 
             return;
         }
 
         // Evita repetir la acción (pisaría completada_at y duplicaría el historial).
         if ($tarea->estatus === TicketTarea::ESTATUS_COMPLETADA) {
-            session()->flash('tareas_error', 'Esa tarea ya estaba completada.');
+            $this->alerta('Esa tarea ya estaba completada.', 'error');
 
             return;
         }
 
         $service->completar($tarea);
-        session()->flash('tareas_mensaje', 'Tarea completada.');
+        $this->alerta('Tarea completada.');
     }
 
     public function abrirDetalle(int $id): void
@@ -347,7 +355,7 @@ class TablaTareas extends Component
         $this->authorizeGestion();
         $tarea = TicketTarea::findOrFail($id);
         if ($tarea->estatus !== TicketTarea::ESTATUS_PENDIENTE) {
-            session()->flash('tareas_error', 'Las tareas completadas no se pueden editar.');
+            $this->alerta('Las tareas completadas no se pueden editar.', 'error');
 
             return;
         }
@@ -377,8 +385,8 @@ class TablaTareas extends Component
 
         $tarea = TicketTarea::findOrFail($this->tareaTextoId);
         if ($tarea->estatus !== TicketTarea::ESTATUS_PENDIENTE) {
-            $this->modalTextoAbierto = false;
-            session()->flash('tareas_error', 'Las tareas completadas no se pueden editar.');
+            $this->cerrarModal();
+            $this->alerta('Las tareas completadas no se pueden editar.', 'error');
 
             return;
         }
@@ -402,13 +410,10 @@ class TablaTareas extends Component
             $service->registrarHistorial($tarea, 'editada', null, [
                 'notas' => implode(' ', $notas),
             ]);
-            session()->flash('tareas_mensaje', 'Título y descripción actualizados.');
+            $this->alerta('Título y descripción actualizados.');
         }
 
-        $this->modalTextoAbierto = false;
-        $this->tareaTextoId = null;
-        $this->titulo = '';
-        $this->razon = '';
+        $this->cerrarModal();
     }
 
     public function render()
@@ -425,31 +430,23 @@ class TablaTareas extends Component
         $inicioMes = Carbon::create($this->calAnio, $this->calMes, 1)->startOfDay();
         $finMes = $inicioMes->copy()->endOfMonth();
 
-        $kpis = [
-            'hoy' => TicketTarea::deHoy()->count(),
-            'atrasadas' => TicketTarea::noRealizadas()->count(),
-            'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereNotNull('fecha_compromiso')
-                ->whereBetween('fecha_compromiso', [$inicioMes->toDateString(), $finMes->toDateString()])
-                ->count(),
-        ];
+        // Un viaje con subselects que reusan los scopes: la regla de cada KPI vive solo en TicketTarea.
+        $contar = fn ($q) => $q->selectRaw('COUNT(*)');
+        $kpis = array_map('intval', (array) DB::query()
+            ->selectSub($contar(TicketTarea::deHoy()), 'hoy')
+            ->selectSub($contar(TicketTarea::sinFecha()), 'sinfecha')
+            ->selectSub($contar(TicketTarea::noRealizadas()), 'atrasadas')
+            ->selectSub($contar(TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
+                ->whereBetween('fecha_compromiso', [$inicioMes->toDateString(), $finMes->toDateString()])), 'completadas_mes')
+            ->first());
 
         $tareasMes = TicketTarea::query()
-            ->with(['asignado', 'metrica'])
-            ->whereNotNull('fecha_compromiso')
             ->whereBetween('fecha_compromiso', [$inicioMes->toDateString(), $finMes->toDateString()]);
         $this->aplicarFiltrosComunes($tareasMes);
         $tareasMes = $tareasMes->orderBy('fecha_compromiso')->get();
 
-        $tareasSinFecha = TicketTarea::query()
-            ->with(['asignado', 'metrica'])
-            ->pendientes()
-            ->whereNull('fecha_compromiso');
-        $this->aplicarFiltrosComunes($tareasSinFecha);
-        $tareasSinFecha = $tareasSinFecha->orderBy('titulo')->get();
-
         $tareasPorDia = $tareasMes->groupBy(fn ($t) => $t->fecha_compromiso->format('Y-m-d'));
-        $calendario = $this->construirCalendario($inicioMes, $tareasPorDia, $this->fechaSeleccionada, $tareasSinFecha);
+        $calendario = $this->construirCalendario($inicioMes, $tareasPorDia, $fechaSel);
 
         $listaTareas = $this->consultarListado($hoy, $fechaSel);
         if ($listaTareas->currentPage() > 1 && $listaTareas->isEmpty()) {
@@ -458,25 +455,31 @@ class TablaTareas extends Component
         }
 
         $tareaDetalle = ($this->modalDetalleAbierto && $this->tareaDetalleId)
-            ? TicketTarea::with(['creador', 'asignado', 'metrica', 'historial.usuario', 'historial.asignadoAnterior', 'historial.asignadoNuevo'])->find($this->tareaDetalleId)
+            ? TicketTarea::with(['creador', 'historial.usuario', 'historial.asignadoAnterior', 'historial.asignadoNuevo'])->find($this->tareaDetalleId)
             : null;
         $creadorDetalle = $tareaDetalle ? $this->nombreCreador($tareaDetalle) : null;
 
-        $tituloMes = $inicioMes->translatedFormat('F Y');
-        $fechaCarbonSel = Carbon::parse($fechaSel);
-        $etiquetaDiaSeleccionado = $fechaCarbonSel->translatedFormat('l d \\d\\e F Y');
-        $etiquetaMesCompletadas = $inicioMes->translatedFormat('F Y');
+        $tituloMes = ucfirst($inicioMes->translatedFormat('F Y'));
+        $etiquetaDiaSeleccionado = Carbon::parse($fechaSel)->translatedFormat('l d \\d\\e F Y');
 
+        // Solo el listado y el detalle muestran nombres; el calendario solo cuenta.
         $nombresResponsables = $this->mapaNombresAsignados(
             $listaTareas->getCollection(),
-            $tareasMes,
-            $tareasSinFecha,
             $tareaDetalle ? collect([$tareaDetalle]) : collect()
         );
 
+        $tituloSeccion = match ($this->filtroEstatus) {
+            'atrasadas' => 'No realizadas',
+            'completadas' => 'Completadas',
+            'hoy' => 'Pendientes de hoy',
+            'sinfecha' => 'Sin fecha asignada',
+            default => 'Toda la actividad',
+        };
+
         $tituloLista = match ($this->filtroEstatus) {
             'atrasadas' => $this->soloDia ? 'No realizadas del ' . $etiquetaDiaSeleccionado : 'No realizadas',
-            'completadas' => $this->soloDia ? 'Completadas del ' . $etiquetaDiaSeleccionado : 'Completadas de ' . $etiquetaMesCompletadas,
+            'completadas' => $this->soloDia ? 'Completadas del ' . $etiquetaDiaSeleccionado : 'Completadas de ' . $tituloMes,
+            'sinfecha' => 'Pendientes sin fecha asignada',
             default => ucfirst($etiquetaDiaSeleccionado),
         };
 
@@ -491,22 +494,20 @@ class TablaTareas extends Component
             'tituloMes',
             'fechaSel',
             'listaTareas',
-            'tareasSinFecha',
-            'etiquetaDiaSeleccionado',
-            'etiquetaMesCompletadas',
-            'tituloLista'
+            'tituloLista',
+            'tituloSeccion'
         ));
     }
 
     private function consultarListado(string $hoy, string $fechaSel)
     {
-        $q = TicketTarea::query()->with(['asignado', 'metrica']);
+        $q = TicketTarea::query();
         $this->aplicarFiltrosComunes($q);
 
         if ($this->filtroEstatus === 'atrasadas') {
             $q->noRealizadas();
             if ($this->soloDia) {
-                $q->where(fn ($inner) => $this->acotarAlDia($inner, $fechaSel, $hoy));
+                $q->whereDate('fecha_compromiso', $fechaSel);
             }
 
             return $this->paginarListado(
@@ -530,16 +531,22 @@ class TablaTareas extends Component
             return $this->paginarListado($q->orderByDesc('completada_at')->orderBy('titulo'));
         }
 
-        $q->pendientes()
-            ->where(fn ($inner) => $this->acotarAlDia($inner, $fechaSel, $hoy))
-            ->where(function ($inner) use ($hoy) {
-                $inner->whereNull('fecha_compromiso')
-                    ->orWhereDate('fecha_compromiso', '>=', $hoy);
-            });
+        if ($this->filtroEstatus === 'sinfecha') {
+            return $this->paginarListado(
+                $q->sinFecha()->orderByRaw("FIELD(prioridad, 'critica', 'normal')")->orderBy('titulo')
+            );
+        }
+
+        // Sin filtro: todo lo que tiene fecha en ese día. Con "hoy": solo pendientes no vencidos.
+        $q->whereDate('fecha_compromiso', $fechaSel);
+        if ($this->filtroEstatus === 'hoy') {
+            $q->pendientes()->whereDate('fecha_compromiso', '>=', $hoy);
+        }
 
         return $this->paginarListado(
-            $q->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
-                ->orderByRaw('fecha_compromiso IS NULL DESC')
+            $q->orderByRaw('estatus = ? DESC', [TicketTarea::ESTATUS_PENDIENTE])
+                ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
+                ->orderBy('fecha_compromiso')
                 ->orderBy('titulo')
         );
     }
@@ -554,13 +561,16 @@ class TablaTareas extends Component
         $q->when($this->filtroTipo !== '', fn ($inner) => $inner->where('tipo', $this->filtroTipo));
         $q->when(trim($this->search) !== '', function ($inner) {
             $term = '%' . trim($this->search) . '%';
-            $idsNombre = Empleados::where('NombreEmpleado', 'like', $term)->pluck('EmpleadoID');
+            $idsNombre = $this->idsBusqueda ??= Empleados::where('NombreEmpleado', 'like', $term)
+                ->pluck('EmpleadoID')->map(fn ($id) => (int) $id)->all();
             $inner->where(function ($sub) use ($term, $idsNombre) {
                 $sub->where('titulo', 'like', $term)
-                    ->orWhere('razon', 'like', $term)
-                    ->orWhereHas('asignado', fn ($a) => $a->where('NombreEmpleado', 'like', $term));
+                    ->orWhere('razon', 'like', $term);
+                if ($idsNombre !== []) {
+                    $sub->orWhereIn('asignado_id', $idsNombre);
+                }
                 foreach ($idsNombre as $eid) {
-                    $sub->orWhereRaw('FIND_IN_SET(?, COALESCE(asignados_ids, ""))', [(int) $eid]);
+                    $sub->orWhereRaw('FIND_IN_SET(?, COALESCE(asignados_ids, ""))', [$eid]);
                 }
             });
         });
@@ -582,21 +592,6 @@ class TablaTareas extends Component
         return Empleados::whereIn('EmpleadoID', $ids)->pluck('NombreEmpleado', 'EmpleadoID');
     }
 
-    /**
-     * Acota una consulta al día que se está viendo. Las tareas sin fecha de compromiso
-     * solo se arrastran al día de hoy: en otra fecha no pertenecen a esa lista.
-     */
-    private function acotarAlDia($query, string $dia, string $hoy)
-    {
-        $query->whereDate('fecha_compromiso', $dia);
-
-        if ($dia === $hoy) {
-            $query->orWhereNull('fecha_compromiso');
-        }
-
-        return $query;
-    }
-
     private function tareaEntraEnFiltro(TicketTarea $tarea): bool
     {
         $clase = $tarea->claseSemaforo();
@@ -605,18 +600,17 @@ class TablaTareas extends Component
             'hoy' => $tarea->estatus === TicketTarea::ESTATUS_PENDIENTE && ! $tarea->estaVencida(),
             'atrasadas' => $tarea->estaVencida() || $clase === 'is-critica',
             'completadas' => $clase === 'is-done',
+            'sinfecha' => false, // no tienen día en el calendario
             default => true,
         };
     }
 
-    private function construirCalendario(Carbon $inicioMes, Collection $tareasPorDia, string $fechaSeleccionada = '', $sinFecha = null): array
+    private function construirCalendario(Carbon $inicioMes, Collection $tareasPorDia, string $sel): array
     {
         $inicioGrid = $inicioMes->copy()->startOfWeek(Carbon::MONDAY);
         $finGrid = $inicioMes->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
         $semanas = [];
         $cursor = $inicioGrid->copy();
-        $sel = $fechaSeleccionada ?: now()->format('Y-m-d');
-        $sinFecha = collect($sinFecha ?? []);
 
         while ($cursor->lte($finGrid)) {
             $semana = [];
@@ -625,11 +619,6 @@ class TablaTareas extends Component
                 $delDia = $tareasPorDia->get($fechaStr, collect())
                     ->filter(fn (TicketTarea $t) => $this->tareaEntraEnFiltro($t))
                     ->values();
-
-                if ($cursor->isToday() && $this->filtroEstatus === 'hoy') {
-                    $extra = $sinFecha->filter(fn (TicketTarea $t) => $this->tareaEntraEnFiltro($t));
-                    $delDia = $delDia->concat($extra)->unique('id')->values();
-                }
 
                 $conteo = [
                     'is-critica' => 0,
@@ -705,5 +694,21 @@ class TablaTareas extends Component
     private function authorizeGestion(): void
     {
         abort_unless(auth()->user()?->can('tickets.gestionar-tareas'), 403);
+    }
+
+    /**
+     * Cierra el modal abierto con su animación de salida: Alpine anima y luego baja la
+     * propiedad (tareasModalCerrable). Los campos no se limpian aquí para que no se
+     * vacíen mientras sale; cada abrir* los vuelve a llenar.
+     */
+    private function cerrarModal(): void
+    {
+        $this->dispatchBrowserEvent('tareas-modal-cerrar');
+    }
+
+    /** Alerta SweetAlert2; el listener vive en partials/tareas-alerta. */
+    private function alerta(string $mensaje, string $icono = 'success'): void
+    {
+        $this->dispatchBrowserEvent('tareas-alerta', ['icono' => $icono, 'mensaje' => $mensaje]);
     }
 }
