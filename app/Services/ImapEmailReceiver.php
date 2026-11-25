@@ -412,38 +412,7 @@ class ImapEmailReceiver
         }
     }
 
-    /**
-     * Desactivado: los tickets se crean desde solicitudes, no desde el buzón.
-     */
-    private function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null, $adjuntos = [])
-    {
-        return false;
-    }
     
-    /**
-     * Limpiar asunto del correo
-     */
-    private function limpiarAsunto($subject)
-    {
-        if (empty($subject)) {
-            return 'Nuevo ticket desde correo';
-        }
-        
-        $subject = trim($subject);
-        
-        // Remover prefijos comunes de respuestas
-        $subject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:|FW:)\s*/i', '', $subject);
-        
-        // Remover formato "Ticket #ID" si existe (para evitar duplicados al crear nuevo ticket)
-        $subject = preg_replace('/^Ticket\s*#\s*\d+\s*-\s*/i', '', $subject);
-        
-        // Limitar longitud
-        if (strlen($subject) > 500) {
-            $subject = substr($subject, 0, 497) . '...';
-        }
-        
-        return trim($subject);
-    }
 
     /**
      * Enviar confirmación de ticket creado

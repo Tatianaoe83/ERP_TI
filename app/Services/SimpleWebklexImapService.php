@@ -287,11 +287,6 @@ class SimpleWebklexImapService
             // Esto permite procesar respuestas de correos del sistema si son respuestas a tickets
             $ticket = $this->buscarTicketPorMensaje($subject, $messageId, $threadId, $fromEmail);
             
-            // Si se encontró un ticket, procesarlo
-            if ($ticket) {
-                // Continuar con el procesamiento del ticket (no retornar aquí)
-            }
-            
             if ($ticket) {
                 // Verificar que el ticket esté en "En progreso"
                 // Solo procesar respuestas de tickets en estado "En progreso"
@@ -330,15 +325,6 @@ class SimpleWebklexImapService
         }
     }
     
-    /**
-     * Ya no se crean tickets desde correo. Si el asunto no mapea a un ticket
-     * existente, el mensaje se omite; el seguimiento nace en solicitudes.
-     */
-    private function intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName)
-    {
-
-        return false;
-    }
     
     /**
      * Extraer dominio de un correo electrónico
@@ -655,41 +641,7 @@ class SimpleWebklexImapService
         }
     }
     
-    /**
-     * Desactivado: los tickets se crean desde solicitudes, no desde el buzón.
-     * El procesador de correos solo mapea respuestas a tickets existentes.
-     */
-    protected function crearTicketDesdeCorreo($empleado, $subject, $bodyTexto, $bodyHtml = null, $adjuntos = [], $fechaCorreo = null, $messageId = null, $threadId = null, $fromName = null)
-    {
-
-        return null;
-    }
     
-    /**
-     * Limpiar asunto del correo
-     */
-    private function limpiarAsunto($subject)
-    {
-        if (empty($subject)) {
-            return 'Nuevo ticket desde correo';
-        }
-        
-        $subject = trim($subject);
-        
-        // Remover prefijos comunes de respuestas
-        $subject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:|FW:)\s*/i', '', $subject);
-        
-        // Remover formato "Ticket #ID" si existe (para evitar duplicados al crear nuevo ticket)
-        // Esto asegura que cuando se cree un ticket nuevo, no tenga el formato "Ticket #ID" previo
-        $subject = preg_replace('/^Ticket\s*#\s*\d+\s*-\s*/i', '', $subject);
-        
-        // Limitar longitud
-        if (strlen($subject) > 500) {
-            $subject = substr($subject, 0, 497) . '...';
-        }
-        
-        return trim($subject);
-    }
     
     /**
      * Generar Thread-ID para nuevo ticket
@@ -700,45 +652,6 @@ class SimpleWebklexImapService
         return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
     }
     
-    /**
-     * Verificar si es correo de comunicado
-     */
-    protected function esCorreoComunicado($subject, $fromEmail)
-    {
-        $correosComunicados = [
-            // Correos de comunicados de proser.com.mx
-            'comunicacion@proser.com.mx',
-            'noreply@proser.com.mx',
-            'no-reply@proser.com.mx',
-            // Correos de comunicados de konkret.mx
-            'comunicacion@konkret.mx',
-            'noreply@konkret.mx',
-            'no-reply@konkret.mx'
-        ];
-        
-        if (in_array(strtolower($fromEmail), $correosComunicados)) {
-            return true;
-        }
-        
-        $patronesComunicados = [
-            '/^\[Corporativo\]/i',
-            '/^COMUNICADO/i',
-            '/^HOY ES ÚLTIMO DÍA/i',
-            '/^ÚNETE A LA JORNADA/i',
-            '/^USO DEL COMEDOR/i',
-            '/^CAJA DE AHORRO/i',
-            '/^RECORDATORIO IMPORTANTE/i',
-            '/^PLÁTICA INFORMATIVA/i',
-        ];
-        
-        foreach ($patronesComunicados as $patron) {
-            if (preg_match($patron, $subject)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
     
     /**
      * Extraer Thread-ID del mensaje
