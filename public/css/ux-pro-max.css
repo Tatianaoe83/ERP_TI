@@ -1040,7 +1040,7 @@ a {
 .metricas-modal__dialog,
 .tareas-modal,
 .erp-modal-panel,
-.swal2-popup,
+.swal2-popup:not(.swal2-hide), /* al cerrar, Swal espera el animationend de SU animación; si se pisa, el contenedor invisible se queda bloqueando clics */
 .sweet-alert,
 .fixed.inset-0 > .relative.flex,
 .fixed.inset-0 > .relative.w-full {
