@@ -466,7 +466,8 @@ class InventarioController extends AppBaseController
             'Precio'           => [$salvoPropioOExtra, 'numeric', 'min:0'],
             'Folio'            => [$salvoPropioOExtra, 'string', 'max:50'],
             'FechaDeCompra'    => [$salvoPropioOExtra, 'date'],
-            'MesDePago'        => ['nullable', 'string', 'max:20'],
+            // Lista de meses separada por coma ("Enero,Febrero,..."): cabe en varchar(191).
+            'MesDePago'        => ['nullable', 'string', 'max:191'],
         ], [
             'required' => 'Este campo es requerido',
             'numeric'  => 'Debe ser un número',

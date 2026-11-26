@@ -239,6 +239,7 @@
     }
 
     .inv-panel-head .crear-btn-linea-extra {
+        margin-left: auto;
         text-transform: none;
         letter-spacing: 0;
         font-size: 0.75rem;
@@ -839,6 +840,24 @@
         width: 1%;
     }
 
+    /* Editar / eliminar van en la última columna de los asignados. */
+    .inv-assign-page .inv-panel .index-table tbody td:last-child .index-actions {
+        justify-content: flex-start;
+    }
+
+    .inv-assign-page .inv-panel table[id$="AsignadosTable"] > thead > tr > th:last-child,
+    .inv-assign-page .inv-panel table[id$="AsignadosTable"] > tbody > tr > td:last-child:not(.dataTables_empty) {
+        width: 1%;
+    }
+
+    /* Sin selección masiva (extraordinario, empleado inactivo) la columna del
+       checkbox queda vacía: se oculta, pero el <td> sigue en el DOM para no
+       mover los índices que usa el JS. */
+    .inv-assign-page .inv-sin-bulk > thead > tr > th:first-child,
+    .inv-assign-page .inv-sin-bulk > tbody > tr > td:first-child:not(.dataTables_empty) {
+        display: none;
+    }
+
     .inv-assign-page .inv-tipo-col,
     .inv-assign-page td .inv-chip {
         vertical-align: middle;
@@ -877,5 +896,107 @@
     .dark .inv-assign-page .inv-check--off {
         background: #1f2937;
         border-color: #374151;
+    }
+
+    /* ---- Tablas de asignados y disponibles ----
+       ux-pro-max.css fuerza table-layout: fixed + white-space: normal !important +
+       overflow-wrap: anywhere en todas las .index-table: con 12-17 columnas eso
+       aplasta todo y parte palabras ("IMPRESOR-A"). Aquí la tabla mide lo que
+       necesita y el .table-responsive da el scroll horizontal. */
+    .inv-assign-page .inv-panel .index-table {
+        table-layout: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .inv-assign-page .inv-panel .index-table thead th,
+    .inv-assign-page .inv-panel .index-table tbody td {
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+        vertical-align: middle !important;
+    }
+
+    .inv-assign-page .inv-panel .index-table thead th {
+        background: #f8fafc !important;
+        color: #64748b !important;
+        padding: 0.6rem 0.85rem !important;
+        /* Encabezados largos ("Monto renovación fianza") parten en espacios, nunca a media palabra. */
+        white-space: normal !important;
+        min-width: 4.5rem;
+        line-height: 1.3;
+        vertical-align: bottom !important;
+    }
+
+    /* Espacio para las flechas de orden de DataTables. */
+    .inv-assign-page .inv-panel .index-table thead th.sorting,
+    .inv-assign-page .inv-panel .index-table thead th.sorting_asc,
+    .inv-assign-page .inv-panel .index-table thead th.sorting_desc {
+        padding-right: 1.75rem !important;
+    }
+
+    .dark .inv-assign-page .inv-panel .index-table thead th {
+        background: #111827 !important;
+        color: #9ca3af !important;
+    }
+
+    .inv-assign-page .inv-panel .index-table tbody td {
+        padding: 0.6rem 0.85rem !important;
+    }
+
+    .inv-assign-page .inv-panel .index-table tbody td.inv-td-wrap {
+        white-space: normal !important;
+        min-width: 12rem;
+        max-width: 20rem;
+        line-height: 1.35;
+    }
+
+    .inv-assign-page .inv-panel .index-table .inv-td-money {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .inv-assign-page .inv-panel .index-table tbody td.inv-td-money {
+        font-weight: 600;
+    }
+
+    /* Meses de pago: varias pills por renglón en vez de una columna de una en una. */
+    .inv-assign-page .inv-panel .index-table td .inv-meses-pills {
+        min-width: 11rem;
+    }
+
+    .inv-vacio {
+        color: #cbd5e1;
+    }
+
+    .dark .inv-vacio {
+        color: #4b5563;
+    }
+
+    .inv-assign-page .inv-panel .index-table tbody tr:hover td {
+        background: #f8fafc !important;
+    }
+
+    .dark .inv-assign-page .inv-panel .index-table tbody tr:hover td {
+        background: #111827 !important;
+    }
+
+    /* Fila recién asignada / editada / pasada a stock o compartido.
+       box-shadow y no background: el background de .index-table td va con !important. */
+    @keyframes invRowFlash {
+        from { box-shadow: inset 0 0 0 999px rgba(59, 130, 246, 0.22); }
+        to   { box-shadow: inset 0 0 0 999px rgba(59, 130, 246, 0); }
+    }
+
+    .inv-assign-page .inv-panel .index-table tbody tr.inv-row-flash td {
+        animation: invRowFlash 2s ease-out;
+    }
+
+    .inv-assign-page .inv-panel .index-page__dt-toolbar {
+        padding: 0.75rem 0.5rem 0.6rem;
+    }
+
+    .inv-assign-page .inv-panel .index-page__dt-footer {
+        padding: 0.65rem 0.5rem 0.25rem;
     }
 </style>
