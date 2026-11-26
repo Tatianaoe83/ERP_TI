@@ -47,11 +47,7 @@ class TablaSolicitudes extends Component
     public array $xmlParseado          = [];
     public array $unidadesGuardadas    = []; // Rastrea qué unidades fueron guardadas en esta sesión
 
-    public array $usuarioSearch      = [];
-    public array $usuarioOptions     = [];
-    public array $usuarioSearchLock  = [];
 
-    public bool   $modalCancelacionAbierto = false;
     public ?int   $solicitudCancelarId     = null;
     public string $motivoCancelacion       = '';
 
@@ -217,19 +213,6 @@ class TablaSolicitudes extends Component
     public function updated($name, $value): void
     {
         $name = (string)$name;
-
-        if (str_starts_with($name, 'usuarioSearch.')) {
-            $parts = explode('.', $name);
-            if (count($parts) === 3) {
-                [$pIndex, $uIndex] = [(int)$parts[1], (int)$parts[2]];
-                if ($this->isUsuarioSearchLocked($pIndex, $uIndex)) {
-                    $this->unlockUsuarioSearch($pIndex, $uIndex);
-                    return;
-                }
-                $this->handleUsuarioSearchUpdated($pIndex, $uIndex, (string)$value);
-            }
-            return;
-        }
 
         if (str_starts_with($name, 'ticketInstalacionResponsable')) {
             $this->buscarResponsableTicket((string)$value);
@@ -488,26 +471,22 @@ class TablaSolicitudes extends Component
     // CANCELACIÓN
     // =========================================================================
 
-    public function abrirModalCancelacion(int $solicitudId): void
+    public function cerrarModalCancelacion(): void { $this->resetCancelacionState(); }
+
+    // El modal se abre en el navegador (Alpine); el id llega aquí al confirmar.
+    public function confirmarCancelacion(int $solicitudId): void
     {
+        $this->solicitudCancelarId = $solicitudId;
+
         $row = $this->hydrateSolicitudById($solicitudId);
         if ($row && in_array($row->estatusDisplay, ['Cancelada', 'Rechazada'], true)) {
             $this->dispatchBrowserEvent('swal:error', [
                 'message' => 'No se puede cerrar esta solicitud por su estatus actual.',
             ]);
+            $this->resetCancelacionState();
             return;
         }
 
-        $this->resetErrorBag();
-        $this->motivoCancelacion       = '';
-        $this->solicitudCancelarId     = $solicitudId;
-        $this->modalCancelacionAbierto = true;
-    }
-
-    public function cerrarModalCancelacion(): void { $this->resetCancelacionState(); }
-
-    public function confirmarCancelacion(): void
-    {
         $this->validate(
             ['motivoCancelacion' => 'required|string|min:10|max:1000'],
             [
@@ -556,10 +535,10 @@ class TablaSolicitudes extends Component
 
     private function resetCancelacionState(): void
     {
-        $this->modalCancelacionAbierto = false;
         $this->solicitudCancelarId     = null;
         $this->motivoCancelacion       = '';
         $this->resetErrorBag('motivoCancelacion');
+        $this->dispatchBrowserEvent('scm-cerrar'); // el modal vive en Alpine
     }
 
     // =========================================================================
@@ -583,6 +562,7 @@ class TablaSolicitudes extends Component
             $this->dispatchBrowserEvent('swal:error', [
                 'message' => 'Esta solicitud no admite asignación en su estatus actual.',
             ]);
+            $this->avisarAsignacion('asg-cerrado');
             return;
         }
 
@@ -600,6 +580,7 @@ class TablaSolicitudes extends Component
 
             if ($seleccionadas->isEmpty()) {
                 $this->dispatchBrowserEvent('swal:error', ['message' => 'No hay cotizaciones Seleccionadas para asignar.']);
+                $this->avisarAsignacion('asg-cerrado');
                 return;
             }
 
@@ -711,23 +692,15 @@ class TablaSolicitudes extends Component
                     }
                 }
             }
-            $this->usuarioSearch        = [];
-            $this->usuarioOptions       = [];
-
-            foreach ($this->propuestasAsignacion as $pIndex => $p) {
-                foreach (($p['unidades'] ?? []) as $uIndex => $u) {
-                    $this->usuarioSearch[$pIndex][$uIndex]  = (string)($u['empleado_nombre'] ?? '');
-                    $this->usuarioOptions[$pIndex][$uIndex] = [];
-                }
-            }
-
             $this->unidadesGuardadas  = [];
 
             $this->modalEsSoloLectura     = false;
             $this->modalAsignacionAbierto = true;
             $this->dispatchBrowserEvent('abrir-modal-overlay');
+            $this->avisarAsignacion('asg-abierto');
         } catch (\Throwable $e) {
             $this->resetAsignacionState();
+            $this->avisarAsignacion('asg-cerrado');
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Error abriendo asignación: ' . $e->getMessage()]);
         }
     }
@@ -753,47 +726,34 @@ class TablaSolicitudes extends Component
         // Limpiar registros en BD que no cumplen las 3 condiciones antes de cerrar
         $this->limpiarRegistrosHuerfanos();
         $this->resetAsignacionState();
+        $this->avisarAsignacion('asg-cerrado');
     }
 
-    public function forzarCloseAsignacion(): void { $this->resetAsignacionState(); }
+    public function forzarCloseAsignacion(): void
+    {
+        $this->resetAsignacionState();
+        $this->avisarAsignacion('asg-cerrado');
+    }
+
+    // El cascarón del modal vive en Alpine; el wid evita que la otra instancia (tabla / global) reaccione.
+    private function avisarAsignacion(string $evento): void
+    {
+        $this->dispatchBrowserEvent($evento, ['wid' => $this->id]);
+    }
 
     // USUARIO SEARCH
 
-    private function handleUsuarioSearchUpdated(int $pIndex, int $uIndex, string $term): void
+    // Lista para el combobox del modal: el navegador la pide una vez y filtra local.
+    public function empleadosActivos(): array
     {
-        $term = trim($term);
-        $this->usuarioOptions[$pIndex]          = $this->usuarioOptions[$pIndex] ?? [];
-        $this->usuarioOptions[$pIndex][$uIndex] = [];
-        
-        // Requerir al menos 2 caracteres para buscar
-        if (strlen($term) < 2) return;
+        $this->skipRender();
 
-        $tokens = collect(preg_split('/\s+/', $term) ?: [])
-            ->map(fn($token) => trim((string)$token))
-            ->filter(fn($token) => $token !== '')
-            ->values();
-
-        $this->usuarioOptions[$pIndex][$uIndex] = Empleados::query()
-            ->select('EmpleadoID', 'NombreEmpleado', 'Correo')
+        return Empleados::query()
             ->where('Estado', true)
-            ->where(function ($query) use ($tokens, $term) {
-                foreach ($tokens as $token) {
-                    $query->where(function ($q) use ($token) {
-                        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $token) . '%';
-                        $q->where('NombreEmpleado', 'like', $like)
-                            ->orWhere('Correo', 'like', $like);
-                    });
-                }
-
-                if (ctype_digit($term)) {
-                    $query->orWhere('EmpleadoID', (int)$term);
-                }
-            })
             ->orderBy('NombreEmpleado')
-            ->limit(10)
-            ->get()
-            ->map(fn($e) => ['id'=>(int)$e->EmpleadoID,'name'=>(string)$e->NombreEmpleado,'correo'=>(string)$e->Correo])
-            ->toArray();
+            ->get(['EmpleadoID', 'NombreEmpleado', 'Correo'])
+            ->map(fn($e) => ['id' => (int)$e->EmpleadoID, 'name' => (string)$e->NombreEmpleado, 'correo' => (string)$e->Correo])
+            ->all();
     }
 
     private function shouldPersistUnit(int $pIndex, int $uIndex, array $u): bool
@@ -849,7 +809,9 @@ class TablaSolicitudes extends Component
                 if (isset($this->xmlParseado[$pIndex][$uIndex])) {
                     $parsed = $this->xmlParseado[$pIndex][$uIndex];
                     
-                    if (empty($parsed['insumoId'])) {
+                    // Vale un insumo del presupuesto o un desvío con nombre (InsumoID null, se guarda InsumoNombre)
+                    $esDesvioConNombre = !empty($parsed['insumoDesvio']) && trim((string)($parsed['insumoNombre'] ?? '')) !== '';
+                    if (empty($parsed['insumoId']) && !$esDesvioConNombre) {
                         $errors["$base.insumo"] = 'Debe asignar un insumo a la factura antes de guardar.';
                     }
                     
@@ -1248,9 +1210,6 @@ class TablaSolicitudes extends Component
             ]
         );
 
-        $this->lockUsuarioSearch($pIndex, $uIndex);
-        $this->usuarioSearch[$pIndex][$uIndex]  = (string)$row['NombreEmpleado'];
-        $this->usuarioOptions[$pIndex][$uIndex] = [];
 
         // Verificar si hay XML y cargar insumos de la gerencia del usuario
         $this->verificarYCargarInsumosParaUnidad($pIndex, $uIndex);
@@ -1451,9 +1410,6 @@ class TablaSolicitudes extends Component
         $this->facturas                    = [];
         $this->facturaXml                  = [];
         $this->xmlParseado                 = [];
-        $this->usuarioSearch               = [];
-        $this->usuarioOptions              = [];
-        $this->usuarioSearchLock           = [];
         $this->checklistTemplatesCache     = [];
         $this->confirmarCierreModalAbierto = false;
         $this->insumosDisponibles          = [];
@@ -1522,9 +1478,6 @@ class TablaSolicitudes extends Component
         ];
     }
 
-    private function lockUsuarioSearch(int $p, int $u): void     { $this->usuarioSearchLock[$p][$u] = true; }
-    private function isUsuarioSearchLocked(int $p, int $u): bool { return !empty($this->usuarioSearchLock[$p][$u]); }
-    private function unlockUsuarioSearch(int $p, int $u): void   { if (isset($this->usuarioSearchLock[$p][$u])) $this->usuarioSearchLock[$p][$u] = false; }
 
     public function toggleRequiereConfig(int $pIndex, int $uIndex): void
     {
@@ -1937,7 +1890,23 @@ class TablaSolicitudes extends Component
                 continue;
             }
             try {
-                $this->xmlParseado[$pIndex][0] = $this->parsearCfdi($full);
+                $parsed = $this->parsearCfdi($full);
+
+                // El XML no trae el insumo: se recupera de la factura ya guardada (insumo del presupuesto o desvío por nombre)
+                $guardada = Facturas::query()
+                    ->where('SolicitudID', (int) $this->asignacionSolicitudId)
+                    ->whereNull('deleted_at')
+                    ->when(!empty($parsed['uuid']), fn($q) => $q->where('UUID', $parsed['uuid']), fn($q) => $q->where('ArchivoRuta', $path))
+                    ->latest('FacturasID')
+                    ->first(['InsumoID', 'InsumoNombre']);
+                if ($guardada) {
+                    $nombre = trim((string) $guardada->InsumoNombre);
+                    $parsed['insumoId']     = $guardada->InsumoID ? (int) $guardada->InsumoID : null;
+                    $parsed['insumoNombre'] = $nombre;
+                    $parsed['insumoDesvio'] = !$guardada->InsumoID && $nombre !== '';
+                }
+
+                $this->xmlParseado[$pIndex][0] = $parsed;
             } catch (\Throwable $e) {
             }
         }

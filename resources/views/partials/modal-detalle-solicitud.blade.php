@@ -1,6 +1,7 @@
 {{-- Modal global "Detalles de Solicitud" (solo lectura).
      Vive en el layout (sidebar) → disponible en cualquier vista, fuera de los tabs.
-     Se abre con window.__abrirModalSolicitud(id) desde notificaciones o desde el botón "Ver". --}}
+     Se abre con window.__abrirModalSolicitud(id) desde notificaciones o desde el botón "Ver".
+     Estilos: .sdm-* en public/css/ux-pro-max.css (sin build de Tailwind). --}}
 <div x-data="{
     modalAbierto: false,
     cargando: false,
@@ -12,6 +13,8 @@
         this.modalAbierto = true;
         this.cargando = true;
         this.solicitudSeleccionada = null;
+        document.documentElement.classList.add('sdm-lock');
+        this.$nextTick(() => this.$refs.sdmCerrar?.focus());
         fetch('/solicitudes/' + id + '/datos', {
                 headers: {
                     'Accept': 'application/json',
@@ -31,12 +34,13 @@
             })
             .catch(() => {
                 this.cargando = false;
-                this.modalAbierto = false;
+                this.cerrarModal();
             });
     },
     cerrarModal() {
         this.modalAbierto = false;
         this.solicitudSeleccionada = null;
+        document.documentElement.classList.remove('sdm-lock');
     },
     formatMoney(value) {
         const amount = Number(value || 0);
@@ -44,6 +48,21 @@
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+    },
+    estatusClase() {
+        return ({
+            'En revisión': 'sol-status--revision',
+            'Cancelada': 'sol-status--cancelada',
+            'Rechazada': 'sol-status--rechazada',
+            'Aprobada': 'sol-status--aprobada',
+            'Cotizaciones Enviadas': 'sol-status--enviadas',
+            'Pendiente': 'sol-status--pendiente',
+            'Re-cotizar': 'sol-status--recotizar',
+            'Listo': 'sol-status--listo'
+        })[this.solicitudSeleccionada?.estatusDisplay || ''] || 'sol-status--default';
+    },
+    iniciales(nombre) {
+        return (nombre || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
     }
 }">
     <div id="modal-solicitud-panel"
@@ -54,209 +73,138 @@
             x-transition:leave="ease-in duration-150"
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
-            class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm overflow-y-auto z-[9999]"
-            @keydown.escape.window="cerrarModal()"
+            class="sdm-overlay"
+            @keydown.escape.window="modalAbierto && cerrarModal()"
             @click.self="cerrarModal()"
             x-cloak>
-            <div class="relative top-16 mx-auto p-5 w-11/12 max-w-3xl shadow-xl rounded-xl bg-gray-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 mb-16">
-                <div class="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700 mb-4">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Detalles de Solicitud
-                        <span x-show="solicitudSeleccionada" x-text="'#' + solicitudSeleccionada?.SolicitudID" class="text-slate-400 ml-1 font-normal"></span>
+        <div class="sdm-dialog" role="dialog" aria-modal="true" aria-labelledby="sdm-titulo">
+
+            {{-- Header fijo --}}
+            <header class="sdm-head">
+                <span class="sdm-head__icon" aria-hidden="true"><i class="fas fa-file-alt"></i></span>
+                <div class="sdm-head__texto">
+                    <h3 id="sdm-titulo" class="sdm-head__titulo">
+                        Solicitud
+                        <span x-show="solicitudSeleccionada" x-text="'#' + solicitudSeleccionada?.SolicitudID" class="sdm-head__id"></span>
                     </h3>
-                    <button @click="cerrarModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1 rounded">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div x-show="cargando" class="text-center py-10">
-                    <i class="fas fa-spinner fa-spin text-2xl text-slate-400 mb-2 block"></i>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>
-                </div>
-                <div x-show="!cargando && solicitudSeleccionada" class="space-y-6">
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">Solicitante</h4>
-                        <div class="grid grid-cols-2 gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Nombre</p>
-                                <p class="text-sm font-medium text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.empleado?.NombreEmpleado"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Correo</p>
-                                <p class="text-sm text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.empleado?.Correo"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Gerencia</p>
-                                <p class="text-sm text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.gerencia?.NombreGerencia || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Obra</p>
-                                <p class="text-sm text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.obra?.NombreObra || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Puesto</p>
-                                <p class="text-sm text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.puesto?.NombrePuesto || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Ubicación</p>
-                                <p class="text-sm text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.ProyectoNombre || solicitudSeleccionada?.Proyecto || 'N/A'"></p>
-                            </div>
-                        </div>
+                    <div x-show="solicitudSeleccionada" class="sdm-head__meta">
+                        <span class="erp-chip" :class="estatusClase()" x-text="solicitudSeleccionada?.estatusDisplay || solicitudSeleccionada?.Estatus || 'Sin estatus'"></span>
+                        <span><i class="far fa-calendar" aria-hidden="true"></i> <span x-text="solicitudSeleccionada?.fechaCreacion || 'N/A'"></span></span>
                     </div>
-                    <template x-if="solicitudSeleccionada?.motivo_cancelacion">
-                        <div class="rounded-lg border border-rose-200 dark:border-rose-700/60 bg-rose-50 dark:bg-rose-900/20 p-4">
-                            <p class="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide mb-1" x-text="solicitudSeleccionada?.estatusDisplay === 'Rechazada' ? 'Solicitud Rechazada' : 'Solicitud Cancelada'"></p>
-                            <p class="text-sm text-rose-700 dark:text-rose-300" x-text="solicitudSeleccionada?.motivo_cancelacion"></p>
-                            <div class="mt-2 flex flex-wrap gap-4 text-xs text-rose-500 dark:text-rose-400">
-                                <span x-text="'Por: ' + (solicitudSeleccionada?.canceladoPorNombre || 'N/A')"></span>
-                                <span x-text="solicitudSeleccionada?.fecha_cancelacion || ''"></span>
-                            </div>
-                        </div>
-                    </template>
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">Solicitud</h4>
-                        <div class="p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-3">
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Motivo</p>
-                                <p class="text-sm font-medium text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.Motivo || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Descripción</p>
-                                <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap" x-text="solicitudSeleccionada?.DescripcionMotivo || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Requerimientos</p>
-                                <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap" x-text="solicitudSeleccionada?.Requerimientos || 'N/A'"></p>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                                <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Estatus</p>
-                                    <p class="text-sm font-semibold"
-                                        :class="{
-                                           'text-rose-600':    (solicitudSeleccionada?.estatusDisplay||'') === 'Cancelada',
-                                           'text-amber-600':   (solicitudSeleccionada?.estatusDisplay||'') === 'Pendiente',
-                                           'text-red-600':     (solicitudSeleccionada?.estatusDisplay||'') === 'Rechazada',
-                                           'text-sky-600':     (solicitudSeleccionada?.estatusDisplay||'') === 'En revisión',
-                                           'text-emerald-600': (solicitudSeleccionada?.estatusDisplay||'') === 'Aprobada',
-                                           'text-teal-600':    (solicitudSeleccionada?.estatusDisplay||'') === 'Listo',
-                                           'text-blue-600':    (solicitudSeleccionada?.estatusDisplay||'') === 'Cotizaciones Enviadas',
-                                           'text-slate-900 dark:text-slate-100': !['Cancelada','Pendiente','Rechazada','En revisión','Aprobada','Listo','Cotizaciones Enviadas'].includes(solicitudSeleccionada?.estatusDisplay||'')
-                                        }"
-                                        x-text="solicitudSeleccionada?.estatusDisplay || solicitudSeleccionada?.Estatus || 'Sin estatus'"></p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Creado</p>
-                                    <p class="text-sm text-slate-900 dark:text-slate-100" x-text="solicitudSeleccionada?.fechaCreacion || 'N/A'"></p>
+                </div>
+                <button type="button" x-ref="sdmCerrar" @click="cerrarModal()" class="sdm-close" aria-label="Cerrar detalle">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </header>
+
+            {{-- Cuerpo: único scroll del modal --}}
+            <div class="sdm-body">
+                <div x-show="cargando" class="sdm-skeleton" aria-live="polite" aria-busy="true">
+                    <span class="sdm-sr">Cargando solicitud…</span>
+                    <div class="sdm-skeleton__col">
+                        <div class="sdm-skeleton__bar sdm-skeleton__bar--lg"></div>
+                        <div class="sdm-skeleton__bar"></div>
+                        <div class="sdm-skeleton__bar"></div>
+                        <div class="sdm-skeleton__bar sdm-skeleton__bar--sm"></div>
+                    </div>
+                    <div class="sdm-skeleton__col">
+                        <div class="sdm-skeleton__bar sdm-skeleton__bar--lg"></div>
+                        <div class="sdm-skeleton__bar"></div>
+                        <div class="sdm-skeleton__bar sdm-skeleton__bar--sm"></div>
+                    </div>
+                </div>
+
+                <div x-show="!cargando && solicitudSeleccionada" class="sdm-grid">
+
+                    {{-- ===== Columna lateral: solicitante ===== --}}
+                    <aside class="sdm-side">
+                        <section class="sdm-card">
+                            <h4 class="sdm-label">Solicitante</h4>
+                            <div class="sol-persona sdm-persona">
+                                <span class="sol-avatar sdm-avatar" aria-hidden="true" x-text="iniciales(solicitudSeleccionada?.empleado?.NombreEmpleado)"></span>
+                                <div class="sol-persona__texto">
+                                    <span class="sdm-persona__nombre" x-text="solicitudSeleccionada?.empleado?.NombreEmpleado"></span>
+                                    <span class="sdm-persona__correo" :title="solicitudSeleccionada?.empleado?.Correo" x-text="solicitudSeleccionada?.empleado?.Correo"></span>
                                 </div>
                             </div>
-                            <div x-show="solicitudSeleccionada?.puedeCotizar" class="pt-2">
-                                <a :href="'/solicitudes/' + (solicitudSeleccionada?.SolicitudID || '') + '/cotizar'"
-                                    class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition no-underline">
-                                    <i class="fas fa-file-invoice-dollar"></i>
-                                    <span x-text="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0 ? 'Editar cotizaciones' : 'Cotizar'"></span>
-                                </a>
+                            <dl class="sdm-dl">
+                                <div><dt><i class="fas fa-sitemap" aria-hidden="true"></i> Gerencia</dt><dd x-text="solicitudSeleccionada?.gerencia?.NombreGerencia || 'N/A'"></dd></div>
+                                <div><dt><i class="fas fa-hard-hat" aria-hidden="true"></i> Obra</dt><dd x-text="solicitudSeleccionada?.obra?.NombreObra || 'N/A'"></dd></div>
+                                <div><dt><i class="fas fa-id-badge" aria-hidden="true"></i> Puesto</dt><dd x-text="solicitudSeleccionada?.puesto?.NombrePuesto || 'N/A'"></dd></div>
+                                <div><dt><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Ubicación</dt><dd x-text="solicitudSeleccionada?.ProyectoNombre || solicitudSeleccionada?.Proyecto || 'N/A'"></dd></div>
+                            </dl>
+                        </section>
+
+                        <template x-if="solicitudSeleccionada?.motivo_cancelacion">
+                            <section class="sdm-alert" role="note">
+                                <p class="sdm-alert__titulo">
+                                    <i class="fas fa-ban" aria-hidden="true"></i>
+                                    <span x-text="solicitudSeleccionada?.estatusDisplay === 'Rechazada' ? 'Solicitud rechazada' : 'Solicitud cancelada'"></span>
+                                </p>
+                                <p class="sdm-alert__texto" x-text="solicitudSeleccionada?.motivo_cancelacion"></p>
+                                <p class="sdm-alert__meta">
+                                    <span x-text="'Por: ' + (solicitudSeleccionada?.canceladoPorNombre || 'N/A')"></span>
+                                    <span x-text="solicitudSeleccionada?.fecha_cancelacion || ''"></span>
+                                </p>
+                            </section>
+                        </template>
+                    </aside>
+
+                    {{-- ===== Columna principal ===== --}}
+                    <div class="sdm-main">
+                        <section class="sdm-card">
+                            <h4 class="sdm-label">Motivo</h4>
+                            <p class="sdm-motivo" x-text="solicitudSeleccionada?.Motivo || 'N/A'"></p>
+                            <div class="sdm-textos">
+                                <div>
+                                    <h5 class="sdm-sublabel">Descripción</h5>
+                                    <p class="sdm-parrafo" x-text="solicitudSeleccionada?.DescripcionMotivo || 'N/A'"></p>
+                                </div>
+                                <div>
+                                    <h5 class="sdm-sublabel">Requerimientos</h5>
+                                    <p class="sdm-parrafo" x-text="solicitudSeleccionada?.Requerimientos || 'N/A'"></p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        </section>
 
-                    {{-- ==================== FLUJO DE APROBACIÓN ==================== --}}
-                    <div>
-                        <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">Flujo de Aprobación</h4>
-
-                        {{-- PARTE 1: Pipeline visual de etapas --}}
-                        <div class="flex items-stretch mb-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
-                            <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="'pipe-'+index">
-                                <div class="flex-1 relative px-4 py-3 text-center"
-                                    :class="{
-                                        'bg-emerald-50 dark:bg-emerald-900/20':  paso.status === 'approved',
-                                        'bg-red-50 dark:bg-red-900/20':          paso.status === 'rejected',
-                                        'bg-amber-50/60 dark:bg-amber-900/10':   paso.status === 'pending',
-                                        'border-r border-slate-200 dark:border-slate-700': index < (solicitudSeleccionada?.pasosAprobacion?.length || 1) - 1
-                                    }">
-                                    <div class="flex flex-col items-center gap-1.5">
-                                        <span class="text-xl"
-                                            :class="{
-                                                'text-emerald-500': paso.status === 'approved',
-                                                'text-red-500':     paso.status === 'rejected',
-                                                'text-amber-400':   paso.status === 'pending'
-                                            }">
-                                            <template x-if="paso.status === 'approved'"><i class="fas fa-check-circle"></i></template>
-                                            <template x-if="paso.status === 'rejected'"><i class="fas fa-times-circle"></i></template>
-                                            <template x-if="paso.status === 'pending'"><i class="far fa-clock"></i></template>
+                        {{-- Flujo de aprobación: timeline vertical (etapa + quién decidió + comentario en un solo lugar) --}}
+                        <section class="sdm-card">
+                            <h4 class="sdm-label">Flujo de aprobación</h4>
+                            <ol class="sdm-flujo">
+                                <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="'paso-'+index">
+                                    <li class="sdm-paso" :class="'sdm-paso--' + paso.status">
+                                        <span class="sdm-paso__dot" aria-hidden="true">
+                                            <i class="fas" :class="{ 'fa-check': paso.status === 'approved', 'fa-times': paso.status === 'rejected', 'fa-clock': paso.status === 'pending' }"></i>
                                         </span>
-                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-tight" x-text="paso.stageLabel"></span>
-                                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                                            :class="{
-                                                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300': paso.status === 'approved',
-                                                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300':                 paso.status === 'rejected',
-                                                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300':         paso.status === 'pending'
-                                            }"
-                                            x-text="paso.statusLabel"></span>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-
-                        {{-- PARTE 2: Detalle de quién decidió / comentarios --}}
-                        <div class="space-y-2">
-                            <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="'det-'+index">
-                                <div x-show="paso.approverNombre || paso.decidedByNombre || paso.decidedAt || paso.comment"
-                                    class="flex items-start gap-3 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                    <div class="mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px]"
-                                        :class="{
-                                            'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300': paso.status === 'approved',
-                                            'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300':                 paso.status === 'rejected',
-                                            'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300':         paso.status === 'pending'
-                                        }">
-                                        <i class="fas"
-                                            :class="{
-                                                'fa-check': paso.status === 'approved',
-                                                'fa-times': paso.status === 'rejected',
-                                                'fa-clock': paso.status === 'pending'
-                                            }"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0 space-y-2">
-                                        <p class="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 leading-snug" x-text="paso.stageLabel"></p>
-                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                                            <div x-show="paso.approverNombre" class="min-w-0">
-                                                <span class="block font-medium text-slate-500 dark:text-slate-400">Aprobador</span>
-                                                <span class="block truncate text-slate-700 dark:text-slate-200" :title="paso.approverNombre" x-text="paso.approverNombre"></span>
+                                        <div class="sdm-paso__cuerpo">
+                                            <div class="sdm-paso__linea">
+                                                <span class="sdm-paso__etapa" x-text="paso.stageLabel"></span>
+                                                <span class="sdm-paso__estado" x-text="paso.statusLabel"></span>
                                             </div>
-                                            <div x-show="paso.decidedByNombre" class="min-w-0">
-                                                <span class="block font-medium text-slate-500 dark:text-slate-400">Decidido por</span>
-                                                <span class="block truncate text-slate-700 dark:text-slate-200" :title="paso.decidedByNombre" x-text="paso.decidedByNombre"></span>
+                                            <div x-show="paso.approverNombre || paso.decidedByNombre || paso.decidedAt" class="sdm-paso__meta">
+                                                <span x-show="paso.approverNombre" :title="paso.approverNombre"><i class="fas fa-user" aria-hidden="true"></i> <span x-text="paso.approverNombre"></span></span>
+                                                <span x-show="paso.decidedByNombre && paso.decidedByNombre !== paso.approverNombre" :title="paso.decidedByNombre"><i class="fas fa-user-check" aria-hidden="true"></i> <span x-text="'Decidió: ' + paso.decidedByNombre"></span></span>
+                                                <span x-show="paso.decidedAt"><i class="far fa-clock" aria-hidden="true"></i> <span x-text="paso.decidedAt"></span></span>
                                             </div>
-                                            <div x-show="paso.decidedAt" class="min-w-0">
-                                                <span class="block font-medium text-slate-500 dark:text-slate-400">Fecha</span>
-                                                <span class="block text-slate-700 dark:text-slate-200" x-text="paso.decidedAt"></span>
-                                            </div>
+                                            <p x-show="paso.comment" class="sdm-paso__comentario"
+                                                :class="(paso.comment || '').toLowerCase().includes('ganador') && 'sdm-paso__comentario--ganador'"
+                                                x-text="paso.comment"></p>
                                         </div>
-                                        <p x-show="paso.comment"
-                                            class="inline-flex items-center gap-1.5 max-w-full rounded-md px-2.5 py-1 text-xs font-medium"
-                                            :class="(paso.comment || '').toLowerCase().includes('ganador')
-                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
-                                            x-text="paso.comment"></p>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                    {{-- ==================== /FLUJO DE APROBACIÓN ==================== --}}
+                                    </li>
+                                </template>
+                            </ol>
+                        </section>
 
                     {{-- ==================== COTIZACIONES: Propuesta → Producto → Cotizaciones ==================== --}}
-                    <div x-show="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0" x-data="{
+                    <section class="sdm-card" x-show="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0" x-data="{
                         propActiva: 0,
                         solicitudCargada: null,
-                        seleccion: {},
-                        clave(propuesta, producto) { return propuesta.numeroPropuesta + '-' + producto.numeroProducto; },
-                        idx(propuesta, producto) {
-                            const k = this.clave(propuesta, producto);
-                            return this.seleccion[k] === undefined ? producto.indiceGanador : this.seleccion[k];
-                        },
-                        elegir(propuesta, producto, i) { this.seleccion[this.clave(propuesta, producto)] = i; },
-                        mover(propuesta, producto, paso) {
-                            const total = producto.cotizaciones.length;
-                            this.elegir(propuesta, producto, (this.idx(propuesta, producto) + paso + total) % total);
+                        cotActiva: {},
+                        lista(propuesta) { return propuesta.productos.flatMap(prod => prod.cotizaciones.map(c => ({ cot: c, producto: prod }))); },
+                        sel(propuesta) { return this.cotActiva[propuesta.numeroPropuesta] || 0; },
+                        moverCot(propuesta, paso) {
+                            const total = this.lista(propuesta).length;
+                            this.cotActiva[propuesta.numeroPropuesta] = (this.sel(propuesta) + paso + total) % total;
                         },
                         irA(i) {
                             const total = this.getPropuestas().length;
@@ -299,7 +247,6 @@
                                     .sort((a, b) => a.numeroProducto - b.numeroProducto)
                                     .map(prod => {
                                         prod.cotizaciones.sort((a, b) => (a.esGanador === b.esGanador) ? 0 : (a.esGanador ? -1 : 1));
-                                        prod.indiceGanador = Math.max(0, prod.cotizaciones.findIndex(c => c.esGanador));
                                         return prod;
                                     });
 
@@ -308,12 +255,11 @@
                                     const g = prod.cotizaciones.find(c => c.esGanador);
                                     if (g && !p.ganador) p.ganador = g;
                                 });
-                                p.totalCotizaciones = p.productos.reduce((s, prod) => s + prod.cotizaciones.length, 0);
                                 return p;
                             }).sort((a, b) => a.numeroPropuesta - b.numeroPropuesta);
                         }
                     }"
-                    x-effect="if (solicitudSeleccionada?.SolicitudID !== solicitudCargada) { solicitudCargada = solicitudSeleccionada?.SolicitudID; propActiva = 0; seleccion = {}; }">
+                    x-effect="if (solicitudSeleccionada?.SolicitudID !== solicitudCargada) { solicitudCargada = solicitudSeleccionada?.SolicitudID; propActiva = 0; cotActiva = {}; }">
 
                         <div class="flex items-center justify-between gap-3 mb-2">
                             <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Cotizaciones</h4>
@@ -359,109 +305,121 @@
                                 x-transition:enter-end="opacity-100 translate-x-0"
                                 class="rounded-xl ring-1 ring-slate-200 dark:ring-slate-700/80 shadow-sm overflow-hidden bg-slate-50 dark:bg-slate-900/60">
 
-                                {{-- Productos de la propuesta --}}
-                                <div class="divide-y divide-slate-200 dark:divide-slate-700/80">
-                                    <template x-for="producto in propuesta.productos" :key="'prod-' + propuesta.numeroPropuesta + '-' + producto.numeroProducto">
-                                        <div class="px-3 py-2.5">
+                                <div class="px-3 py-2.5">
+                                    {{-- Producto de la cotización activa: cambia solo al pasar a otro producto --}}
+                                    <template x-for="(item, k) in lista(propuesta)" :key="'hd-' + item.cot.CotizacionID">
+                                        <div x-show="sel(propuesta) === k" class="flex items-center gap-2 min-w-0">
+                                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-indigo-600 text-white text-[10px] font-bold tabular-nums shrink-0" x-text="item.producto.numeroProducto"></span>
+                                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate" :title="item.producto.nombre" x-text="item.producto.nombre"></span>
+                                            <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 shrink-0 tabular-nums">
+                                                ×<span x-text="item.producto.cantidad"></span> <span x-text="item.producto.unidad"></span>
+                                            </span>
+                                        </div>
+                                    </template>
 
-                                            {{-- Producto --}}
-                                            <div class="flex items-center gap-2 min-w-0">
-                                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-indigo-600 text-white text-[10px] font-bold tabular-nums shrink-0" x-text="producto.numeroProducto"></span>
-                                                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate" :title="producto.nombre" x-text="producto.nombre"></span>
-                                                <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 shrink-0 tabular-nums">
-                                                    ×<span x-text="producto.cantidad"></span> <span x-text="producto.unidad"></span>
-                                                </span>
-                                            </div>
+                                    {{-- Pestañas: todas las cotizaciones de la propuesta, agrupadas por producto --}}
+                                    <div x-show="lista(propuesta).length > 1"
+                                        class="mt-2 flex flex-wrap items-center gap-1 p-1 rounded-lg bg-slate-200/60 dark:bg-slate-800/70"
+                                        role="tablist" aria-label="Cotizaciones"
+                                        @keydown.arrow-right.prevent="moverCot(propuesta, 1)"
+                                        @keydown.arrow-left.prevent="moverCot(propuesta, -1)">
+                                        <template x-for="(item, k) in lista(propuesta)" :key="'tab-' + item.cot.CotizacionID">
+                                            <button type="button" role="tab"
+                                                @click="cotActiva[propuesta.numeroPropuesta] = k"
+                                                :aria-selected="sel(propuesta) === k"
+                                                :tabindex="sel(propuesta) === k ? 0 : -1"
+                                                :title="item.producto.nombre + ' · ' + (item.cot.Proveedor || '')"
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all duration-200 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-200 dark:focus-visible:ring-offset-slate-800 focus-visible:ring-violet-500"
+                                                :class="[
+                                                    k > 0 && lista(propuesta)[k - 1].producto !== item.producto ? 'ml-2' : '',
+                                                    sel(propuesta) === k
+                                                        ? (item.cot.esGanador
+                                                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                                                            : 'bg-rose-600 text-white shadow-sm shadow-rose-600/30')
+                                                        : (item.cot.esGanador
+                                                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/70'
+                                                            : 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-900/70')
+                                                ]">
+                                                <span x-show="propuesta.productos.length > 1" class="text-[9px] font-bold opacity-70 tabular-nums" x-text="'P' + item.producto.numeroProducto"></span>
+                                                <i x-show="item.cot.esGanador" class="fas fa-trophy text-[9px]"
+                                                    :class="sel(propuesta) === k ? 'text-amber-300' : 'text-emerald-500'" aria-hidden="true"></i>
+                                                <span class="max-w-[10rem] truncate" x-text="item.cot.Proveedor || ('Opción ' + (k + 1))"></span>
+                                            </button>
+                                        </template>
+                                    </div>
 
-                                            {{-- Tabs de proveedores --}}
-                                            <div x-show="producto.cotizaciones.length > 1"
-                                                class="mt-2 flex flex-wrap gap-1 p-1 rounded-lg bg-slate-200/60 dark:bg-slate-800/70"
-                                                role="tablist"
-                                                :aria-label="'Cotizaciones de ' + producto.nombre"
-                                                @keydown.arrow-right.prevent="mover(propuesta, producto, 1)"
-                                                @keydown.arrow-left.prevent="mover(propuesta, producto, -1)">
-                                                <template x-for="(cot, i) in producto.cotizaciones" :key="'tab-' + cot.CotizacionID">
-                                                    <button type="button" role="tab"
-                                                        @click="elegir(propuesta, producto, i)"
-                                                        :aria-selected="idx(propuesta, producto) === i"
-                                                        :tabindex="idx(propuesta, producto) === i ? 0 : -1"
-                                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all duration-200 active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-200 dark:focus-visible:ring-offset-slate-800 focus-visible:ring-violet-500"
-                                                        :class="idx(propuesta, producto) === i
-                                                            ? (cot.esGanador
-                                                                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                                                                : 'bg-rose-600 text-white shadow-sm shadow-rose-600/30')
-                                                            : (cot.esGanador
-                                                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/70'
-                                                                : 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-900/70')">
-                                                        <i x-show="cot.esGanador" class="fas fa-trophy text-[9px]"
-                                                            :class="idx(propuesta, producto) === i ? 'text-amber-300' : 'text-emerald-500'" aria-hidden="true"></i>
-                                                        <span class="max-w-[10rem] truncate" x-text="cot.Proveedor || ('Opción ' + (i + 1))"></span>
-                                                    </button>
-                                                </template>
-                                            </div>
+                                    {{-- Card de la cotización activa --}}
+                                    <template x-for="(item, k) in lista(propuesta)" :key="'det-' + item.cot.CotizacionID">
+                                        <div x-show="sel(propuesta) === k" role="tabpanel"
+                                            x-transition:enter="transition ease-out duration-200"
+                                            x-transition:enter-start="opacity-0 translate-y-1"
+                                            x-transition:enter-end="opacity-100 translate-y-0"
+                                            class="mt-2 rounded-lg border-l-[3px] ring-1 overflow-hidden"
+                                            :class="item.cot.esGanador
+                                                ? 'border-l-emerald-500 ring-emerald-200 dark:ring-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/25'
+                                                : 'border-l-rose-400 ring-rose-200 dark:ring-rose-900/50 bg-rose-50/50 dark:bg-rose-950/15'">
 
-                                            {{-- Card de la cotización seleccionada --}}
-                                            <template x-for="(cot, i) in producto.cotizaciones" :key="'det-' + cot.CotizacionID">
-                                                <div x-show="idx(propuesta, producto) === i" role="tabpanel"
-                                                    x-transition:enter="transition ease-out duration-200"
-                                                    x-transition:enter-start="opacity-0 translate-y-1"
-                                                    x-transition:enter-end="opacity-100 translate-y-0"
-                                                    class="mt-2 rounded-lg border-l-[3px] ring-1 overflow-hidden"
-                                                    :class="cot.esGanador
-                                                        ? 'border-l-emerald-500 ring-emerald-200 dark:ring-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/25'
-                                                        : 'border-l-rose-400 ring-rose-200 dark:ring-rose-900/50 bg-rose-50/50 dark:bg-rose-950/15'">
-
-                                                    <div class="px-2.5 py-1.5 flex items-center justify-between gap-2">
-                                                        <div class="flex items-center gap-1.5 min-w-0">
-                                                            <span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0 text-white"
-                                                                :class="cot.esGanador ? 'bg-emerald-600' : 'bg-rose-500'">
-                                                                <i class="fas text-[8px]" :class="cot.esGanador ? 'fa-trophy' : 'fa-times'" aria-hidden="true"></i>
-                                                                <span x-text="cot.esGanador ? 'Ganador' : (cot.Estatus || 'No elegida')"></span>
-                                                            </span>
-                                                            <span class="text-xs font-bold truncate"
-                                                                :class="cot.esGanador ? 'text-emerald-800 dark:text-emerald-200' : 'text-rose-800 dark:text-rose-200'"
-                                                                x-text="cot.Proveedor || 'Proveedor'"></span>
-                                                        </div>
-                                                        <span class="text-sm font-extrabold tabular-nums shrink-0"
-                                                            :class="cot.esGanador ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'"
-                                                            x-text="formatMoney(totalCot(cot))"></span>
-                                                    </div>
-
-                                                    <div class="grid grid-cols-2 divide-x border-t"
-                                                        :class="cot.esGanador
-                                                            ? 'divide-emerald-200/70 border-emerald-200/70 dark:divide-emerald-800/50 dark:border-emerald-800/50'
-                                                            : 'divide-rose-200/70 border-rose-200/70 dark:divide-rose-900/50 dark:border-rose-900/50'">
-                                                        <div class="px-2.5 py-1">
-                                                            <p class="text-[9px] uppercase tracking-wide text-slate-500 dark:text-slate-400 leading-none">Unitario</p>
-                                                            <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 tabular-nums" x-text="formatMoney(cot.Precio)"></p>
-                                                        </div>
-                                                        <div class="px-2.5 py-1">
-                                                            <p class="text-[9px] uppercase tracking-wide text-slate-500 dark:text-slate-400 leading-none">Envío</p>
-                                                            <p class="text-[11px] font-semibold tabular-nums"
-                                                                :class="parseFloat(cot.CostoEnvio || 0) > 0 ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500'"
-                                                                x-text="formatMoney(cot.CostoEnvio)"></p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div x-show="cot.NumeroParte || cot.Descripcion"
-                                                        class="px-2.5 py-1 border-t flex items-center gap-2 min-w-0"
-                                                        :class="cot.esGanador
-                                                            ? 'border-emerald-200/70 dark:border-emerald-800/50'
-                                                            : 'border-rose-200/70 dark:border-rose-900/50'">
-                                                        <span x-show="cot.NumeroParte" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 shrink-0 truncate max-w-[8rem]" :title="cot.NumeroParte" x-text="cot.NumeroParte"></span>
-                                                        <span x-show="cot.Descripcion" class="text-[10px] text-slate-500 dark:text-slate-400 truncate" :title="cot.Descripcion" x-text="cot.Descripcion"></span>
-                                                    </div>
+                                            <div class="px-2.5 py-1.5 flex items-center justify-between gap-2">
+                                                <div class="flex items-center gap-1.5 min-w-0">
+                                                    <span class="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0 text-white"
+                                                        :class="item.cot.esGanador ? 'bg-emerald-600' : 'bg-rose-500'">
+                                                        <i class="fas text-[8px]" :class="item.cot.esGanador ? 'fa-trophy' : 'fa-times'" aria-hidden="true"></i>
+                                                        <span x-text="item.cot.esGanador ? 'Ganador' : (item.cot.Estatus || 'No elegida')"></span>
+                                                    </span>
+                                                    <span class="text-xs font-bold truncate"
+                                                        :class="item.cot.esGanador ? 'text-emerald-800 dark:text-emerald-200' : 'text-rose-800 dark:text-rose-200'"
+                                                        x-text="item.cot.Proveedor || 'Proveedor'"></span>
                                                 </div>
-                                            </template>
+                                                <span class="text-sm font-extrabold tabular-nums shrink-0"
+                                                    :class="item.cot.esGanador ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'"
+                                                    x-text="formatMoney(totalCot(item.cot))"></span>
+                                            </div>
 
+                                            <div class="grid grid-cols-2 divide-x border-t"
+                                                :class="item.cot.esGanador
+                                                    ? 'divide-emerald-200/70 border-emerald-200/70 dark:divide-emerald-800/50 dark:border-emerald-800/50'
+                                                    : 'divide-rose-200/70 border-rose-200/70 dark:divide-rose-900/50 dark:border-rose-900/50'">
+                                                <div class="px-2.5 py-1">
+                                                    <p class="text-[9px] uppercase tracking-wide text-slate-500 dark:text-slate-400 leading-none">Unitario</p>
+                                                    <p class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 tabular-nums" x-text="formatMoney(item.cot.Precio)"></p>
+                                                </div>
+                                                <div class="px-2.5 py-1">
+                                                    <p class="text-[9px] uppercase tracking-wide text-slate-500 dark:text-slate-400 leading-none">Envío</p>
+                                                    <p class="text-[11px] font-semibold tabular-nums"
+                                                        :class="parseFloat(item.cot.CostoEnvio || 0) > 0 ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500'"
+                                                        x-text="formatMoney(item.cot.CostoEnvio)"></p>
+                                                </div>
+                                            </div>
+
+                                            <div x-show="item.cot.NumeroParte || item.cot.Descripcion"
+                                                class="px-2.5 py-1 border-t flex items-center gap-2 min-w-0"
+                                                :class="item.cot.esGanador
+                                                    ? 'border-emerald-200/70 dark:border-emerald-800/50'
+                                                    : 'border-rose-200/70 dark:border-rose-900/50'">
+                                                <span x-show="item.cot.NumeroParte" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 shrink-0 truncate max-w-[8rem]" :title="item.cot.NumeroParte" x-text="item.cot.NumeroParte"></span>
+                                                <span x-show="item.cot.Descripcion" class="text-[10px] text-slate-500 dark:text-slate-400 truncate" :title="item.cot.Descripcion" x-text="item.cot.Descripcion"></span>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
                             </div>
                         </template>
-                    </div>
+                    </section>
                     {{-- ==================== /COTIZACIONES ==================== --}}
+                    </div>
                 </div>
             </div>
+
+            {{-- Footer fijo --}}
+            <footer class="sdm-foot">
+                <button type="button" @click="cerrarModal()" class="sdm-btn sdm-btn--ghost">Cerrar</button>
+                <a x-show="solicitudSeleccionada?.puedeCotizar"
+                    :href="'/solicitudes/' + (solicitudSeleccionada?.SolicitudID || '') + '/cotizar'"
+                    class="sdm-btn sdm-btn--primario">
+                    <i class="fas fa-calculator" aria-hidden="true"></i>
+                    <span x-text="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0 ? 'Editar cotizaciones' : 'Cotizar'"></span>
+                </a>
+            </footer>
+        </div>
     </div>
 </div>

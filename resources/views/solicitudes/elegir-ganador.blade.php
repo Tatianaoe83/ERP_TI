@@ -6,8 +6,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>{{ ($soloLectura ?? false) ? 'Ganadores confirmados' : 'Elegir Ganador' }} - Solicitud #{{ $solicitud->SolicitudID }}</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
@@ -18,373 +17,356 @@
                     colors: {
                         primary: "#0F766E",
                         "primary-hover": "#115E59",
-                        "secondary": "#3B82F6",
-                        "danger": "#EF4444",
-                        "background-light": "#F3F4F6",
-                        "background-dark": "#111827",
-                        "surface-light": "#FFFFFF",
-                        "surface-dark": "#1F2937",
-                        "border-light": "#E5E7EB",
-                        "border-dark": "#374151",
+                        ink: "#0a1628",
                     },
                     fontFamily: {
-                        display: ["Inter", "sans-serif"],
+                        display: ["Space Grotesk", "Inter", "sans-serif"],
                         body: ["Inter", "sans-serif"],
                     },
                 },
             },
         };
     </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .num { font-family: 'Space Grotesk', 'Inter', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+        /* Tarjeta de cotización: el JS solo cambia is-ganador / is-descartada */
+        .propuesta-card { transition: border-color .15s, box-shadow .15s, transform .15s, opacity .15s; }
+        .propuesta-card.is-elegible:hover { border-color: #0a1628; transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(10, 22, 40, .35); }
+        .dark .propuesta-card.is-elegible:hover { border-color: #e2e8f0; }
+        .propuesta-card.is-ganador { border-color: #059669; box-shadow: 0 0 0 3px rgba(5, 150, 105, .18); }
+        .propuesta-card.is-ganador .cot-check { opacity: 1; transform: scale(1); }
+        .propuesta-card.is-descartada { opacity: .5; }
+        .cot-check { opacity: 0; transform: scale(.6); transition: opacity .15s, transform .2s cubic-bezier(.2, .9, .3, 1.3); }
+        .propuesta-btn { transition: background-color .15s, color .15s; }
+        .propuesta-card.is-ganador .propuesta-btn { background: #059669; color: #fff; border-color: #059669; }
+
+        .prop-step.is-done .prop-step__dot { background: #10b981; border-color: #10b981; color: #0a1628; }
+        .prop-step.is-done .prop-step__dot i { opacity: 1; }
+        .prop-step.is-done .prop-step__estado { color: #6ee7b7; }
+        .prop-head.is-done .prop-head__estado { background: #d1fae5; color: #065f46; }
+        .dark .prop-head.is-done .prop-head__estado { background: rgba(16, 185, 129, .15); color: #6ee7b7; }
+        .prop-head.is-done .prop-head__icon { color: #059669; }
+        .prop-head.is-done .prop-head__ganador { color: inherit; }
+        .prop-head.is-done .prop-next:not(:disabled) { background: #0a1628; border-color: #0a1628; color: #fff; }
+        .dark .prop-head.is-done .prop-next:not(:disabled) { background: #f1f5f9; border-color: #f1f5f9; color: #0a1628; }
+        .prop-step.is-active { background: rgba(248, 250, 252, .08); }
+        .prop-step.is-active .prop-step__dot { border-color: #f8fafc; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .propuesta-card, .cot-check, .propuesta-btn { transition: none; }
+            .propuesta-card.is-elegible:hover { transform: none; }
+        }
+    </style>
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-900">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
     @php
     $soloLectura = $soloLectura ?? false;
     $seleccionadas = $seleccionadas ?? [];
     $propuestas = $productos ?? [];
     $totalPropuestas = count($propuestas);
     $totalProductos = 0;
-    $nombresProductos = [];
     $todosProveedores = collect();
     foreach ($propuestas as $prop) {
         $totalProductos += count($prop['productos'] ?? []);
         foreach ($prop['productos'] ?? [] as $prod) {
-            $nombresProductos[] = $prod['descripcion'] ?: 'Producto';
             foreach ($prod['cotizaciones'] ?? [] as $c) {
                 $todosProveedores->push($c->Proveedor);
             }
         }
     }
     $numProveedores = $todosProveedores->unique()->count();
-    $nombresStr = implode(', ', $nombresProductos);
+    $totalCot = fn($c) => (($c->Cantidad ?? 1) * ($c->Precio ?? 0)) + ($c->CostoEnvio ?? 0);
     @endphp
-    <div class="min-h-screen py-4 md:py-6 lg:py-8 px-3 md:px-4 lg:px-6">
-        <div class="max-w-7xl mx-auto">
-            <!-- Header -->
-            <div class="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-black rounded-2xl shadow-xl border border-slate-700 dark:border-slate-800 p-5 md:p-6 lg:p-8 mb-5 md:mb-6 overflow-hidden relative">
-                <div class="absolute top-0 right-0 w-48 h-48 bg-slate-700/10 rounded-full blur-3xl"></div>
-                <div class="absolute bottom-0 left-0 w-32 h-32 bg-slate-600/10 rounded-full blur-3xl"></div>
-                
-                <div class="relative z-10">
-                    <img src="{{ asset('img/LogoBlanco.png') }}" alt="Proser" class="h-10 w-auto mb-4">
-                    <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white flex items-center gap-3 mb-3">
-                        <i class="fas {{ $soloLectura ? 'fa-check-circle text-emerald-400' : 'fa-trophy text-amber-400' }} text-2xl md:text-3xl"></i>
-                        {{ $soloLectura ? 'Ganadores confirmados' : 'Elegir Ganador' }}
+
+    <div class="lg:flex lg:min-h-screen">
+
+        {{-- ═════ Marcador lateral ═════ --}}
+        <aside class="lg:w-[340px] lg:shrink-0 bg-ink text-slate-200">
+            <div class="lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto flex flex-col gap-6 p-5 md:p-6">
+                <div>
+                    <img src="{{ asset('img/LogoBlanco.png') }}" alt="Proser" class="h-8 w-auto mb-5">
+                    <p class="text-sm text-slate-400">Solicitud #{{ $solicitud->SolicitudID }}</p>
+                    <h1 class="font-display text-2xl md:text-[1.7rem] font-bold text-white leading-tight mt-1">
+                        {{ $soloLectura ? 'Ganadores confirmados' : 'Elige los ganadores' }}
                     </h1>
-                    <p class="text-sm md:text-base text-slate-300 mb-4">
-                        Solicitud #{{ $solicitud->SolicitudID }} • {{ count($propuestas) }} propuestas • {{ $totalProductos }} productos • {{ $numProveedores }} proveedores
+                    <p class="text-sm text-slate-400 mt-2">
+                        {{ $totalPropuestas }} {{ $totalPropuestas === 1 ? 'propuesta' : 'propuestas' }},
+                        {{ $totalProductos }} {{ $totalProductos === 1 ? 'producto' : 'productos' }} y
+                        {{ $numProveedores }} {{ $numProveedores === 1 ? 'proveedor' : 'proveedores' }}
                     </p>
-
-                    @if($soloLectura)
-                    <div class="bg-emerald-500/10 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/40">
-                        <p class="text-sm text-emerald-100 font-semibold flex items-center gap-2 mb-1">
-                            <i class="fas fa-lock"></i>
-                            Ya elegiste los ganadores de esta solicitud
-                        </p>
-                        <p class="text-xs text-emerald-200/90 leading-relaxed">
-                            Esta vista es solo de consulta: tu elección aparece marcada y no se puede modificar.
-                            La solicitud fue enviada a <strong>Administración</strong> para su aprobación final.
-                        </p>
-                    </div>
-                    @elseif($totalPropuestas > 0)
-                    <div class="bg-slate-700/30 backdrop-blur-sm rounded-xl p-4 border border-slate-600/50">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="flex-1 h-3 bg-slate-600/50 rounded-full overflow-hidden">
-                                <div id="progress-fill" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <span id="progress-text" class="text-sm font-bold text-white whitespace-nowrap">0/{{ $totalPropuestas }}</span>
-                        </div>
-                        <p class="text-xs text-slate-300">Selecciona un ganador por cada propuesta</p>
-                    </div>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Información de la Solicitud -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-5 md:p-6 mb-5 md:mb-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-                        <i class="fas fa-file-alt text-white text-base"></i>
-                    </div>
-                    <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">Información de la Solicitud</h2>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
-                        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Solicitante</label>
-                        <p class="text-sm text-slate-900 dark:text-slate-100 font-semibold">{{ $solicitud->empleadoid->NombreEmpleado ?? 'N/A' }}</p>
-                    </div>
-                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
-                        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Motivo</label>
-                        <p class="text-sm text-slate-900 dark:text-slate-100 font-semibold">{{ $solicitud->Motivo ?? 'N/A' }}</p>
-                    </div>
-                    <div class="md:col-span-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
-                        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 block">Descripción</label>
-                        <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ $solicitud->DescripcionMotivo ?? 'N/A' }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cotizaciones por producto -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-5 md:p-6 mb-5 md:mb-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
-                        <i class="fas fa-clipboard-check text-white text-base"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">Comparación de Propuestas</h2>
-                    </div>
                 </div>
 
-                @if(isset($error) && $error)
-                <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200">{{ $error }}</div>
-                @else
-                <div class="space-y-5 md:space-y-6" id="cotizaciones-container">
-                    @php $contadorProducto = 0; @endphp
-                    @foreach($propuestas as $propIndex => $propuesta)
-                    <!-- PROPUESTA -->
-                    <div class="propuesta-group bg-slate-100 dark:bg-slate-900/70 rounded-2xl p-4 md:p-5 border-2 border-slate-300 dark:border-slate-600" data-numero-propuesta="{{ $propuesta['numeroPropuesta'] }}">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center flex-shrink-0">
-                                <span class="text-white font-bold text-lg">{{ $propuesta['numeroPropuesta'] }}</span>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100">
-                                    Propuesta {{ $propuesta['numeroPropuesta'] }}
-                                </h3>
-                                <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                                    Elige una cotización de cualquier producto de esta propuesta
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- PRODUCTOS de la Propuesta -->
-                        <div class="space-y-4 md:space-y-5">
-                            @foreach($propuesta['productos'] as $prodIndex => $prod)
-                            @php
-                            $claveProducto = 'np_' . $propuesta['numeroPropuesta'] . '_prod_' . $prod['numeroProducto'];
-                            @endphp
-                            <div class="producto-group bg-slate-50 dark:bg-slate-800 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-700" data-clave-producto="{{ $claveProducto }}">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="flex-1 min-w-0">
-                                        <h4 class="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
-                                            {{ $prod['descripcion'] }}
-                                        </h4>
-                                    </div>
-                                </div>
-                                <div class="grid gap-3 md:gap-4 lg:grid-cols-2">
-                            @foreach($prod['cotizaciones'] as $cotizacion)
-
-                            @php
-                            $cantidad = $cotizacion->Cantidad ?? 1;
-                            $precioUnitario = $cotizacion->Precio ?? 0;
-                            $costoEnvio = $cotizacion->CostoEnvio ?? 0;
-                            $subtotal = $cantidad * $precioUnitario;
-                            $total = $subtotal + $costoEnvio;
-                            @endphp
-
-                            <div class="propuesta-card group relative bg-white dark:bg-slate-800 rounded-xl border-2 transition-all duration-200 border-slate-300 dark:border-slate-600 overflow-hidden {{ $soloLectura ? 'cursor-default select-none' : 'hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-lg cursor-pointer' }}"
-                                data-numero-propuesta="{{ $propuesta['numeroPropuesta'] }}"
-                                data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
-                                
-                                <div class="bg-slate-700 dark:bg-slate-700 px-4 py-3">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <i class="fas fa-building text-slate-300 text-sm shrink-0"></i>
-                                            <span class="text-sm font-bold text-white truncate" title="{{ $cotizacion->Proveedor }}">{{ $cotizacion->Proveedor }}</span>
-                                        </div>
-                                        @if(!empty($cotizacion->NumeroParte))
-                                        <span class="hidden sm:inline-flex max-w-[45%] truncate rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-mono text-slate-200" title="{{ $cotizacion->NumeroParte }}">
-                                            {{ $cotizacion->NumeroParte }}
-                                        </span>
-                                        @endif
-                                    </div>
-                                </div>
-
-                                <!-- Contenido -->
-                                <div class="p-4 space-y-3">
-                                    <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3">
-                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Descripción cotizada</p>
-                                        <p class="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-normal break-words">
-                                            {{ $cotizacion->Descripcion ?: ($prod['descripcion'] ?? 'Sin descripción') }}
-                                        </p>
-                                    </div>
-
-                                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-2">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-slate-600 dark:text-slate-400">Precio Unitario</span>
-                                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">${{ number_format($precioUnitario, 2, '.', ',') }}</span>
-                                        </div>
-                                        
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-slate-600 dark:text-slate-400">Cantidad</span>
-                                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">×{{ $cantidad }}</span>
-                                        </div>
-                                        
-                                        <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-                                            <span class="text-xs text-slate-600 dark:text-slate-400">Subtotal</span>
-                                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">${{ number_format($subtotal, 2, '.', ',') }}</span>
-                                        </div>
-                                        
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
-                                                <i class="fas fa-shipping-fast text-xs"></i>
-                                                Envío
-                                            </span>
-                                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">${{ number_format($costoEnvio, 2, '.', ',') }}</span>
-                                        </div>
-                                        
-                                        <div class="flex items-center justify-between pt-2 border-t-2 border-slate-300 dark:border-slate-600">
-                                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">TOTAL</span>
-                                            <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">${{ number_format($total, 2, '.', ',') }}</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Detalles Adicionales -->
-                                    @if(!empty($cotizacion->NumeroParte) || !empty($cotizacion->TiempoEntrega))
-                                    <div class="space-y-2">
-                                        @if(!empty($cotizacion->NumeroParte))
-                                        <div class="flex items-start gap-2">
-                                            <i class="fas fa-hashtag text-slate-400 text-xs mt-0.5 flex-shrink-0"></i>
-                                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed break-all">{{ $cotizacion->NumeroParte }}</p>
-                                        </div>
-                                        @endif
-                                        @if(!empty($cotizacion->TiempoEntrega))
-                                        <div class="flex items-start gap-2">
-                                            <i class="fas fa-clock text-slate-400 text-xs mt-0.5 flex-shrink-0"></i>
-                                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Entrega: {{ $cotizacion->TiempoEntrega }} días</p>
-                                        </div>
-                                        @endif
-                                    </div>
-                                    @endif
-
-                                    <!-- Botón -->
-                                    <div class="pt-2">
-                                        <div class="propuesta-btn pointer-events-none w-full px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all">
-                                            <i class="fas fa-trophy"></i>
-                                            <span class="btn-label">Elegir ganador</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
-                            <!-- FIN COTIZACIONES -->
-                        </div>
+                @if($totalPropuestas > 0)
+                <div>
+                    <div class="flex items-baseline justify-between mb-2">
+                        <span class="text-sm font-medium text-slate-300">{{ $soloLectura ? 'Elegidos' : 'Avance' }}</span>
+                        <span id="progress-text" class="num text-lg font-bold text-white">0/{{ $totalPropuestas }}</span>
                     </div>
-                    @endforeach
-                    <!-- FIN PRODUCTOS -->
-                </div>
-            </div>
-            @endforeach
-            <!-- FIN PROPUESTAS -->
+                    <div class="h-2 rounded-full bg-slate-50/10 overflow-hidden">
+                        <div id="progress-fill" class="h-full rounded-full bg-emerald-400 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <ol class="mt-4 space-y-1">
+                        @foreach($propuestas as $prop)
+                        <li>
+                            <button type="button" onclick="mostrarPropuesta({{ $prop['numeroPropuesta'] }})"
+                                class="prop-step w-full text-left flex items-center gap-3 rounded-lg px-2 py-2 -mx-2 hover:bg-slate-50/5 transition-colors" data-step-propuesta="{{ $prop['numeroPropuesta'] }}">
+                                <span class="prop-step__dot w-6 h-6 shrink-0 rounded-full border-2 border-slate-500 flex items-center justify-center text-[10px] transition-colors">
+                                    <i class="fas fa-check opacity-0"></i>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm text-slate-200 truncate">Propuesta {{ $prop['numeroPropuesta'] }}</span>
+                                    <span class="prop-step__ganador block text-xs text-slate-500 truncate"></span>
+                                </span>
+                                <span class="prop-step__estado text-xs text-slate-500">Pendiente</span>
+                            </button>
+                        </li>
+                        @endforeach
+                    </ol>
                 </div>
                 @endif
-            </div>
 
-            @if($soloLectura)
-            <!-- Solo lectura: sin acciones, solo salida -->
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 mb-4 p-4 md:p-5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700">
-                <p class="text-sm text-emerald-800 dark:text-emerald-200 leading-relaxed flex items-start gap-3">
-                    <i class="fas fa-check-circle text-emerald-500 dark:text-emerald-400 text-lg mt-0.5 shrink-0"></i>
-                    Tu elección quedó registrada. Ya no es posible cambiar los ganadores desde este enlace.
-                </p>
-                @auth
-                <a href="{{ route('home') }}" class="shrink-0 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-semibold transition-colors inline-flex items-center gap-2">
-                    <i class="fas fa-home"></i>
-                    Ir al Dashboard
-                </a>
-                @else
-                <button type="button" onclick="window.close()" class="shrink-0 px-5 py-2.5 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">
-                    Cerrar
-                </button>
-                @endauth
-            </div>
-            @elseif(!isset($error) || !$error)
-            <!-- Botones de acción -->
-            <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3 md:gap-4 mb-4">
-                <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" onclick="abrirModalCancelar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-rose-600 hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600 text-white text-sm md:text-base font-semibold rounded-lg transition-all">
-                        <i class="fas fa-ban mr-2"></i>
-                        Rechazar solicitud
-                    </button>
+                <div class="space-y-3 text-sm border-t border-white/10 pt-5">
+                    <div>
+                        <p class="text-xs text-slate-500">Solicitante</p>
+                        <p class="font-semibold text-white">{{ $solicitud->empleadoid->NombreEmpleado ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500">Motivo</p>
+                        <p class="font-semibold text-white">{{ $solicitud->Motivo ?? 'N/A' }}</p>
+                    </div>
+                    <details class="group">
+                        <summary class="flex items-center justify-between cursor-pointer list-none text-xs text-slate-500 hover:text-slate-300">
+                            Descripción <i class="fas fa-chevron-down text-[10px] transition-transform group-open:rotate-180"></i>
+                        </summary>
+                        <p class="mt-1.5 text-slate-300 whitespace-pre-wrap leading-relaxed">{{ $solicitud->DescripcionMotivo ?? 'N/A' }}</p>
+                    </details>
+                </div>
+
+                <div class="mt-auto space-y-3 border-t border-white/10 pt-5">
+                    @if($soloLectura)
+                    <div class="rounded-xl bg-emerald-400/10 border border-emerald-400/30 p-4">
+                        <p class="text-sm font-semibold text-emerald-200 flex items-center gap-2"><i class="fas fa-lock text-xs"></i> Elección registrada</p>
+                        <p class="text-xs text-emerald-100/80 mt-1 leading-relaxed">Es solo de consulta. La solicitud pasó a <strong>Administración</strong> para su aprobación final.</p>
+                    </div>
+                    @auth
+                    <a href="{{ route('home') }}" class="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-slate-50/10 hover:bg-slate-50/15 text-white text-sm font-semibold transition-colors">
+                        <i class="fas fa-home"></i> Ir al Dashboard
+                    </a>
+                    @else
+                    <button type="button" onclick="window.close()" class="w-full h-11 rounded-xl bg-slate-50/10 hover:bg-slate-50/15 text-white text-sm font-semibold transition-colors">Cerrar</button>
+                    @endauth
+                    @elseif(!isset($error) || !$error)
                     @if($totalPropuestas > 0)
-                    <button type="button" onclick="abrirModalRecotizar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 text-white text-sm md:text-base font-semibold rounded-lg transition-all">
-                        <i class="fas fa-redo-alt mr-2"></i>
-                        Solicitar re-cotización
+                    <p id="warning-box" class="flex items-start gap-2 text-xs text-amber-300 leading-relaxed">
+                        <i class="fas fa-circle-info mt-0.5"></i>
+                        Elige una cotización por cada propuesta para confirmar.
+                    </p>
+                    @endif
+                    <button type="button" id="btn-confirmar" disabled
+                        class="w-full h-12 rounded-xl text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2 bg-slate-50/10 text-slate-500 cursor-not-allowed">
+                        <i class="fas fa-check"></i> Confirmar ganadores
                     </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        @if($totalPropuestas > 0)
+                        <button type="button" onclick="abrirModalRecotizar()" class="h-10 rounded-xl border border-white/15 hover:bg-slate-50/5 text-slate-200 text-xs font-semibold transition-colors inline-flex items-center justify-center gap-1.5">
+                            <i class="fas fa-redo-alt"></i> Re-cotizar
+                        </button>
+                        @endif
+                        <button type="button" onclick="abrirModalCancelar()" class="h-10 rounded-xl border border-rose-400/30 hover:bg-rose-500/10 text-rose-300 text-xs font-semibold transition-colors inline-flex items-center justify-center gap-1.5 {{ $totalPropuestas > 0 ? '' : 'col-span-2' }}">
+                            <i class="fas fa-ban"></i> Rechazar
+                        </button>
+                    </div>
                     @endif
                 </div>
-                <button type="button" id="btn-confirmar" disabled
-                    class="px-5 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed">
-                    <i class="fas fa-check mr-2"></i> Confirmar Ganadores
-                </button>
             </div>
+        </aside>
 
-            <!-- Modal Solicitar re-cotización -->
-            <div id="modal-recotizar" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-recotizar-title" role="dialog">
-                <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="cerrarModalRecotizar()"></div>
-                    <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-600">
-                        <h3 id="modal-recotizar-title" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
-                            <i class="fas fa-redo-alt text-amber-500"></i>
-                            Solicitar re-cotización
-                        </h3>
-                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Indica qué propuesta(s) están mal o deben recotizarse y el motivo. TI verá esta información en el listado.</p>
-                        <div class="mb-4">
-                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Propuestas a recotizar</label>
-                            <div id="recotizar-checkboxes" class="space-y-2">
-                                @foreach($propuestas as $prop)
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="recotizar_prop" value="{{ $prop['numeroPropuesta'] }}" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
-                                    <span class="text-sm text-slate-800 dark:text-slate-200">Propuesta {{ $prop['numeroPropuesta'] }}</span>
-                                </label>
+        {{-- ═════ Comparación ═════ --}}
+        <main class="flex-1 min-w-0 p-4 md:p-6 lg:p-8">
+            @if(isset($error) && $error)
+            <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200">{{ $error }}</div>
+            @else
+            {{-- Una propuesta a la vez; cada producto es un carril con sus cotizaciones en fila.
+                 Un solo ganador por propuesta: elegir en cualquier carril reemplaza la elección anterior. --}}
+            <div class="max-w-[1400px]" id="cotizaciones-container">
+                @foreach($propuestas as $propIndex => $propuesta)
+                @php $np = $propuesta['numeroPropuesta']; @endphp
+                <section id="propuesta-{{ $np }}" class="propuesta-group {{ $loop->first ? '' : 'hidden' }}" data-numero-propuesta="{{ $np }}" aria-labelledby="titulo-propuesta-{{ $np }}">
+                    <header class="prop-head flex flex-wrap items-end gap-x-6 gap-y-3 mb-5" data-head-propuesta="{{ $np }}">
+                        <div class="flex-1 min-w-[14rem]">
+                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Propuesta {{ $loop->iteration }} de {{ $totalPropuestas }}</p>
+                            <h2 id="titulo-propuesta-{{ $np }}" class="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-white leading-tight">Propuesta {{ $np }}</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                {{ $soloLectura ? 'Cotización elegida para esta propuesta.' : 'Elige 1 cotización entre todos sus productos.' }}
+                            </p>
+                        </div>
+
+                        <div class="prop-head__estado flex items-center gap-3 rounded-xl px-4 py-2.5 bg-slate-200/70 dark:bg-slate-800 min-w-[14rem]">
+                            <i class="fas fa-trophy text-slate-400 prop-head__icon"></i>
+                            <div class="min-w-0">
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-none">Ganador</p>
+                                <p class="prop-head__ganador text-sm font-semibold text-slate-700 dark:text-slate-200 truncate mt-1">Sin elegir</p>
+                            </div>
+                        </div>
+
+                        @if($totalPropuestas > 1)
+                        <div class="flex gap-2">
+                            <button type="button" onclick="moverPropuesta(-1)" {{ $loop->first ? 'disabled' : '' }}
+                                class="h-11 w-11 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors" aria-label="Propuesta anterior">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button" onclick="moverPropuesta(1)" {{ $loop->last ? 'disabled' : '' }}
+                                class="prop-next h-11 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-200/70 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        @endif
+                    </header>
+
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 overflow-hidden divide-y divide-slate-200 dark:divide-slate-800">
+                        @foreach($propuesta['productos'] as $prodIndex => $prod)
+                        @php
+                        $claveProducto = 'np_' . $np . '_prod_' . $prod['numeroProducto'];
+                        $cots = collect($prod['cotizaciones'] ?? []);
+                        $minTotal = $cots->count() > 1 ? $cots->min($totalCot) : null;
+                        $desde = $cots->count() ? $cots->min($totalCot) : 0;
+                        @endphp
+                        <div class="producto-group lg:grid lg:grid-cols-[230px_minmax(0,1fr)]" data-clave-producto="{{ $claveProducto }}">
+                            {{-- Carril: producto --}}
+                            <div class="px-5 py-4 bg-slate-100/70 dark:bg-slate-950/40 lg:border-r border-slate-200 dark:border-slate-800">
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">Producto {{ $loop->iteration }}</p>
+                                <h3 class="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 break-words">{{ $prod['descripcion'] }}</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    {{ $cots->count() }} {{ $cots->count() === 1 ? 'cotización' : 'cotizaciones' }}
+                                    @if($cots->count()) · desde <span class="num font-semibold text-slate-700 dark:text-slate-200">${{ number_format($desde, 2, '.', ',') }}</span> @endif
+                                </p>
+                            </div>
+
+                            {{-- Carril: cotizaciones en fila --}}
+                            <div class="flex gap-3 overflow-x-auto snap-x p-4">
+                                @foreach($prod['cotizaciones'] as $cotizacion)
+                                @php
+                                $cantidad = $cotizacion->Cantidad ?? 1;
+                                $precioUnitario = $cotizacion->Precio ?? 0;
+                                $costoEnvio = $cotizacion->CostoEnvio ?? 0;
+                                $total = $totalCot($cotizacion);
+                                $esMasBajo = $minTotal !== null && $total == $minTotal;
+                                @endphp
+                                <div class="propuesta-card relative snap-start shrink-0 w-[250px] flex flex-col rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3.5 {{ $soloLectura ? 'cursor-default select-none' : 'is-elegible cursor-pointer' }}"
+                                    data-numero-propuesta="{{ $np }}"
+                                    data-cotizacion-id="{{ $cotizacion->CotizacionID }}"
+                                    data-resumen="{{ $cotizacion->Proveedor }} · ${{ number_format($total, 2, '.', ',') }}"
+                                    @unless($soloLectura) role="button" tabindex="0" aria-label="Elegir {{ $cotizacion->Proveedor }}, {{ $prod['descripcion'] }}, para la propuesta {{ $np }}" @endunless>
+
+                                    <span class="cot-check absolute -top-2 -right-2 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shadow-md" aria-hidden="true">
+                                        <i class="fas fa-trophy"></i>
+                                    </span>
+
+                                    <div class="flex items-start justify-between gap-2">
+                                        <p class="text-sm font-semibold text-slate-900 dark:text-white truncate" title="{{ $cotizacion->Proveedor }}">{{ $cotizacion->Proveedor }}</p>
+                                        @if($esMasBajo)
+                                        <span class="shrink-0 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-full">Más bajo</span>
+                                        @endif
+                                    </div>
+
+                                    <p class="num text-2xl font-bold text-slate-900 dark:text-white mt-1.5 leading-none">${{ number_format($total, 2, '.', ',') }}</p>
+                                    <p class="num text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                                        ${{ number_format($precioUnitario, 2, '.', ',') }} × {{ $cantidad }}
+                                        @if($costoEnvio > 0) + ${{ number_format($costoEnvio, 2, '.', ',') }} envío @else · sin envío @endif
+                                    </p>
+
+                                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-snug mt-2.5 line-clamp-2 break-words" title="{{ $cotizacion->Descripcion ?: ($prod['descripcion'] ?? '') }}">
+                                        {{ $cotizacion->Descripcion ?: ($prod['descripcion'] ?? 'Sin descripción') }}
+                                    </p>
+
+                                    <div class="mt-auto pt-3 flex items-center justify-between gap-2">
+                                        <span class="min-w-0 flex gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                            @if(!empty($cotizacion->NumeroParte))
+                                            <span class="truncate" title="{{ $cotizacion->NumeroParte }}"><i class="fas fa-hashtag mr-0.5"></i>{{ $cotizacion->NumeroParte }}</span>
+                                            @endif
+                                            @if(!empty($cotizacion->TiempoEntrega))
+                                            <span class="shrink-0"><i class="fas fa-clock mr-0.5"></i>{{ $cotizacion->TiempoEntrega }} d</span>
+                                            @endif
+                                        </span>
+                                        <span class="propuesta-btn pointer-events-none shrink-0 h-8 px-3 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold inline-flex items-center">
+                                            <span class="btn-label">Elegir</span>
+                                        </span>
+                                    </div>
+                                </div>
                                 @endforeach
                             </div>
                         </div>
-                        <div class="mb-5">
-                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Motivo (obligatorio)</label>
-                            <textarea id="recotizar-motivo" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm" placeholder="Ej.: Precio muy alto en propuesta 2, solicito nueva cotización..."></textarea>
-                            <p id="recotizar-motivo-error" class="text-red-500 text-xs mt-1 hidden">Escribe el motivo de la re-cotización.</p>
-                        </div>
-                        <div class="flex justify-end gap-2">
-                            <button type="button" onclick="cerrarModalRecotizar()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500">Cerrar</button>
-                            <button type="button" onclick="enviarSolicitudRecotizacion()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">Enviar</button>
-                        </div>
+                        @endforeach
                     </div>
-                </div>
-            </div>
-            <!-- Modal Rechazar solicitud -->
-            <div id="modal-cancelar" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-cancelar-title" role="dialog">
-                <div class="flex min-h-full items-center justify-center p-4">
-                    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="cerrarModalCancelar()"></div>
-                    <div class="relative bg-slate-50 dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-600">
-                        <h3 id="modal-cancelar-title" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
-                            <i class="fas fa-ban text-rose-600"></i>
-                            Rechazar solicitud #{{ $solicitud->SolicitudID }}
-                        </h3>
-                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">La solicitud se detiene por completo y ya no se podrá elegir ganador. Se avisará por correo a quienes ya la aprobaron.</p>
-                        <div class="mb-5">
-                            <label for="cancelar-motivo" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Motivo de rechazo (obligatorio)</label>
-                            <textarea id="cancelar-motivo" rows="4" maxlength="1000" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm" placeholder="Describe por qué se rechaza esta solicitud..."></textarea>
-                            <p id="cancelar-motivo-error" class="text-red-500 text-xs mt-1 hidden"></p>
-                        </div>
-                        <div class="flex justify-end gap-2">
-                            <button type="button" onclick="cerrarModalCancelar()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500">Cerrar</button>
-                            <button type="button" id="btn-confirmar-cancelacion" onclick="enviarCancelacion()" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold">
-                                <i class="fas fa-ban mr-1"></i> Confirmar rechazo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @if($totalPropuestas > 0)
-            <div id="warning-box" class="flex items-start gap-3 p-4 md:p-5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700">
-                <i class="fas fa-exclamation-triangle text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"></i>
-                <p class="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">Debes seleccionar una cotización ganadora por cada propuesta antes de confirmar.</p>
+                </section>
+                @endforeach
             </div>
             @endif
-            @endif
+        </main>
+    </div>
+
+    @if(!$soloLectura && (!isset($error) || !$error))
+    <!-- Modal Solicitar re-cotización -->
+    <div id="modal-recotizar" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-recotizar-title" role="dialog">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="cerrarModalRecotizar()"></div>
+            <div class="relative bg-gray-50 dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-600">
+                <h3 id="modal-recotizar-title" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                    <i class="fas fa-redo-alt text-amber-500"></i>
+                    Solicitar re-cotización
+                </h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Indica qué propuesta(s) están mal o deben recotizarse y el motivo. TI verá esta información en el listado.</p>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Propuestas a recotizar</label>
+                    <div id="recotizar-checkboxes" class="space-y-2">
+                        @foreach($propuestas as $prop)
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="recotizar_prop" value="{{ $prop['numeroPropuesta'] }}" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+                            <span class="text-sm text-slate-800 dark:text-slate-200">Propuesta {{ $prop['numeroPropuesta'] }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Motivo (obligatorio)</label>
+                    <textarea id="recotizar-motivo" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm" placeholder="Ej.: Precio muy alto en propuesta 2, solicito nueva cotización..."></textarea>
+                    <p id="recotizar-motivo-error" class="text-red-500 text-xs mt-1 hidden">Escribe el motivo de la re-cotización.</p>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="cerrarModalRecotizar()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500">Cerrar</button>
+                    <button type="button" onclick="enviarSolicitudRecotizacion()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">Enviar</button>
+                </div>
+            </div>
         </div>
     </div>
+    <!-- Modal Rechazar solicitud -->
+    <div id="modal-cancelar" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-cancelar-title" role="dialog">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="cerrarModalCancelar()"></div>
+            <div class="relative bg-slate-50 dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-600">
+                <h3 id="modal-cancelar-title" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                    <i class="fas fa-ban text-rose-600"></i>
+                    Rechazar solicitud #{{ $solicitud->SolicitudID }}
+                </h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">La solicitud se detiene por completo y ya no se podrá elegir ganador. Se avisará por correo a quienes ya la aprobaron.</p>
+                <div class="mb-5">
+                    <label for="cancelar-motivo" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Motivo de rechazo (obligatorio)</label>
+                    <textarea id="cancelar-motivo" rows="4" maxlength="1000" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm" placeholder="Describe por qué se rechaza esta solicitud..."></textarea>
+                    <p id="cancelar-motivo-error" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="cerrarModalCancelar()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500">Cerrar</button>
+                    <button type="button" id="btn-confirmar-cancelacion" onclick="enviarCancelacion()" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold">
+                        <i class="fas fa-ban mr-1"></i> Confirmar rechazo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <script>
         window.ELECTOR_TOKEN = @json($token ?? '');
@@ -536,36 +518,34 @@
                 const numPropuesta = parseInt(card.dataset.numeroPropuesta, 10);
                 const cid = parseInt(card.dataset.cotizacionId, 10);
                 const esGanador = selecciones[numPropuesta] === cid;
-                const btn = card.querySelector('.propuesta-btn');
                 const label = card.querySelector('.btn-label');
-                if (esGanador) {
-                    card.classList.remove('border-slate-300', 'dark:border-slate-600', 'hover:border-amber-400', 'dark:hover:border-amber-500');
-                    card.classList.add('border-emerald-500', 'dark:border-emerald-400', 'bg-emerald-50', 'dark:bg-emerald-900/20', 'shadow-lg');
-                    if (btn) {
-                        btn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
-                        btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
-                        if (label) label.textContent = '✓ Ganador';
-                    }
-                } else {
-                    card.classList.remove('border-emerald-500', 'dark:border-emerald-400', 'bg-emerald-50', 'dark:bg-emerald-900/20', 'shadow-lg');
-                    card.classList.add('border-slate-300', 'dark:border-slate-600');
-                    if (!window.ELECTOR_READONLY) {
-                        card.classList.add('hover:border-amber-400', 'dark:hover:border-amber-500');
-                    } else {
-                        card.classList.add('opacity-60');
-                    }
-                    if (btn) {
-                        btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-                        if (window.ELECTOR_READONLY) {
-                            btn.classList.remove('bg-amber-500', 'hover:bg-amber-600', 'text-white');
-                            btn.classList.add('bg-slate-200', 'dark:bg-slate-700', 'text-slate-500', 'dark:text-slate-400');
-                            if (label) label.textContent = 'No seleccionada';
-                        } else {
-                            btn.classList.add('bg-amber-500', 'hover:bg-amber-600');
-                            if (label) label.textContent = 'Elegir ganador';
-                        }
-                    }
-                }
+                card.classList.toggle('is-ganador', esGanador);
+                card.classList.toggle('is-descartada', !esGanador && window.ELECTOR_READONLY);
+                card.setAttribute('aria-pressed', esGanador ? 'true' : 'false');
+                if (label) label.textContent = esGanador ? 'Ganador' : (window.ELECTOR_READONLY ? 'No seleccionada' : 'Elegir');
+            });
+
+            // Estado por propuesta: lista del marcador y encabezado de cada propuesta
+            // Resumen del ganador por propuesta: marcador lateral + encabezado de la propuesta
+            function resumenGanador(num) {
+                const card = document.querySelector('.propuesta-card[data-numero-propuesta="' + num + '"][data-cotizacion-id="' + selecciones[num] + '"]');
+                return card ? card.dataset.resumen : '';
+            }
+            document.querySelectorAll('[data-step-propuesta]').forEach(function(el) {
+                const num = parseInt(el.dataset.stepPropuesta, 10);
+                const hecho = selecciones[num] !== undefined;
+                el.classList.toggle('is-done', hecho);
+                const estado = el.querySelector('.prop-step__estado');
+                if (estado) estado.textContent = hecho ? 'Elegida' : 'Pendiente';
+                const ganador = el.querySelector('.prop-step__ganador');
+                if (ganador) ganador.textContent = hecho ? resumenGanador(num) : '';
+            });
+            document.querySelectorAll('[data-head-propuesta]').forEach(function(el) {
+                const num = parseInt(el.dataset.headPropuesta, 10);
+                const hecho = selecciones[num] !== undefined;
+                el.classList.toggle('is-done', hecho);
+                const ganador = el.querySelector('.prop-head__ganador');
+                if (ganador) ganador.textContent = hecho ? resumenGanador(num) : 'Sin elegir';
             });
 
             const todos = total > 0 && n === total;
@@ -573,24 +553,39 @@
             const warning = document.getElementById('warning-box');
             if (btnConfirm) {
                 btnConfirm.disabled = !todos;
-                btnConfirm.classList.toggle('bg-slate-200', !todos);
-                btnConfirm.classList.toggle('dark:bg-slate-700', !todos);
-                btnConfirm.classList.toggle('text-slate-400', !todos);
-                btnConfirm.classList.toggle('dark:text-slate-500', !todos);
+                btnConfirm.classList.toggle('bg-slate-50/10', !todos);
+                btnConfirm.classList.toggle('text-slate-500', !todos);
                 btnConfirm.classList.toggle('cursor-not-allowed', !todos);
-                btnConfirm.classList.toggle('bg-emerald-600', todos);
-                btnConfirm.classList.toggle('dark:bg-emerald-600', todos);
-                btnConfirm.classList.toggle('hover:bg-emerald-700', todos);
-                btnConfirm.classList.toggle('dark:hover:bg-emerald-500', todos);
-                btnConfirm.classList.toggle('text-white', todos);
+                btnConfirm.classList.toggle('bg-emerald-500', todos);
+                btnConfirm.classList.toggle('hover:bg-emerald-400', todos);
+                btnConfirm.classList.toggle('text-ink', todos);
                 btnConfirm.classList.toggle('cursor-pointer', todos);
-                if (todos) {
-                    btnConfirm.onclick = confirmarGanadores;
-                } else {
-                    btnConfirm.onclick = null;
-                }
+                btnConfirm.onclick = todos ? confirmarGanadores : null;
             }
             if (warning) warning.style.display = todos ? 'none' : 'flex';
+        }
+
+        // Navegación: una propuesta visible a la vez
+        const ordenPropuestas = Array.from(document.querySelectorAll('.propuesta-group')).map(function(s) { return parseInt(s.dataset.numeroPropuesta, 10); });
+        let propuestaActual = ordenPropuestas[0];
+
+        function mostrarPropuesta(num, sinScroll) {
+            propuestaActual = num;
+            document.querySelectorAll('.propuesta-group').forEach(function(s) {
+                s.classList.toggle('hidden', parseInt(s.dataset.numeroPropuesta, 10) !== num);
+            });
+            document.querySelectorAll('[data-step-propuesta]').forEach(function(el) {
+                const activa = parseInt(el.dataset.stepPropuesta, 10) === num;
+                el.classList.toggle('is-active', activa);
+                el.setAttribute('aria-current', activa ? 'step' : 'false');
+            });
+            const main = document.querySelector('main');
+            if (main && !sinScroll) main.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+
+        function moverPropuesta(delta) {
+            const i = ordenPropuestas.indexOf(propuestaActual) + delta;
+            if (i >= 0 && i < ordenPropuestas.length) mostrarPropuesta(ordenPropuestas[i]);
         }
 
         function elegirGanador(numeroPropuesta, cotizacionId) {
@@ -687,11 +682,14 @@
                     const cid = parseInt(this.dataset.cotizacionId, 10);
                     elegirGanador(numPropuesta, cid);
                 });
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); }
+                });
             });
         }
 
         actualizarUI();
+        if (ordenPropuestas.length) mostrarPropuesta(ordenPropuestas[0], true);
     </script>
 </body>
 
-</html>

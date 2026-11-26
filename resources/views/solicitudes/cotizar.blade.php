@@ -3,569 +3,475 @@
 @section('content')
 <style>
     [x-cloak] { display: none !important; }
-    .cotizar-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.85rem;
-        padding: 1rem 1.05rem 0.9rem;
-        box-shadow: 0 1px 2px rgba(16, 29, 73, 0.06);
+
+    /* ── Cotizar: tokens ── */
+    .cz {
+        --cz-surface: #fff;
+        --cz-sunken: #f4f7fb;
+        --cz-line: #e2e8f0;
+        --cz-ink: #0a1628;
+        --cz-muted: #5b6b82;
+        --cz-faint: #94a3b8;
+        --cz-primary: #0052cc;
+        --cz-primary-soft: rgba(0, 82, 204, 0.08);
+        --cz-best: #00875a;
+        --cz-best-soft: rgba(0, 135, 90, 0.08);
+        --cz-danger: #de350b;
     }
-    .cotizar-card h2 {
-        margin: 0;
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--index-navy, #101d49);
+    .dark .cz {
+        --cz-surface: #121d30;
+        --cz-sunken: #0c1526;
+        --cz-line: rgba(255, 255, 255, 0.09);
+        --cz-ink: #f1f5f9;
+        --cz-muted: #a3b3c9;
+        --cz-faint: #64748b;
+        --cz-primary: #4c9aff;
+        --cz-primary-soft: rgba(76, 154, 255, 0.12);
+        --cz-best: #57d9a3;
+        --cz-best-soft: rgba(87, 217, 163, 0.1);
+        --cz-danger: #ff8f73;
     }
-    .cotizar-card__box {
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.7rem;
-        padding: 0.75rem;
-        color: #334155;
-        font-size: 0.75rem;
-        line-height: 1.5;
+    .cz-num { font-family: var(--erp-font-display, "Space Grotesk", sans-serif); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+    .cz-layout { display: grid; gap: 1.25rem; align-items: start; }
+    @media (min-width: 1280px) {
+        .cz-layout { grid-template-columns: 300px minmax(0, 1fr); }
+        .cz-aside { position: sticky; top: 1rem; }
     }
-    .cotizar-card__box p { margin: 0; color: inherit; }
-    .cotizar-card__label {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        margin: 0 0 0.45rem;
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #64748b;
+
+    /* ── Panel lateral ── */
+    .cz-aside { display: flex; flex-direction: column; gap: 1rem; }
+    .cz-panel { background: var(--cz-surface); border: 1px solid var(--cz-line); border-radius: 1rem; }
+    .cz-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding: 1rem 1.1rem .75rem; }
+    .cz-panel__title { margin: 0; font-size: .95rem; font-weight: 700; color: var(--cz-ink); }
+    .cz-panel__meta { font-size: .78rem; color: var(--cz-muted); }
+
+    .cz-total { margin: 0 1.1rem; padding: .9rem 1rem; border-radius: .8rem; background: var(--cz-sunken); }
+    .cz-total__label { margin: 0; font-size: .78rem; color: var(--cz-muted); }
+    .cz-total__value { margin: .1rem 0 0; font-size: 1.6rem; font-weight: 700; line-height: 1.15; color: var(--cz-ink); }
+    .cz-total__sub { margin: .25rem 0 0; font-size: .75rem; color: var(--cz-muted); }
+
+    .cz-sum { list-style: none; margin: 0; padding: .5rem 1.1rem 1rem; }
+    .cz-sum__prop { padding: .7rem 0; border-bottom: 1px dashed var(--cz-line); }
+    .cz-sum__prop:last-child { border-bottom: 0; padding-bottom: 0; }
+    .cz-sum__row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .cz-sum__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; font-weight: 600; color: var(--cz-ink); }
+    .cz-sum__tag { flex-shrink: 0; font-size: .7rem; font-weight: 600; color: var(--cz-primary); background: var(--cz-primary-soft); padding: .1rem .5rem; border-radius: 99px; }
+    .cz-sum__prod { display: flex; justify-content: space-between; gap: .5rem; margin-top: .35rem; font-size: .78rem; color: var(--cz-muted); }
+    .cz-sum__prod span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cz-sum__best { display: flex; justify-content: space-between; gap: .5rem; margin-top: .15rem; font-size: .75rem; color: var(--cz-best); }
+    .cz-sum__best span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cz-sum__hint { margin: .3rem 0 0; font-size: .72rem; color: var(--cz-faint); }
+
+    .cz-info { padding: 0 1.1rem 1.1rem; display: flex; flex-direction: column; gap: .85rem; }
+    .cz-info__label { margin: 0 0 .25rem; font-size: .75rem; font-weight: 600; color: var(--cz-muted); }
+    .cz-info__text { margin: 0; font-size: .82rem; line-height: 1.55; color: var(--cz-ink); white-space: pre-wrap; }
+
+    .cz-help { border-top: 1px solid var(--cz-line); }
+    .cz-help summary { display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.1rem; cursor: pointer; list-style: none; font-size: .82rem; font-weight: 600; color: var(--cz-muted); }
+    .cz-help summary::-webkit-details-marker { display: none; }
+    .cz-help summary i { transition: transform .2s; }
+    .cz-help[open] summary i { transform: rotate(180deg); }
+    .cz-steps { margin: 0; padding: 0 1.1rem 1rem 2.4rem; font-size: .8rem; line-height: 1.7; color: var(--cz-muted); }
+
+    /* ── Avisos ── */
+    .cz-note { display: flex; gap: .85rem; padding: .9rem 1rem; border-radius: .9rem; border: 1px solid; }
+    .cz-note__icon { flex-shrink: 0; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; border-radius: .6rem; font-size: .85rem; }
+    .cz-note__title { margin: 0; font-size: .875rem; font-weight: 700; }
+    .cz-note__text { margin: .15rem 0 0; font-size: .82rem; line-height: 1.5; }
+    .cz-note--warn { background: #fffae6; border-color: #ffe380; color: #7a4d00; }
+    .cz-note--warn .cz-note__icon { background: #ffab00; color: #172b4d; }
+    .cz-note--info { background: #deebff; border-color: #b3d4ff; color: #0747a6; }
+    .cz-note--info .cz-note__icon { background: #0052cc; color: #fff; }
+    .dark .cz-note--warn { background: rgba(255, 171, 0, 0.1); border-color: rgba(255, 171, 0, 0.3); color: #ffd666; }
+    .dark .cz-note--info { background: rgba(76, 154, 255, 0.1); border-color: rgba(76, 154, 255, 0.3); color: #a8ccff; }
+
+    /* ── Propuesta ── */
+    .cz-main { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+    .cz-prop { background: var(--cz-surface); border: 1px solid var(--cz-line); border-radius: 1rem; overflow: hidden; }
+    .cz-prop__head { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; padding: .9rem 1.1rem; border-bottom: 1px solid var(--cz-line); }
+    .cz-prop__badge { flex-shrink: 0; width: 2.25rem; height: 2.25rem; display: flex; align-items: center; justify-content: center; border-radius: .7rem; background: var(--cz-ink); color: var(--cz-surface); font-size: .85rem; font-weight: 700; }
+    .cz-prop__name {
+        flex: 1 1 14rem; min-width: 0; padding: .35rem .55rem; margin-left: -.55rem;
+        font-size: 1.05rem; font-weight: 700; color: var(--cz-ink);
+        background: transparent; border: 1px solid transparent; border-radius: .55rem; transition: border-color .15s, background-color .15s;
     }
-    .dark .cotizar-card {
-        background: #1f2937;
-        border-color: #374151;
-        box-shadow: none;
+    .cz-prop__name:hover { border-color: var(--cz-line); }
+    .cz-prop__name:focus { outline: none; border-color: var(--cz-primary); background: var(--cz-sunken); }
+    .cz-prop__stats { font-size: .78rem; color: var(--cz-muted); white-space: nowrap; }
+
+    .cz-qty { display: inline-flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--cz-muted); }
+    .cz-qty__box { display: inline-flex; align-items: center; border: 1px solid var(--cz-line); border-radius: .6rem; overflow: hidden; background: var(--cz-sunken); }
+    .cz-qty__btn { width: 2rem; height: 2.25rem; border: 0; background: transparent; color: var(--cz-muted); cursor: pointer; transition: background-color .15s, color .15s; }
+    .cz-qty__btn:hover { background: var(--cz-primary-soft); color: var(--cz-primary); }
+    .cz-qty__input { width: 3rem; height: 2.25rem; border: 0; background: transparent; text-align: center; font-weight: 700; color: var(--cz-ink); -moz-appearance: textfield; }
+    .cz-qty__input::-webkit-outer-spin-button, .cz-qty__input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .cz-qty__input:focus { outline: none; }
+    .cz-qty__box:focus-within { border-color: var(--cz-primary); }
+
+    .cz-icon-btn { width: 2.25rem; height: 2.25rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: .6rem; background: transparent; color: var(--cz-faint); cursor: pointer; transition: background-color .15s, color .15s; }
+    .cz-icon-btn:hover { background: rgba(222, 53, 11, 0.08); color: var(--cz-danger); }
+    .cz-icon-btn:focus-visible, .cz-btn:focus-visible, .cz-add:focus-visible, .cz-qty__btn:focus-visible, .cz-prod__toggle:focus-visible { outline: 2px solid var(--cz-primary); outline-offset: 2px; }
+
+    .cz-prop__body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: .75rem; background: var(--cz-sunken); }
+
+    /* ── Producto ── */
+    .cz-prod { background: var(--cz-surface); border: 1px solid var(--cz-line); border-radius: .85rem; overflow: hidden; }
+    .cz-prod__head { display: flex; align-items: center; gap: .5rem; padding: .35rem .5rem .35rem .35rem; }
+    .cz-prod__toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: .65rem; padding: .45rem .5rem; border: 0; border-radius: .6rem; background: transparent; text-align: left; cursor: pointer; color: var(--cz-ink); }
+    .cz-prod__toggle:hover { background: var(--cz-sunken); }
+    .cz-prod__chev { width: 1rem; color: var(--cz-faint); font-size: .75rem; transition: transform .2s; }
+    .cz-prod__chev.is-open { transform: rotate(90deg); }
+    .cz-prod__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 600; }
+    .cz-chip { flex-shrink: 0; font-size: .7rem; font-weight: 600; padding: .12rem .5rem; border-radius: 99px; background: var(--cz-sunken); color: var(--cz-muted); border: 1px solid var(--cz-line); }
+    .cz-prod__best { margin-left: auto; flex-shrink: 0; font-size: .8rem; color: var(--cz-muted); white-space: nowrap; }
+    .cz-prod__best strong { color: var(--cz-best); font-weight: 700; }
+
+    .cz-prod__body { padding: .25rem 1rem 1rem; border-top: 1px solid var(--cz-line); }
+    .cz-fields { display: grid; gap: .75rem; margin: .85rem 0 1rem; }
+    @media (min-width: 768px) { .cz-fields { grid-template-columns: minmax(0, 1fr) 11rem; } }
+    .cz-label { display: block; margin-bottom: .3rem; font-size: .75rem; font-weight: 600; color: var(--cz-muted); }
+    .cz-input {
+        width: 100%; height: 2.5rem; padding: 0 .75rem; font-size: .875rem; color: var(--cz-ink);
+        background: var(--cz-sunken); border: 1px solid var(--cz-line); border-radius: .6rem;
+        transition: border-color .15s, box-shadow .15s, background-color .15s;
     }
-    .dark .cotizar-card h2 { color: #fff; }
-    .dark .cotizar-card__box {
-        background: rgba(17, 24, 39, 0.65);
-        border-color: #374151;
-        color: #d1d5db;
+    .cz-input::placeholder { color: var(--cz-faint); }
+    .cz-input:focus { outline: none; border-color: var(--cz-primary); box-shadow: 0 0 0 3px var(--cz-primary-soft); background: var(--cz-surface); }
+    select.cz-input { padding-right: 2rem; }
+    .dark select.cz-input option { background: #121d30; color: #f1f5f9; }
+
+    /* ── Tabla de cotizaciones ── */
+    .cz-table-wrap { overflow-x: auto; border: 1px solid var(--cz-line); border-radius: .75rem; }
+    .cz-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .85rem; }
+    .cz-table th { padding: .6rem .6rem; text-align: left; font-size: .72rem; font-weight: 600; color: var(--cz-muted); background: var(--cz-sunken); border-bottom: 1px solid var(--cz-line); white-space: nowrap; }
+    .cz-table th.is-num, .cz-table td.is-num { text-align: right; }
+    .cz-table td { padding: .4rem .4rem; border-bottom: 1px solid var(--cz-line); vertical-align: middle; }
+    .cz-table tbody tr:last-child td { border-bottom: 0; }
+    .cz-table tr.is-best td { background: var(--cz-best-soft); }
+    .cz-table tr.is-best td:first-child { box-shadow: inset 3px 0 0 var(--cz-best); }
+    .cz-cell {
+        width: 100%; height: 2.25rem; padding: 0 .55rem; font-size: .85rem; color: var(--cz-ink);
+        background: transparent; border: 1px solid transparent; border-radius: .5rem;
+        transition: border-color .15s, background-color .15s;
     }
-    .dark .cotizar-card__label { color: #9ca3af; }
-    .cotizar-table thead th {
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #6b7280;
-        background: #f3f4f6;
-        border-bottom: 1px solid #e5e7eb;
-        white-space: nowrap;
+    .cz-cell::placeholder { color: var(--cz-faint); }
+    .cz-cell:hover { border-color: var(--cz-line); }
+    .cz-cell:focus { outline: none; border-color: var(--cz-primary); background: var(--cz-surface); }
+    .cz-cell.is-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .cz-cell.is-num::-webkit-outer-spin-button, .cz-cell.is-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .cz-cell.is-num { -moz-appearance: textfield; }
+    .cz-row-total { padding-right: .6rem !important; white-space: nowrap; font-weight: 700; color: var(--cz-ink); }
+    .cz-best-tag { display: inline-flex; align-items: center; gap: .3rem; margin-right: .4rem; font-size: .68rem; font-weight: 600; color: var(--cz-best); }
+    .cz-empty { padding: 1.5rem 1rem !important; text-align: center; font-size: .82rem; color: var(--cz-muted); }
+
+    /* ── Botones de agregar ── */
+    .cz-add {
+        display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+        min-height: 2.5rem; padding: 0 1rem; border-radius: .7rem; cursor: pointer;
+        font-size: .85rem; font-weight: 600; color: var(--cz-primary);
+        background: transparent; border: 1px dashed color-mix(in srgb, var(--cz-primary) 45%, transparent);
+        transition: background-color .15s, border-color .15s;
     }
-    .dark .cotizar-table thead th {
-        color: #9ca3af;
-        background: #242933;
-        border-bottom-color: #374151;
+    .cz-add:hover { background: var(--cz-primary-soft); border-color: var(--cz-primary); }
+    .cz-add--row { margin-top: .6rem; }
+    .cz-add--block { width: 100%; }
+    .cz-add--prop { width: 100%; min-height: 3.5rem; border-radius: 1rem; font-size: .92rem; }
+
+    /* ── Barra de acciones ── */
+    .cz-bar {
+        position: sticky; bottom: .75rem; z-index: 20;
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem;
+        padding: .75rem .9rem .75rem 1.1rem; border-radius: 1rem;
+        background: var(--cz-surface); border: 1px solid var(--cz-line);
+        box-shadow: 0 12px 32px -12px rgba(10, 22, 40, 0.28);
     }
-    .cotizar-pedido__head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 0.75rem;
-        margin-bottom: 0.85rem;
+    .dark .cz-bar { box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.7); }
+    .cz-bar__info { font-size: .82rem; color: var(--cz-muted); }
+    .cz-bar__info strong { color: var(--cz-ink); }
+    .cz-bar__actions { display: flex; gap: .5rem; }
+    .cz-btn {
+        display: inline-flex; align-items: center; gap: .5rem; min-height: 2.5rem; padding: 0 1.1rem;
+        border-radius: .7rem; border: 1px solid transparent; cursor: pointer;
+        font-size: .875rem; font-weight: 600; transition: background-color .15s, border-color .15s, transform .1s;
     }
-    .cotizar-pedido__meta {
-        font-size: 0.8rem;
-        color: #64748b;
-        white-space: nowrap;
+    .cz-btn:active { transform: scale(.98); }
+    .cz-btn--ghost { background: transparent; color: var(--cz-ink); border-color: var(--cz-line); }
+    .cz-btn--ghost:hover { background: var(--cz-sunken); }
+    .cz-btn--primary { background: #0052cc; color: #fff; }
+    .cz-btn--primary:hover { background: #0747a6; }
+
+    .cz-loading { display: flex; flex-direction: column; align-items: center; gap: .9rem; padding: 4rem 1rem; color: var(--cz-muted); font-size: .9rem; }
+    .cz-loading i { font-size: 1.75rem; color: var(--cz-faint); }
+
+    @media (max-width: 640px) {
+        .cz-prop__stats { display: none; }
+        .cz-bar { bottom: 0; border-radius: 1rem 1rem 0 0; }
+        .cz-bar__actions { width: 100%; }
+        .cz-bar__actions .cz-btn { flex: 1; justify-content: center; }
     }
-    .cotizar-pedido__caja {
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.85rem;
-        padding: 0.85rem 0.9rem 0.75rem;
+    @media (prefers-reduced-motion: reduce) {
+        .cz *, .cz *::before { transition: none !important; }
     }
-    .cotizar-pedido__partida + .cotizar-pedido__partida {
-        margin-top: 0.85rem;
-        padding-top: 0.85rem;
-        border-top: 1px solid #e5e7eb;
-    }
-    .cotizar-pedido__fila {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-    }
-    .cotizar-pedido__punto {
-        width: 0.7rem;
-        height: 0.7rem;
-        border: 2px solid #94a3b8;
-        border-radius: 999px;
-        flex-shrink: 0;
-    }
-    .cotizar-pedido__titulo {
-        min-width: 0;
-        flex: 1;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: #0f172a;
-    }
-    .cotizar-pedido__cant {
-        font-size: 0.75rem;
-        color: #64748b;
-        white-space: nowrap;
-    }
-    .cotizar-pedido__aviso {
-        margin: 0.35rem 0 0 1.25rem;
-        font-size: 0.72rem;
-        line-height: 1.35;
-        color: #475569;
-    }
-    .cotizar-pedido__productos {
-        margin: 0.45rem 0 0;
-        padding: 0 0 0 1.25rem;
-        list-style: none;
-    }
-    .cotizar-pedido__productos li {
-        display: block;
-        margin-top: 0.55rem;
-    }
-    .cotizar-pedido__prod {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 0.5rem;
-        font-size: 0.8rem;
-        color: #334155;
-    }
-    .cotizar-pedido__prod-nombre {
-        min-width: 0;
-        display: flex;
-        gap: 0.35rem;
-    }
-    .cotizar-pedido__prod-nombre span:last-child {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    .cotizar-pedido__prod-cant {
-        color: #64748b;
-        font-size: 0.75rem;
-        white-space: nowrap;
-    }
-    .cotizar-pedido__cot {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.12rem 0.65rem;
-        margin: 0.35rem 0 0 1.15rem;
-        font-size: 0.72rem;
-        color: #64748b;
-    }
-    .cotizar-pedido__cot span:nth-child(odd) {
-        color: #94a3b8;
-    }
-    .cotizar-pedido__cot strong {
-        color: #0f172a;
-        font-weight: 700;
-        text-align: right;
-    }
-    .cotizar-pedido__pie {
-        margin: 0.85rem 0 0;
-        padding-top: 0.7rem;
-        border-top: 1px solid #e5e7eb;
-        font-size: 0.8rem;
-        color: #64748b;
-    }
-    .cotizar-pedido__pie p {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.5rem;
-        margin: 0.2rem 0 0;
-    }
-    .cotizar-pedido__pie strong {
-        color: #0f172a;
-        font-weight: 700;
-    }
-    .dark .cotizar-pedido__meta,
-    .dark .cotizar-pedido__cant,
-    .dark .cotizar-pedido__aviso,
-    .dark .cotizar-pedido__pie { color: #94a3b8; }
-    .dark .cotizar-pedido__caja {
-        background: #0b1220;
-        border-color: rgba(255, 255, 255, 0.08);
-    }
-    .dark .cotizar-pedido__partida + .cotizar-pedido__partida,
-    .dark .cotizar-pedido__pie { border-top-color: rgba(255, 255, 255, 0.08); }
-    .dark .cotizar-pedido__punto { border-color: #cbd5e1; }
-    .dark .cotizar-pedido__titulo,
-    .dark .cotizar-pedido__prod,
-    .dark .cotizar-pedido__cot strong,
-    .dark .cotizar-pedido__pie strong { color: #f8fafc; }
-    .dark .cotizar-pedido__prod-cant,
-    .dark .cotizar-pedido__cot { color: #94a3b8; }
 </style>
 
 <x-index-page
     title="Cotización #{{ $solicitud->SolicitudID }}"
-    icon="fa-file-invoice-dollar"
+    icon="fa-calculator"
     subtitle="Precios sin IVA"
     :show-count="false"
     :card="false"
+    class="cz"
     x-data="cotizarPagina({{ $solicitud->SolicitudID }}, '{{ route('tickets.index') }}')"
 >
     <x-slot name="headerActions">
-        <span class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-            <i class="fas fa-layer-group text-xs"></i>
-            <span class="font-semibold" x-text="propuestas.length"></span> propuestas
-        </span>
         <a href="{{ route('tickets.index') }}" class="index-page__btn-secondary">Volver</a>
     </x-slot>
 
-    <div x-show="cargando" class="text-center py-16">
-        <div class="inline-flex flex-col items-center gap-4">
-            <div class="relative">
-                <i class="fas fa-spinner fa-spin text-5xl text-slate-400"></i>
-                <div class="absolute inset-0 blur-xl bg-slate-400/20 rounded-full"></div>
-            </div>
-            <p class="text-slate-600 dark:text-slate-400 font-medium">Cargando cotizaciones...</p>
-        </div>
+    <div x-show="cargando" class="cz-loading">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <p class="m-0">Cargando cotizaciones…</p>
     </div>
 
-    <div x-show="!cargando" x-cloak class="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-5 lg:gap-6 items-start">
-        
-        <div class="xl:col-span-3 space-y-4 md:space-y-5">
+    <div x-show="!cargando" x-cloak class="cz-layout">
 
-            <div class="cotizar-card cotizar-pedido">
-                <div class="cotizar-pedido__head">
-                    <h2>Resumen</h2>
-                    <span class="cotizar-pedido__meta" x-text="propuestas.length + (propuestas.length === 1 ? ' propuesta' : ' propuestas')"></span>
+        {{-- ═════ Lateral: resumen + datos de la solicitud ═════ --}}
+        <aside class="cz-aside">
+            <section class="cz-panel" aria-labelledby="cz-resumen">
+                <div class="cz-panel__head">
+                    <h2 id="cz-resumen" class="cz-panel__title">Resumen</h2>
+                    <span class="cz-panel__meta" x-text="propuestas.length + (propuestas.length === 1 ? ' propuesta' : ' propuestas')"></span>
                 </div>
 
-                <div class="cotizar-pedido__caja">
+                <div class="cz-total">
+                    <p class="cz-total__label">Total cotizado</p>
+                    <p class="cz-total__value cz-num" x-text="dinero(totalGeneral)"></p>
+                    <p class="cz-total__sub">El gerente elige <strong x-text="textoGanadores"></strong> (1 por propuesta)</p>
+                </div>
+
+                <ul class="cz-sum">
                     <template x-for="propuesta in propuestas" :key="'resumen-' + propuesta.id">
-                        <div class="cotizar-pedido__partida">
-                            <div class="cotizar-pedido__fila">
-                                <span class="cotizar-pedido__punto" aria-hidden="true"></span>
-                                <span class="cotizar-pedido__titulo" x-text="propuesta.nombre || ('Propuesta ' + propuesta.numero)"></span>
-                                <span class="cotizar-pedido__cant" x-text="etiquetaGanador(propuesta)"></span>
+                        <li class="cz-sum__prop">
+                            <div class="cz-sum__row">
+                                <span class="cz-sum__name" x-text="propuesta.nombre || ('Propuesta ' + propuesta.numero)"></span>
+                                <span class="cz-sum__tag" x-text="etiquetaGanador(propuesta)"></span>
                             </div>
-                            <p class="cotizar-pedido__aviso" x-show="variasOpciones(propuesta)" x-cloak>Solo un ganador por propuesta</p>
-                            <ul class="cotizar-pedido__productos">
-                                <template x-for="producto in propuesta.productos" :key="'resumen-prod-' + producto.id">
-                                    <li>
-                                        <div class="cotizar-pedido__prod">
-                                            <span class="cotizar-pedido__prod-nombre">
-                                                <span aria-hidden="true">·</span>
-                                                <span x-text="producto.nombre || 'Nuevo producto'"></span>
-                                            </span>
-                                            <span class="cotizar-pedido__prod-cant" x-text="'x' + (propuesta.cantidad || 1) + ' ' + (producto.unidad || 'PIEZA')"></span>
-                                        </div>
-                                        <template x-for="(cot, cotIndex) in producto.cotizaciones" :key="'resumen-cot-' + producto.id + '-' + cotIndex">
-                                            <div class="cotizar-pedido__cot">
-                                                <span>Proveedor</span>
-                                                <span x-text="cot.proveedor || 'Sin proveedor'"></span>
-                                                <span>P. unit.</span>
-                                                <span x-text="dinero(cot.precioUnitario)"></span>
-                                                <span>Total</span>
-                                                <strong x-text="dinero(totalCotizacion(propuesta, cot))"></strong>
-                                            </div>
-                                        </template>
-                                    </li>
-                                </template>
-                            </ul>
-                        </div>
+                            <template x-for="producto in propuesta.productos" :key="'resumen-prod-' + producto.id">
+                                <div>
+                                    <div class="cz-sum__prod">
+                                        <span x-text="producto.nombre || 'Nuevo producto'"></span>
+                                        <span x-text="'x' + (propuesta.cantidad || 1) + ' ' + (producto.unidad || 'PIEZA')"></span>
+                                    </div>
+                                    <div class="cz-sum__best" x-show="mejorCotizacion(producto, propuesta)" x-cloak>
+                                        <span x-text="(mejorCotizacion(producto, propuesta)?.proveedor || 'Sin proveedor')"></span>
+                                        <span class="cz-num" x-text="dinero(totalCotizacion(propuesta, mejorCotizacion(producto, propuesta) || {}))"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            <p class="cz-sum__hint" x-show="variasOpciones(propuesta)" x-cloak>Solo un ganador por propuesta</p>
+                        </li>
                     </template>
-                    <div class="cotizar-pedido__pie">
-                        <p>Ganadores: <strong x-text="ganadoresRequeridos"></strong></p>
-                        <p>Total: <strong x-text="dinero(totalGeneral)"></strong></p>
+                </ul>
+            </section>
+
+            <section class="cz-panel" aria-labelledby="cz-detalles">
+                <div class="cz-panel__head">
+                    <h2 id="cz-detalles" class="cz-panel__title">Solicitud</h2>
+                </div>
+                <div class="cz-info">
+                    <div>
+                        <p class="cz-info__label">Motivo</p>
+                        <p class="cz-info__text">{{ $solicitud->DescripcionMotivo ?? 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <p class="cz-info__label">Requerimientos</p>
+                        <p class="cz-info__text">{{ $solicitud->Requerimientos ?? 'N/A' }}</p>
                     </div>
                 </div>
-            </div>
+                <details class="cz-help">
+                    <summary>¿Cómo funciona? <i class="fas fa-chevron-down text-xs" aria-hidden="true"></i></summary>
+                    <ol class="cz-steps">
+                        <li>Crea propuestas (opciones distintas)</li>
+                        <li>Agrega los productos de cada propuesta</li>
+                        <li>Registra la cotización de cada proveedor</li>
+                        <li>Guarda y envía al gerente</li>
+                    </ol>
+                </details>
+            </section>
+        </aside>
 
-            <div class="cotizar-card">
-                <div class="flex items-center gap-3 mb-3 md:mb-4">
-                    <span class="index-page__icon" aria-hidden="true">
-                        <i class="fas fa-lightbulb"></i>
-                    </span>
-                    <h2>¿Cómo funciona?</h2>
-                </div>
-
-                <div class="cotizar-card__box space-y-2">
-                    <p><strong>1.</strong> Crea <strong>Propuestas</strong> (diferentes opciones)</p>
-                    <p><strong>2.</strong> Agrega <strong>Productos</strong> en cada propuesta</p>
-                    <p><strong>3.</strong> Registra <strong>Cotizaciones</strong> de proveedores</p>
-                    <p><strong>4.</strong> Guarda y envía al gerente</p>
-                </div>
-            </div>
-
-            <div class="cotizar-card">
-                <div class="flex items-center gap-3 mb-3 md:mb-4">
-                    <span class="index-page__icon" aria-hidden="true">
-                        <i class="fas fa-clipboard-list"></i>
-                    </span>
-                    <h2>Detalles</h2>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="cotizar-card__box">
-                        <div class="cotizar-card__label">
-                            <i class="fas fa-align-left"></i>
-                            Motivo
-                        </div>
-                        <p class="whitespace-pre-wrap">{{ $solicitud->DescripcionMotivo ?? 'N/A' }}</p>
-                    </div>
-                    <div class="cotizar-card__box">
-                        <div class="cotizar-card__label">
-                            <i class="fas fa-list-check"></i>
-                            Requerimientos
-                        </div>
-                        <p class="whitespace-pre-wrap">{{ $solicitud->Requerimientos ?? 'N/A' }}</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="xl:col-span-9 space-y-4 md:space-y-5">
+        {{-- ═════ Principal: propuestas ═════ --}}
+        <div class="cz-main">
 
             @if(($solicitud->Estatus ?? '') === 'Re-cotizar' && !empty($recotizarMotivo ?? ''))
-            <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-amber-300 dark:border-amber-700/50 shadow-lg">
-                <div class="flex items-start gap-3 md:gap-4">
-                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <i class="fas fa-redo-alt text-white text-base md:text-lg"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-sm md:text-base font-bold text-amber-900 dark:text-amber-200 mb-1">Re-cotizar propuestas</h3>
-                        @if(!empty($recotizarPropuestas ?? []))
-                        <p class="text-xs md:text-sm text-amber-800 dark:text-amber-300 mb-2">
-                            El gerente solicitó re-cotizar las propuestas: <strong>{{ implode(', ', array_map(fn($n) => 'Propuesta ' . $n, $recotizarPropuestas ?? [])) }}</strong>
-                        </p>
-                        @endif
-                        <p class="text-xs md:text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
-                            <strong>Motivo del gerente:</strong> {{ $recotizarMotivo }}
-                        </p>
-                    </div>
+            <div class="cz-note cz-note--warn" role="status">
+                <span class="cz-note__icon" aria-hidden="true"><i class="fas fa-redo-alt"></i></span>
+                <div>
+                    <p class="cz-note__title">El gerente pidió re-cotizar</p>
+                    @if(!empty($recotizarPropuestas ?? []))
+                    <p class="cz-note__text">Propuestas: <strong>{{ implode(', ', array_map(fn($n) => 'Propuesta ' . $n, $recotizarPropuestas ?? [])) }}</strong></p>
+                    @endif
+                    <p class="cz-note__text"><strong>Motivo:</strong> {{ $recotizarMotivo }}</p>
                 </div>
             </div>
             @endif
-            
-            <div x-show="tieneCotizacionesEnviadas" x-cloak class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl md:rounded-2xl p-4 md:p-5 border border-blue-200 dark:border-blue-700/50 shadow-lg">
-                <div class="flex items-start gap-3 md:gap-4">
-                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <i class="fas fa-paper-plane text-white text-base md:text-lg"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-sm md:text-base font-bold text-blue-900 dark:text-blue-200 mb-1">Cotizaciones Enviadas</h3>
-                        <p class="text-xs md:text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                            Las propuestas han sido enviadas al gerente para su revisión. Aún puedes editarlas si es necesario.
-                        </p>
-                    </div>
+
+            <div x-show="tieneCotizacionesEnviadas" x-cloak class="cz-note cz-note--info" role="status">
+                <span class="cz-note__icon" aria-hidden="true"><i class="fas fa-paper-plane"></i></span>
+                <div>
+                    <p class="cz-note__title">Enviadas al gerente</p>
+                    <p class="cz-note__text">Están en revisión. Aún puedes editarlas.</p>
                 </div>
             </div>
 
-            <!-- PROPUESTAS -->
             <template x-for="(propuesta, propIndex) in propuestas" :key="propuesta.id">
-            <div class="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden shadow-sm">
+                <section class="cz-prop">
+                    <header class="cz-prop__head">
+                        <span class="cz-prop__badge cz-num" x-text="propuesta.numero" aria-hidden="true"></span>
+                        <input type="text" x-model="propuesta.nombre" placeholder="Nombre de la propuesta"
+                            class="cz-prop__name" aria-label="Nombre de la propuesta">
+                        <span class="cz-prop__stats"
+                            x-text="propuesta.productos.length + (propuesta.productos.length === 1 ? ' producto' : ' productos') + ' · ' + cotizacionesPropuesta(propuesta) + ' con precio'"></span>
+                        <label class="cz-qty">
+                            Cantidad
+                            <span class="cz-qty__box">
+                                <button type="button" class="cz-qty__btn" aria-label="Restar"
+                                    @click="propuesta.cantidad = Math.max(1, (parseInt(propuesta.cantidad) || 1) - 1)"><i class="fas fa-minus text-xs" aria-hidden="true"></i></button>
+                                <input type="number" min="1" x-model.number="propuesta.cantidad" class="cz-qty__input cz-num">
+                                <button type="button" class="cz-qty__btn" aria-label="Sumar"
+                                    @click="propuesta.cantidad = (parseInt(propuesta.cantidad) || 0) + 1"><i class="fas fa-plus text-xs" aria-hidden="true"></i></button>
+                            </span>
+                        </label>
+                        <button type="button" class="cz-icon-btn" @click="eliminarPropuesta(propIndex)"
+                            x-show="propuestas.length > 1" title="Eliminar propuesta" aria-label="Eliminar propuesta">
+                            <i class="fas fa-trash-alt text-sm" aria-hidden="true"></i>
+                        </button>
+                    </header>
 
-                <!-- Header de Propuesta -->
-                <div class="bg-[#101d49] dark:bg-[#1e3a5f] px-5 md:px-6 py-4 md:py-5">
-                    <div class="flex items-center justify-between gap-4 md:gap-6">
-                        <div class="flex-1 min-w-0 max-w-md">
-                            <input type="text" x-model="propuesta.nombre" placeholder="Nombre de la propuesta"
-                                class="w-full font-semibold text-base md:text-lg px-4 py-2.5 border-2 border-slate-500/30 rounded-xl bg-slate-800/50 dark:bg-slate-900/50 text-slate-50 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all shadow-inner backdrop-blur-sm">
-                        </div>
-
-                        <!-- Metricas & Acciones -->
-                        <div class="flex items-center gap-4 md:gap-6">
-                            <div class="flex items-center gap-3 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-4 py-2 backdrop-blur-sm border border-slate-600/30">
-                                <div class="text-right">
-                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Cantidad</p>
-                                    <input type="number" min="1" x-model.number="propuesta.cantidad"
-                                        class="w-16 px-2 py-1 text-sm border border-slate-500/30 rounded-lg bg-slate-700/50 dark:bg-slate-800/50 text-slate-50 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all text-center font-bold shadow-inner">
-                                </div>
-                            </div>
-
-                            <!-- Stats -->
-                            <div class="hidden sm:flex items-center bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-5 py-2.5 backdrop-blur-sm border border-slate-600/30">
-                                <div class="text-center">
-                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Productos</p>
-                                    <p class="text-lg font-bold text-slate-50" x-text="propuesta.productos.length"></p>
-                                </div>
-                                
-                                <div class="w-px h-8 bg-slate-600/50"></div>
-                            
-                            </div>
-
-                            <div class="flex sm:hidden flex-col items-end gap-1 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-4 py-2 backdrop-blur-sm border border-slate-600/30 min-w-[100px]">
-                                <p class="text-[10px] text-slate-400"><span class="font-bold text-slate-200" x-text="propuesta.productos.length"></span> prod.</p>
-                                <p class="text-sm font-bold text-emerald-400" x-text="'$' + totalPropuesta(propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></p>
-                            </div>
-
-                            <button
-                                @click="eliminarPropuesta(propIndex)"
-                                x-show="propuestas.length > 1"
-                                class="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all p-2.5 rounded-lg border border-transparent hover:border-red-500/30"
-                                title="Eliminar propuesta">
-                                <i class="fas fa-trash text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PRODUCTOS de la Propuesta -->
-                <div class="p-4 md:p-5 space-y-3 md:space-y-4">
-                    <template x-for="(producto, prodIndex) in propuesta.productos" :key="producto.id">
-                        <div class="bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
-
-                            <!-- Header del Producto -->
-                            <div
-                                @click="producto.abierto = !producto.abierto"
-                                class="flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
-                                <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                                    <i class="fas transition-transform text-slate-600 dark:text-slate-300 text-sm" :class="producto.abierto ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
-                                    <i class="fas fa-box text-slate-600 dark:text-slate-300 text-sm"></i>
-                                    <span class="font-medium text-sm md:text-base text-slate-900 dark:text-slate-100 truncate" x-text="producto.nombre || 'Nuevo Producto'"></span>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 px-2 py-0.5 rounded flex-shrink-0"><span x-text="propuesta.cantidad"></span> <span x-text="producto.unidad"></span></span>
-                                </div>
-                                <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
-                                    <span class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
-                                        <span x-text="cotizacionesConPrecio(producto).length"></span> cot. •
-                                    </span>
-                                    <button
-                                        @click.stop="eliminarProducto(propuesta, prodIndex)"
-                                        x-show="propuesta.productos.length > 1"
-                                        class="text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-slate-300 dark:hover:bg-slate-500 rounded"
-                                        title="Eliminar producto">
-                                        <i class="fas fa-times"></i>
+                    <div class="cz-prop__body">
+                        <template x-for="(producto, prodIndex) in propuesta.productos" :key="producto.id">
+                            <article class="cz-prod">
+                                <div class="cz-prod__head">
+                                    <button type="button" class="cz-prod__toggle" @click="producto.abierto = !producto.abierto" :aria-expanded="producto.abierto">
+                                        <i class="fas fa-chevron-right cz-prod__chev" :class="{ 'is-open': producto.abierto }" aria-hidden="true"></i>
+                                        <span class="cz-prod__name" x-text="producto.nombre || 'Nuevo producto'"></span>
+                                        <span class="cz-chip"><span x-text="propuesta.cantidad"></span> <span x-text="producto.unidad"></span></span>
+                                        <span class="cz-prod__best">
+                                            <template x-if="mejorCotizacion(producto, propuesta)">
+                                                <span>Desde <strong class="cz-num" x-text="dinero(totalCotizacion(propuesta, mejorCotizacion(producto, propuesta)))"></strong></span>
+                                            </template>
+                                            <template x-if="!mejorCotizacion(producto, propuesta)">
+                                                <span>Sin precios</span>
+                                            </template>
+                                        </span>
+                                    </button>
+                                    <button type="button" class="cz-icon-btn" @click="eliminarProducto(propuesta, prodIndex)"
+                                        x-show="propuesta.productos.length > 1" title="Eliminar producto" aria-label="Eliminar producto">
+                                        <i class="fas fa-times" aria-hidden="true"></i>
                                     </button>
                                 </div>
-                            </div>
 
-                            <!-- Detalles del Producto -->
-                            <div x-show="producto.abierto" x-collapse class="border-t border-slate-300 dark:border-slate-600">
-                                <div class="p-3 md:p-4 bg-slate-50 dark:bg-slate-800">
-                                    <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Nombre del producto</label>
-                                            <input type="text" x-model="producto.nombre" placeholder="Ej. Laptop HP Pavilion, Mouse Logitech"
-                                                class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
+                                <div x-show="producto.abierto" x-collapse>
+                                    <div class="cz-prod__body">
+                                        <div class="cz-fields">
+                                            <div>
+                                                <label class="cz-label" :for="'cz-nombre-' + producto.id">Nombre del producto</label>
+                                                <input type="text" :id="'cz-nombre-' + producto.id" x-model="producto.nombre"
+                                                    placeholder="Ej. Laptop HP Pavilion, Mouse Logitech" class="cz-input">
+                                            </div>
+                                            <div>
+                                                <label class="cz-label" :for="'cz-unidad-' + producto.id">Unidad</label>
+                                                <select :id="'cz-unidad-' + producto.id" x-model="producto.unidad" class="cz-input">
+                                                    <option value="PIEZA">PIEZA</option>
+                                                    <option value="LOTE">LOTE</option>
+                                                    <option value="SERVICIO">SERVICIO</option>
+                                                    <option value="KIT">KIT</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Unidad</label>
-                                            <select x-model="producto.unidad"
-                                                class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
-                                                <option value="PIEZA">PIEZA</option>
-                                                <option value="LOTE">LOTE</option>
-                                                <option value="SERVICIO">SERVICIO</option>
-                                                <option value="KIT">KIT</option>
-                                            </select>
-                                        </div>
-                                    </div>
 
-                                    <!-- Tabla de Cotizaciones -->
-                                    <div class="overflow-x-auto border border-slate-200 dark:border-slate-600 rounded-lg -mx-1">
-                                        <table class="cotizar-table min-w-full text-xs md:text-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-left">Proveedor</th>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-left">No. Parte</th>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-left">Descripción</th>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-right">Precio Unit.</th>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-right">Envío</th>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-right">Total</th>
-                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-center w-12 md:w-16"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-slate-200 dark:divide-slate-600 bg-slate-100 dark:bg-slate-700">
-                                                <template x-for="(cot, cotIndex) in producto.cotizaciones" :key="cotIndex">
-                                                    <tr class="hover:bg-slate-200 dark:hover:bg-slate-600/50 transition-colors">
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
-                                                            <input type="text" x-model="cot.proveedor" placeholder="Proveedor"
-                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
-                                                        </td>
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
-                                                            <input type="text" x-model="cot.numeroParte" placeholder="#"
-                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
-                                                        </td>
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
-                                                            <input type="text" x-model="cot.descripcion" placeholder="Descripción"
-                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
-                                                        </td>
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
-                                                            <input type="number" step="0.01" min="0" x-model.number="cot.precioUnitario" placeholder="0.00"
-                                                                @input="cot.total = ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
-                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 text-right focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
-                                                        </td>
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
-                                                            <input type="number" step="0.01" min="0" x-model.number="cot.costoEnvio" placeholder="0.00"
-                                                                @input="cot.total = ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
-                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 text-right focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
-                                                        </td>
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2 text-right font-semibold text-xs md:text-sm text-slate-900 dark:text-slate-100">
-                                                            <span x-text="'$' + ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
-                                                        </td>
-                                                        <td class="px-2 md:px-3 py-1.5 md:py-2 text-center">
-                                                            <button @click="eliminarCotizacion(producto, cotIndex)"
-                                                                class="text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1 hover:bg-slate-300 dark:hover:bg-slate-500 rounded transition-all text-xs md:text-sm">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        </td>
+                                        <div class="cz-table-wrap">
+                                            <table class="cz-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 22%">Proveedor</th>
+                                                        <th style="width: 14%">No. parte</th>
+                                                        <th>Descripción</th>
+                                                        <th class="is-num" style="width: 12%">Precio unit.</th>
+                                                        <th class="is-num" style="width: 10%">Envío</th>
+                                                        <th class="is-num" style="width: 15%">Total</th>
+                                                        <th style="width: 3rem"><span class="sr-only">Quitar</span></th>
                                                     </tr>
-                                                </template>
-                                                <tr x-show="producto.cotizaciones.length === 0">
-                                                    <td colspan="7" class="px-3 py-6 md:py-8 text-center text-slate-500 dark:text-slate-400 text-xs md:text-sm">
-                                                        Sin cotizaciones. Agrega una nueva cotización.
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    <template x-for="(cot, cotIndex) in producto.cotizaciones" :key="cotIndex">
+                                                        <tr :class="{ 'is-best': mejorCotizacion(producto, propuesta) === cot && cotizacionesConPrecio(producto).length > 1 }">
+                                                            <td><input type="text" x-model="cot.proveedor" placeholder="Proveedor" class="cz-cell" aria-label="Proveedor"></td>
+                                                            <td><input type="text" x-model="cot.numeroParte" placeholder="#" class="cz-cell" aria-label="Número de parte"></td>
+                                                            <td><input type="text" x-model="cot.descripcion" placeholder="Descripción" class="cz-cell" aria-label="Descripción"></td>
+                                                            <td><input type="number" step="0.01" min="0" x-model.number="cot.precioUnitario" placeholder="0.00"
+                                                                    @input="cot.total = ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
+                                                                    class="cz-cell is-num" aria-label="Precio unitario"></td>
+                                                            <td><input type="number" step="0.01" min="0" x-model.number="cot.costoEnvio" placeholder="0.00"
+                                                                    @input="cot.total = ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
+                                                                    class="cz-cell is-num" aria-label="Costo de envío"></td>
+                                                            <td class="is-num cz-row-total">
+                                                                <span class="cz-best-tag" x-show="mejorCotizacion(producto, propuesta) === cot && cotizacionesConPrecio(producto).length > 1" x-cloak>
+                                                                    <i class="fas fa-arrow-down" aria-hidden="true"></i>Más bajo
+                                                                </span>
+                                                                <span class="cz-num" x-text="dinero(totalCotizacion(propuesta, cot))"></span>
+                                                            </td>
+                                                            <td>
+                                                                <button type="button" class="cz-icon-btn" @click="eliminarCotizacion(producto, cotIndex)" title="Quitar cotización" aria-label="Quitar cotización">
+                                                                    <i class="fas fa-times" aria-hidden="true"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </template>
+                                                    <tr x-show="producto.cotizaciones.length === 0">
+                                                        <td colspan="7" class="cz-empty">Sin cotizaciones. Agrega la del primer proveedor.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <button type="button" class="cz-add cz-add--row" @click="agregarCotizacion(producto)">
+                                            <i class="fas fa-plus text-xs" aria-hidden="true"></i> Agregar cotización
+                                        </button>
                                     </div>
-
-                                    <button type="button" @click="agregarCotizacion(producto)"
-                                        class="mt-3 px-3 md:px-4 py-1.5 md:py-2 bg-slate-600 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-xs md:text-sm font-medium rounded-lg transition-all shadow-sm">
-                                        <i class="fas fa-plus mr-2"></i> Agregar Cotización
-                                    </button>
                                 </div>
-                            </div>
-                        </div>
-                    </template>
+                            </article>
+                        </template>
 
-                    <!-- Botón Agregar Producto dentro de la propuesta -->
-                    <div class="flex justify-center pt-2">
-                        <button type="button" @click="agregarProducto(propuesta)"
-                            class="px-4 md:px-5 py-2 md:py-2.5 bg-slate-600 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-xs md:text-sm font-medium rounded-lg transition-all shadow-sm">
-                            <i class="fas fa-plus mr-2"></i> Agregar Producto
+                        <button type="button" class="cz-add cz-add--block" @click="agregarProducto(propuesta)">
+                            <i class="fas fa-plus text-xs" aria-hidden="true"></i> Agregar producto
                         </button>
                     </div>
+                </section>
+            </template>
+
+            <button type="button" class="cz-add cz-add--prop" @click="agregarPropuesta()">
+                <i class="fas fa-layer-group" aria-hidden="true"></i> Nueva propuesta
+            </button>
+
+            <div class="cz-bar">
+                <p class="cz-bar__info m-0">
+                    <strong x-text="propuestas.length"></strong> <span x-text="propuestas.length === 1 ? 'propuesta' : 'propuestas'"></span>
+                    · <strong class="cz-num" x-text="dinero(totalGeneral)"></strong>
+                </p>
+                <div class="cz-bar__actions">
+                    <button type="button" class="cz-btn" :class="tieneCotizacionesGuardadas ? 'cz-btn--ghost' : 'cz-btn--primary'" @click="guardar()">
+                        <i class="fas fa-save" aria-hidden="true"></i> Guardar
+                    </button>
+                    <button type="button" class="cz-btn cz-btn--primary" x-show="tieneCotizacionesGuardadas" @click="enviarAlGerente()">
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i> Enviar al gerente
+                    </button>
                 </div>
             </div>
-        </template>
-
-            <!-- Botón Agregar Nueva Propuesta -->
-            <div class="flex justify-center pt-3">
-                <button type="button" @click="agregarPropuesta()"
-                    class="px-5 md:px-6 py-2.5 md:py-3 bg-slate-700 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm md:text-base font-semibold rounded-lg transition-all shadow-md">
-                    <i class="fas fa-layer-group mr-2"></i> Nueva Propuesta
-                </button>
-            </div>
-
-            <!-- Botones de acción -->
-            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2 md:gap-3 pt-4 md:pt-6 border-t border-slate-200 dark:border-slate-600 mt-4 md:mt-6">
-                    <button type="button" @click="guardar()" class="index-page__btn-primary">
-                        <i class="fas fa-save"></i> Guardar
-                    </button>
-                    <button type="button" x-show="tieneCotizacionesGuardadas"
-                        @click="enviarAlGerente()"
-                        class="index-page__btn-primary">
-                        <i class="fas fa-paper-plane"></i> Enviar al Gerente
-                    </button>
-            </div>
-
         </div>
-        <!-- FIN COLUMNA DERECHA -->
-        
     </div>
-    <!-- FIN GRID PRINCIPAL -->
 </x-index-page>
+
 
 @verbatim
 <script>
@@ -617,6 +523,12 @@
 
             cotizacionesConPrecio(producto) {
                 return producto.cotizaciones.filter(c => (parseFloat(c.precioUnitario) || 0) > 0);
+            },
+
+            // Solo para resaltar en la vista: la cotización con precio de menor total.
+            mejorCotizacion(producto, propuesta) {
+                return this.cotizacionesConPrecio(producto).reduce((mejor, c) =>
+                    !mejor || this.totalCotizacion(propuesta, c) < this.totalCotizacion(propuesta, mejor) ? c : mejor, null);
             },
 
             cotizacionesPropuesta(propuesta) {

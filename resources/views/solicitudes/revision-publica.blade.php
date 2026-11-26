@@ -116,14 +116,15 @@
         : (!empty($waitingFor) ? $waitingFor : '');
     @endphp
 
-    <div class="flex flex-col lg:flex-row w-full max-w-7xl mx-auto p-4 lg:p-8 gap-6 lg:gap-8 relative z-10">
+    <div class="lg:min-h-screen lg:flex lg:items-center">
+    <div class="flex flex-col lg:flex-row w-full max-w-7xl mx-auto p-4 lg:p-6 gap-6 relative z-10">
         
         <main class="flex-1 w-full min-w-0">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col transition-colors duration-300">
+            <div class="bg-gray-50 dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col transition-colors duration-300">
 
-                <div class="p-6 lg:p-8 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <img src="{{ asset('img/LogoAzul.png') }}" alt="Proser" class="h-10 w-auto mb-4">
+                        <img src="{{ asset('img/LogoAzul.png') }}" alt="Proser" class="h-9 w-auto mb-3">
                         <span class="text-xs font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase mb-2 block">
                             {{ $solicitud->gerenciaid->NombreGerencia ?? 'Sin Gerencia' }}
                         </span>
@@ -146,11 +147,11 @@
                     </span>
                 </div>
 
-                <div class="p-6 lg:p-8">
+                <div class="p-6">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-5 border border-slate-200 dark:border-slate-600">
-                            <div class="flex items-center gap-2 mb-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl px-5 py-4 border border-slate-200 dark:border-slate-600">
+                            <div class="flex items-center gap-2 mb-2">
                                 <span class="material-icons-outlined text-slate-400 text-lg">person</span>
                                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Solicitante</span>
                             </div>
@@ -162,8 +163,8 @@
                             </p>
                         </div>
 
-                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-5 border border-slate-200 dark:border-slate-600">
-                            <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl px-5 py-4 border border-slate-200 dark:border-slate-600">
+                            <div class="flex items-center gap-2 mb-2">
                                 <span class="material-icons-outlined text-slate-400 text-lg">business_center</span>
                                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Obra/Ubicación</span>
                             </div>
@@ -177,7 +178,7 @@
                     </div>
 
                     @if(!empty($destinoVoBo['nombre']))
-                    <div class="mb-8 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-5 py-4">
+                    <div class="mb-6 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-5 py-4">
                         <p class="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 mb-1">Después de este visto bueno se envía a</p>
                         <p class="text-lg font-semibold text-slate-900 dark:text-white">
                             {{ $destinoVoBo['rol'] }}: {{ $destinoVoBo['nombre'] }}
@@ -188,8 +189,8 @@
                     </div>
                     @endif
 
-                    <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-6 lg:p-8 border border-blue-100 dark:border-blue-900/30">
-                        <div class="mb-8">
+                    <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-6 border border-blue-100 dark:border-blue-900/30">
+                        <div class="mb-6">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
                                 <span class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Motivo</span>
@@ -199,8 +200,8 @@
                             </h2>
                         </div>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                            <div class="space-y-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                            <div class="space-y-3">
                                 <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
                                     <div class="flex items-center gap-2">
                                         <span class="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-300 rounded-full"></span>
@@ -208,12 +209,12 @@
                                     </div>
                                     <span class="text-xs text-slate-400 font-medium">DETALLE</span>
                                 </div>
-                                <div class="bg-white dark:bg-slate-800 rounded-lg p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed border border-slate-100 dark:border-slate-700 shadow-sm min-h-[120px]">
+                                <div class="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed border border-slate-100 dark:border-slate-700 shadow-sm min-h-[100px] {{ ($step->stage ?? '') === 'administracion' ? 'max-h-32 overflow-y-auto' : '' }}">
                                     <p class="break-words">{{ $solicitud->DescripcionMotivo }}</p>
                                 </div>
                             </div>
 
-                            <div class="space-y-4">
+                            <div class="space-y-3">
                                 <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
                                     <div class="flex items-center gap-2">
                                         <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
@@ -221,7 +222,7 @@
                                     </div>
                                     <span class="text-xs text-slate-400 font-medium">ESPECIFICACIÓN</span>
                                 </div>
-                                <div class="bg-white dark:bg-slate-800 rounded-lg p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed border border-slate-100 dark:border-slate-700 shadow-sm min-h-[120px]">
+                                <div class="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed border border-slate-100 dark:border-slate-700 shadow-sm min-h-[100px] {{ ($step->stage ?? '') === 'administracion' ? 'max-h-32 overflow-y-auto' : '' }}">
                                     <p class="break-words">{{ $solicitud->Requerimientos }}</p>
                                 </div>
                             </div>
@@ -237,63 +238,46 @@
                                 $totalFinalGanadores += ($cant * $precio) + $envio;
                             }
                         @endphp
-                        <div class="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
-                            <div class="flex items-center gap-2 mb-4">
-                                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                                <h4 class="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Productos ganadores</h4>
+                        {{-- Ganadores: una sola fila de tarjetas de ancho fijo; si no caben se recorre de lado, la altura nunca crece. --}}
+                        <div class="mt-5 border-t border-slate-200 dark:border-slate-700 pt-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                    <h4 class="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Productos ganadores</h4>
+                                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">({{ $ganadores->count() }})</span>
+                                </div>
+                                <p class="text-sm text-slate-600 dark:text-slate-300">
+                                    Total final <span class="ml-1 text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">${{ number_format($totalFinalGanadores, 2, '.', ',') }}</span>
+                                </p>
                             </div>
-                            <div class="space-y-4">
+                            <div class="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2">
                                 @foreach($ganadores as $ganador)
                                 @php
                                     $cantidad = (float)($ganador->Cantidad ?? 1);
                                     $precioUnitario = (float)($ganador->Precio ?? 0);
                                     $costoEnvio = (float)($ganador->CostoEnvio ?? 0);
                                     $totalProducto = ($cantidad * $precioUnitario) + $costoEnvio;
+                                    $nombreGanador = $ganador->NombreEquipo ?? $ganador->Descripcion ?? 'Producto';
                                 @endphp
-                                <div class="bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
-                                    <div class="space-y-2">
-                                        <p class="font-semibold text-slate-900 dark:text-white">{{ $ganador->NombreEquipo ?? $ganador->Descripcion ?? 'Producto' }}</p>
-                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                                            <div>
-                                                <span class="text-slate-500 dark:text-slate-400">Proveedor:</span>
-                                                <span class="text-slate-900 dark:text-white">{{ $ganador->Proveedor ?? 'N/A' }}</span>
-                                            </div>
-                                            @if(!empty($ganador->NumeroParte))
-                                            <div>
-                                                <span class="text-slate-500 dark:text-slate-400">No. Parte:</span>
-                                                <span class="text-slate-900 dark:text-white">{{ $ganador->NumeroParte }}</span>
-                                            </div>
-                                            @endif
-                                            <div>
-                                                <span class="text-slate-500 dark:text-slate-400">Cantidad:</span>
-                                                <span class="text-slate-900 dark:text-white font-medium">{{ (int)$cantidad }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-slate-500 dark:text-slate-400">Precio Unitario:</span>
-                                                <span class="text-slate-900 dark:text-white font-medium">${{ number_format($precioUnitario, 2, '.', ',') }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-slate-500 dark:text-slate-400">Costo Envío:</span>
-                                                <span class="text-slate-900 dark:text-white font-medium">${{ number_format($costoEnvio, 2, '.', ',') }}</span>
-                                            </div>
-                                            <div>
-                                                <span class="text-slate-500 dark:text-slate-400">Total Final:</span>
-                                                <span class="text-emerald-700 dark:text-emerald-400 font-bold">${{ number_format($totalProducto, 2, '.', ',') }}</span>
-                                            </div>
-                                        </div>
+                                <div class="snap-start shrink-0 w-[300px] flex items-start justify-between gap-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-900/20 px-4 py-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-sm text-slate-900 dark:text-white truncate" title="{{ $nombreGanador }}">{{ $nombreGanador }}</p>
+                                        <p class="text-xs text-slate-600 dark:text-slate-300 truncate mt-0.5" title="{{ $ganador->Proveedor ?? 'N/A' }}">
+                                            {{ $ganador->Proveedor ?? 'N/A' }}@if(!empty($ganador->NumeroParte)) <span class="text-slate-400">· {{ $ganador->NumeroParte }}</span>@endif
+                                        </p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums mt-1">
+                                            ${{ number_format($precioUnitario, 2, '.', ',') }} × {{ (int)$cantidad }}@if($costoEnvio > 0) + ${{ number_format($costoEnvio, 2, '.', ',') }} envío @endif
+                                        </p>
                                     </div>
+                                    <p class="shrink-0 text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums leading-tight">${{ number_format($totalProducto, 2, '.', ',') }}</p>
                                 </div>
                                 @endforeach
-                            </div>
-                            <div class="mt-4 pt-4 border-t-2 border-emerald-300 dark:border-emerald-700 flex justify-between items-center">
-                                <span class="text-base font-bold text-slate-900 dark:text-white">Total final</span>
-                                <span class="text-xl font-bold text-emerald-700 dark:text-emerald-400">${{ number_format($totalFinalGanadores, 2, '.', ',') }}</span>
                             </div>
                         </div>
                         @endif
 
                         @if(!empty($step->comment))
-                        <div class="mt-6 bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-100 dark:border-slate-700">
+                        <div class="mt-6 bg-gray-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-100 dark:border-slate-700">
                             <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                                 Comentario registrado ({{ $stageLabel }})
                             </div>
@@ -310,7 +294,7 @@
         </main>
 
         <aside class="w-full lg:w-96 flex-shrink-0">
-            <div class="lg:sticky lg:top-8 space-y-6">
+            <div class="lg:sticky lg:top-6 space-y-5">
 
                 <div class="bg-emerald-50/50 dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-xl p-5 shadow-sm">
                     <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3 block">
@@ -328,8 +312,8 @@
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                    <div class="mb-6">
+                <div class="bg-gray-50 dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <div class="mb-5">
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2" for="comment">
                             Comentarios ({{ $stageLabel }})
                         </label>
@@ -356,7 +340,7 @@
                         </button>
 
                         <div class="grid grid-cols-2 gap-3">
-                            <button type="button" onclick="procesarDecision('rejected')" class="w-full bg-white dark:bg-transparent border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
+                            <button type="button" onclick="procesarDecision('rejected')" class="w-full bg-transparent border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
                                 <span class="material-icons-outlined text-lg">cancel</span>
                                 Rechazar
                             </button>
@@ -381,6 +365,7 @@
 
             </div>
         </aside>
+    </div>
     </div>
 
     <div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none opacity-40 dark:opacity-10">

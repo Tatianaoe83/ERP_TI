@@ -11,16 +11,59 @@
         if (typeof window.__abrirModalSolicitud === 'function') {
             window.__abrirModalSolicitud(id);
         }
-    }
+    },
+    // Modal de asignación: el cascarón abre al instante con esqueleto; el servidor llena el contenido.
+    asgOpen: false,
+    asgCargando: false,
+    asgTimer: null,
+    asgCierresPropios: 0,
+    asgAbrir(id) {
+        // Reabrir antes de que salga el cierre: se cancela (openAsignacion reinicia el estado de todos modos).
+        if (this.asgTimer) { clearTimeout(this.asgTimer); this.asgTimer = null; }
+        this.asgCargando = true;
+        this.asgOpen = true;
+        this.$wire.abrirModalAsignacion(id);
+    },
+    asgCerrar() {
+        if (window.__bloqueoCierreAsignacion || document.querySelector('.swal2-container')) return;
+        this.asgOpen = false;
+        this.asgTimer = setTimeout(() => {
+            this.asgTimer = null;
+            this.asgCierresPropios++;
+            this.$wire.closeAsignacion();
+        }, 160);
+    },
+    esMiInstancia(e) { return e.detail && e.detail.wid === this.$el.getAttribute('wire:id'); }
 }"
-    @click="abrirModalDesdeClick($event)">
+    {{-- Livewire 2 hace Alpine.clone() al morfear un x-data: los nodos nuevos del modal quedan marcados (_x_marker)
+         pero sin listeners. Tras cada respuesta se desmarcan esos "clonados" (directivas sin _x_cleanups) y se
+         inicializan; initTree se salta los que ya funcionan. Un solo hook por página. --}}
+    x-init="if (!window.__asgInitHook && window.Livewire) { window.__asgInitHook = true; Livewire.hook('message.processed', (m, c) => c.el.querySelectorAll('.asg-panel').forEach(p => { p.querySelectorAll('*').forEach(el => { if (el._x_marker && !(el._x_cleanups && el._x_cleanups.length) && Array.from(el.attributes).some(a => /^(x-|@|:)/.test(a.name))) delete el._x_marker }); Alpine.initTree(p) })) }"
+    @click="abrirModalDesdeClick($event)"
+    @asg-abierto.window="if (esMiInstancia($event)) { asgOpen = true; asgCargando = false }"
+    @asg-cerrado.window="if (esMiInstancia($event)) { if (asgCierresPropios > 0) { asgCierresPropios-- } else { asgOpen = false; asgCargando = false } }"
+    @keydown.escape.window="asgOpen && asgCerrar()">
 
     @if(!$soloModal)
-    <div class="index-page__filters">
-        <div class="form-group">
-            <label for="filtroEstatus">Estatus</label>
-            <select id="filtroEstatus" wire:model.live="filtroEstatus" class="form-control">
-                <option value="">Todos los estatus</option>
+    @php $hayFiltrosSol = $search !== '' || $filtroEstatus !== ''; @endphp
+    <div class="sol-toolbar" role="search">
+        <div class="sol-toolbar__search">
+            <label for="searchSolicitudes" class="sol-toolbar__label">Buscar</label>
+            <div class="sol-toolbar__input-icon">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input id="searchSolicitudes" type="search"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="ID, empleado o motivo"
+                    autocomplete="off"
+                    class="sol-toolbar__input">
+            </div>
+        </div>
+        <div class="sol-toolbar__field">
+            <label for="filtroEstatus" class="sol-toolbar__label">Estatus</label>
+            {{-- wire:ignore: el poll/morph de Livewire quitaba el contenedor de select2 y regresaba el select nativo --}}
+            <div wire:ignore>
+            <select id="filtroEstatus" wire:model.live="filtroEstatus" class="sol-toolbar__input">
+                <option value="">Todos</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="En revisión">En revisión</option>
                 <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
@@ -28,62 +71,87 @@
                 <option value="Aprobada">Aprobada</option>
                 <option value="Cancelada">Cancelada</option>
             </select>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="searchSolicitudes">Buscar</label>
-            <input id="searchSolicitudes" type="text"
-                wire:model.live.debounce.300ms="search"
-                placeholder="Buscar ID, empleado o motivo..."
-                class="form-control">
-        </div>
-        <div class="form-group">
-            <label for="solicitudesPorPagina">Por página</label>
-            <select id="solicitudesPorPagina" wire:model.live="perPage" class="form-control">
+        <div class="sol-toolbar__field sol-toolbar__field--sm">
+            <label for="solicitudesPorPagina" class="sol-toolbar__label">Por página</label>
+            <div wire:ignore>
+            <select id="solicitudesPorPagina" wire:model.live="perPage" class="sol-toolbar__input">
                 <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
                 <option value="100">100</option>
             </select>
+            </div>
         </div>
-        <div class="form-group d-flex align-items-end">
-            <button type="button" wire:click="limpiarFiltros" class="index-page__btn-primary">
-                <i class="fa fa-times"></i> Limpiar filtros
-            </button>
-        </div>
+        @if($hayFiltrosSol)
+        <button type="button" wire:click="limpiarFiltros"
+            onclick="if (window.jQuery) { jQuery('#filtroEstatus').val('').trigger('change.select2'); jQuery('#solicitudesPorPagina').val('10').trigger('change.select2'); }" class="sol-toolbar__clear">
+            <i class="fas fa-times" aria-hidden="true"></i> Limpiar filtros
+        </button>
+        @endif
     </div>
-    <div class="index-page__card">
+
+    <div class="index-page__card sol-card">
 
         <div @if(!$modalAsignacionAbierto) wire:poll.15s @endif>
 
-            <div class="index-page__table-wrap table-responsive">
-                <table class="table index-table w-full">
+            <div class="sol-card__head">
+                <div>
+                    <h3 class="sol-card__title">Solicitudes</h3>
+                    <p class="sol-card__meta">{{ number_format($todasSolicitudes->total()) }} {{ $todasSolicitudes->total() === 1 ? 'resultado' : 'resultados' }}{{ $hayFiltrosSol ? ' con los filtros aplicados' : '' }}</p>
+                </div>
+                {{-- Solo para acciones del usuario: el poll de 15s no muestra carga. --}}
+                <span class="sol-card__loading" wire:loading.delay
+                    wire:target="search,filtroEstatus,perPage,limpiarFiltros,gotoPage,nextPage,previousPage"
+                    role="status">
+                    <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Cargando…
+                </span>
+            </div>
+
+            <div class="sol-table-wrap">
+                <table class="sol-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Empleado</th>
-                            <th>Motivo</th>
-                            <th>Estatus</th>
-                            <th>Aprobaciones</th>
-                            <th>Facturas</th>
-                            <th>Creado</th>
-                            <th>Acciones</th>
+                            <th scope="col">Solicitud</th>
+                            <th scope="col">Empleado</th>
+                            <th scope="col">Motivo</th>
+                            <th scope="col">Estatus</th>
+                            <th scope="col">Aprobaciones</th>
+                            <th scope="col">Facturas</th>
+                            <th scope="col" class="sol-table__th-acciones">Acciones</th>
                         </tr>
                     </thead>
                     <tbody wire:key="solicitudes-body-page-{{ $todasSolicitudes->currentPage() }}">
                         @forelse ($todasSolicitudes as $solicitud)
+                        @php
+                            $nombreSol = trim((string) $solicitud->nombreFormateado);
+                            $inicialesSol = collect(preg_split('/\s+/', $nombreSol, -1, PREG_SPLIT_NO_EMPTY))
+                                ->take(2)
+                                ->map(fn ($parte) => mb_strtoupper(mb_substr($parte, 0, 1)))
+                                ->implode('') ?: '?';
+                        @endphp
                         <tr wire:key="solicitud-row-{{ $todasSolicitudes->currentPage() }}-{{ $solicitud->SolicitudID }}">
-                            <td>
-                                <strong>#{{ $solicitud->SolicitudID }}</strong>
+                            <td data-label="Solicitud">
+                                <span class="sol-id">#{{ $solicitud->SolicitudID }}</span>
+                                <span class="sol-sub" title="{{ $solicitud->created_at->format('d/m/Y H:i') }}">
+                                    {{ $solicitud->created_at->format('d/m/Y') }}
+                                </span>
                             </td>
-                            <td>
-                                <div>{{ $solicitud->nombreFormateado }}</div>
-                                <div>{{ $solicitud->empleadoid->Correo ?? 'N/A' }}</div>
+                            <td data-label="Empleado">
+                                <div class="sol-persona">
+                                    <span class="sol-avatar" aria-hidden="true">{{ $inicialesSol }}</span>
+                                    <div class="sol-persona__texto">
+                                        <span class="sol-persona__nombre">{{ $nombreSol ?: 'N/A' }}</span>
+                                        <span class="sol-sub" title="{{ $solicitud->empleadoid->Correo ?? '' }}">{{ $solicitud->empleadoid->Correo ?? 'N/A' }}</span>
+                                    </div>
+                                </div>
                             </td>
-                            <td>
-                                {{ $solicitud->Motivo ?? 'N/A' }}
+                            <td data-label="Motivo">
+                                <span class="sol-motivo" title="{{ $solicitud->Motivo ?? '' }}">{{ $solicitud->Motivo ?? 'N/A' }}</span>
                             </td>
-                            <td>
+                            <td data-label="Estatus">
                                 @php
                                     $solStatusMod = match($solicitud->estatusDisplay) {
                                         'En revisión' => 'sol-status--revision',
@@ -104,7 +172,7 @@
                                     {{ $solicitud->estatusDisplay }}{{ $solicitud->recotizarPropuestasText ?? '' }}
                                 </span>
                             </td>
-                            <td>
+                            <td data-label="Aprobaciones">
                                 <div class="sol-approvals">
                                     @if($solicitud->pasoSupervisor)
                                     @if($solicitud->pasoSupervisor->status === 'approved')
@@ -141,70 +209,82 @@
                                     @endif
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="Facturas">
                                 @if($solicitud->totalFacturasNecesarias > 0)
-                                @if($solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias)
-                                <span class="erp-chip erp-chip--ok">
-                                    <i class="fas fa-check-circle"></i> {{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }} Completas
-                                </span>
-                                @elseif($solicitud->facturasSubidas > 0)
-                                <span class="erp-chip erp-chip--aviso">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }} Parcial
-                                </span>
+                                @php
+                                    $facSubidas = (int) $solicitud->facturasSubidas;
+                                    $facTotal = (int) $solicitud->totalFacturasNecesarias;
+                                    $facPct = min(100, (int) round($facSubidas / $facTotal * 100));
+                                    [$facMod, $facIcono, $facTexto] = $facSubidas >= $facTotal
+                                        ? ['ok', 'fa-check-circle', 'Completas']
+                                        : ($facSubidas > 0 ? ['parcial', 'fa-exclamation-triangle', 'Parcial'] : ['pendiente', 'fa-times-circle', 'Pendiente']);
+                                @endphp
+                                <div class="sol-facturas sol-facturas--{{ $facMod }}">
+                                    <div class="sol-facturas__linea">
+                                        <span class="sol-facturas__estado"><i class="fas {{ $facIcono }}" aria-hidden="true"></i> {{ $facTexto }}</span>
+                                        <span class="sol-facturas__conteo">{{ $facSubidas }}/{{ $facTotal }}</span>
+                                    </div>
+                                    <div class="sol-facturas__barra" role="progressbar" aria-valuenow="{{ $facSubidas }}" aria-valuemin="0" aria-valuemax="{{ $facTotal }}" aria-label="Facturas subidas">
+                                        <span style="width: {{ $facPct }}%"></span>
+                                    </div>
+                                </div>
                                 @else
-                                <span class="erp-chip erp-chip--alerta">
-                                    <i class="fas fa-times-circle"></i> 0/{{ $solicitud->totalFacturasNecesarias }} Pendiente
-                                </span>
-                                @endif
-                                @else
-                                <span class="erp-chip erp-chip--neutro">N/A</span>
+                                <span class="sol-sub">No aplica</span>
                                 @endif
                             </td>
-                            <td>
-                                {{ $solicitud->created_at->format('d/m/Y') }}
-                            </td>
-                            <td>
+                            <td data-label="Acciones">
                                 @php
                                     $yaSubio = $solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias && $solicitud->totalFacturasNecesarias > 0;
                                     $puedeCerrar = !in_array($solicitud->estatusDisplay, ['Cancelada', 'Rechazada'], true);
                                 @endphp
-                                <div class="index-actions">
+                                <div class="index-actions sol-acciones">
                                     <button type="button"
                                         data-ver-solicitud="{{ $solicitud->SolicitudID }}"
                                         @click.prevent.stop="abrirModal({{ $solicitud->SolicitudID }})"
                                         class="index-action index-action--view"
-                                        title="Ver">
-                                        <i class="fas fa-eye"></i>
+                                        title="Ver" aria-label="Ver solicitud #{{ $solicitud->SolicitudID }}">
+                                        <i class="fas fa-fw fa-eye" aria-hidden="true"></i>
                                     </button>
                                     @if($solicitud->puedeCotizar)
                                     <a href="{{ route('solicitudes.cotizar', $solicitud->SolicitudID) }}"
                                         class="index-action index-action--edit no-underline"
-                                        title="Cotizar">
-                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        title="Cotizar" aria-label="Cotizar solicitud #{{ $solicitud->SolicitudID }}">
+                                        <i class="fas fa-fw fa-calculator" aria-hidden="true"></i>
                                     </a>
                                     @endif
                                     @if($solicitud->puedeSubirFactura)
-                                    <button type="button" wire:click="abrirModalAsignacion({{ $solicitud->SolicitudID }})"
+                                    <button type="button" @click="asgAbrir({{ $solicitud->SolicitudID }})"
                                         data-asignacion-solicitud="{{ $solicitud->SolicitudID }}"
                                         class="index-action index-action--view"
-                                        title="{{ $yaSubio ? 'Ver asignación' : 'Asignación' }}">
-                                        <i class="fas fa-file-invoice"></i>
+                                        title="{{ $yaSubio ? 'Ver asignación' : 'Asignación' }}"
+                                        aria-label="{{ $yaSubio ? 'Ver asignación' : 'Asignación' }} de la solicitud #{{ $solicitud->SolicitudID }}">
+                                        <i class="fas fa-fw fa-user-check" aria-hidden="true"></i>
                                     </button>
                                     @endif
                                     @if($puedeCerrar)
-                                    <button type="button" wire:click="abrirModalCancelacion({{ $solicitud->SolicitudID }})"
+                                    <button type="button" @click="$dispatch('scm-abrir', {{ $solicitud->SolicitudID }})"
                                         class="index-action index-action--delete"
-                                        title="Cerrar solicitud">
-                                        <i class="fas fa-ban"></i>
+                                        title="Cerrar solicitud" aria-label="Cerrar solicitud #{{ $solicitud->SolicitudID }}">
+                                        <i class="fas fa-fw fa-ban" aria-hidden="true"></i>
                                     </button>
                                     @endif
                                 </div>
                             </td>
                         </tr>
                         @empty
-                        <tr>
-                            <td colspan="8">
-                                No hay solicitudes registradas
+                        <tr class="sol-table__vacia">
+                            <td colspan="7">
+                                <div class="sol-empty">
+                                    <i class="fas fa-inbox" aria-hidden="true"></i>
+                                    <p class="sol-empty__titulo">{{ $hayFiltrosSol ? 'Sin resultados' : 'No hay solicitudes registradas' }}</p>
+                                    @if($hayFiltrosSol)
+                                    <p class="sol-empty__texto">Ninguna solicitud coincide con la búsqueda o el estatus elegido.</p>
+                                    <button type="button" wire:click="limpiarFiltros"
+            onclick="if (window.jQuery) { jQuery('#filtroEstatus').val('').trigger('change.select2'); jQuery('#solicitudesPorPagina').val('10').trigger('change.select2'); }" class="sol-toolbar__clear">
+                                        <i class="fas fa-times" aria-hidden="true"></i> Limpiar filtros
+                                    </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforelse
@@ -226,50 +306,60 @@
     </div>
     @endif
 
-
-    @if($modalAsignacionAbierto)
-    @php $modalYaTieneFacturas = $modalEsSoloLectura; @endphp
-    <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
-        wire:keydown.escape.window="closeAsignacion" tabindex="-1"
-        x-data="{ __ready: true }">
-        <div class="absolute inset-0" @click="if (window.__bloqueoCierreAsignacion || document.querySelector('.swal2-container')) return; $wire.closeAsignacion()"></div>
-        <div class="relative z-10 w-full max-w-7xl mx-2 lg:mx-6 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden"
-            wire:ignore.self>
+    {{-- Cascarón siempre en el DOM: Alpine lo muestra y anima; el contenido llega de Livewire. Estilos .asg-* en ux-pro-max.css --}}
+    <div x-show="asgOpen" x-cloak class="asg"
+        x-transition:enter="asg-in" x-transition:enter-start="asg-off" x-transition:enter-end="asg-on"
+        x-transition:leave="asg-out" x-transition:leave-start="asg-on" x-transition:leave-end="asg-off">
+        <div class="asg-backdrop" @click="asgCerrar()"></div>
+        <div class="asg-panel" :class="{ 'is-cargando': asgCargando }" role="dialog" aria-modal="true" aria-labelledby="asg-titulo" wire:ignore.self>
+            {{-- Visible solo mientras is-cargando (ver .asg-panel en ux-pro-max.css) --}}
+            <div class="asg-skel" aria-busy="true" aria-label="Cargando asignación">
+                <div class="asg-skel__bar" style="height: 2.2rem; width: 45%"></div>
+                <div class="asg-skel__bar" style="height: 1rem; width: 30%"></div>
+                <div class="asg-skel__bar" style="height: 9rem"></div>
+                <div class="asg-skel__bar" style="height: 9rem"></div>
+            </div>
+            @if($modalAsignacionAbierto)
+            @php
+                $modalYaTieneFacturas = $modalEsSoloLectura;
+                $asgUnidades = collect($propuestasAsignacion)->sum(fn($pp) => count($pp['unidades'] ?? []));
+                $asgConUsuario = collect($propuestasAsignacion)->sum(fn($pp) => collect($pp['unidades'] ?? [])->filter(fn($uu) => !empty($uu['empleado_id']))->count());
+            @endphp
             <div id="insumos-catalogo-asignacion" class="hidden" data-tiene="{{ $insumosTienenPresupuesto ? '1' : '0' }}">{!! json_encode($insumosDisponibles ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) !!}</div>
 
-            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4 shrink-0">
-                <div>
-                    <div class="flex items-center gap-3">
-                        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">
-                            @if($modalYaTieneFacturas) Ver Asignación @else Asignación de Activos @endif
-                        </h3>
-                        @if($asignacionSolicitudId)
-                        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Solicitud #{{ $asignacionSolicitudId }}</span>
-                        @endif
+            <div class="asg-head">
+                <div class="min-w-0">
+                    <h3 id="asg-titulo" class="asg-head__title">
+                        @if($modalYaTieneFacturas) Asignación registrada @else Asignación de activos @endif
+                        @if($asignacionSolicitudId)<span class="asg-head__id">#{{ $asignacionSolicitudId }}</span>@endif
+                    </h3>
+                    <p class="asg-head__sub">
+                        @if($modalYaTieneFacturas) Consulta de lo que se asignó. @else Asigna usuario final y fecha de entrega a cada unidad, y sube el XML de la factura. @endif
+                    </p>
+                    <div class="asg-stats">
+                        <span class="asg-stat"><strong>{{ count($propuestasAsignacion) }}</strong> {{ count($propuestasAsignacion) === 1 ? 'propuesta' : 'propuestas' }}</span>
+                        <span class="asg-stat {{ $asgUnidades > 0 && $asgConUsuario === $asgUnidades ? 'asg-stat--ok' : '' }}">
+                            <i class="fas fa-user-check text-[10px]"></i><strong>{{ $asgConUsuario }}/{{ $asgUnidades }}</strong> con usuario
+                        </span>
                         @if($modalYaTieneFacturas)
-                        <span class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Solo lectura</span>
+                        <span class="asg-stat"><i class="fas fa-lock text-[10px]"></i> Solo lectura</span>
                         @endif
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        @if($modalYaTieneFacturas) Visualización de la asignación registrada. @else Asigna responsables, fechas de entrega y sube el XML de factura. @endif
-                    </p>
                 </div>
-                <button type="button" wire:click="closeAsignacion"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <i class="fas fa-times"></i>
+                <button type="button" class="asg-x" @click="asgCerrar()" aria-label="Cerrar">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
 
             @php $proveedoresAgrupados = collect($propuestasAsignacion)->groupBy('proveedor')->filter(fn($g) => $g->count() > 1); @endphp
             @if($proveedoresAgrupados->isNotEmpty())
-            <div class="px-6 py-2.5 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-100 dark:border-blue-800/30 shrink-0">
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    <i class="fas fa-info-circle text-blue-400 mr-1"></i>
-                    El XML se comparte entre propuestas del mismo proveedor:
+            <div class="asg-banner">
+                <i class="fas fa-link" aria-hidden="true"></i>
+                <span>Un mismo XML cubre las propuestas de:
                     @foreach($proveedoresAgrupados->keys() as $proveedor)
-                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $proveedor }}</span>{{ !$loop->last ? ', ' : '' }}
+                    <strong>{{ $proveedor }}</strong>{{ !$loop->last ? ', ' : '' }}
                     @endforeach
-                </p>
+                </span>
             </div>
             @endif
 
@@ -290,35 +380,38 @@
             @endphp
             @endif
 
-            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="asg-body">
                 @if(empty($propuestasAsignacion))
                 <div class="py-10 text-center text-slate-500 dark:text-slate-400 text-sm">No hay datos para asignación.</div>
                 @else
 
                 @foreach($propuestasAsignacion as $pIndex => $p)
-                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900"
-                    wire:key="prop-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $p['cotizacionId'] ?? 'x' }}">
+                @php
+                    $pUnidades = count($p['unidades'] ?? []);
+                    $pConUsuario = collect($p['unidades'] ?? [])->filter(fn($uu) => !empty($uu['empleado_id']))->count();
+                    $pPct = $pUnidades ? round(100 * $pConUsuario / $pUnidades) : 0;
+                @endphp
+                <section class="asg-prop" wire:key="prop-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $p['cotizacionId'] ?? 'x' }}">
 
-                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
-                        <div>
-                            <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ $p['nombreEquipo'] ?? 'Sin nombre' }}</h4>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $p['proveedor'] ?? 'Sin proveedor' }} &middot; {{ (int)($p['itemsTotal'] ?? 0) }} unidad(es)</p>
+                    <header class="asg-prop__head">
+                        <span class="asg-prop__num">{{ $p['numeroPropuesta'] ?? ($pIndex + 1) }}</span>
+                        <div class="min-w-0">
+                            <h4 class="asg-prop__name">{{ $p['nombreEquipo'] ?? 'Sin nombre' }}</h4>
+                            <p class="asg-prop__meta">{{ $p['proveedor'] ?? 'Sin proveedor' }} · {{ (int)($p['itemsTotal'] ?? 0) }} {{ (int)($p['itemsTotal'] ?? 0) === 1 ? 'unidad' : 'unidades' }}</p>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs text-slate-500 mb-0.5">Total</p>
-                            <p class="text-lg font-bold text-slate-900 dark:text-slate-100">${{ number_format((float)($p['precioUnitario'] ?? 0), 2, '.', ',') }}</p>
+                        <div class="asg-prop__right">
+                            <div class="asg-prop__progress">
+                                <span>{{ $pConUsuario }}/{{ $pUnidades }} con usuario</span>
+                                <div class="asg-prop__bar {{ $pPct === 100 ? 'is-full' : '' }}"><span style="width: {{ $pPct }}%"></span></div>
+                            </div>
+                            <div class="asg-prop__total">
+                                <small>Precio unitario</small>
+                                <strong>${{ number_format((float)($p['precioUnitario'] ?? 0), 2, '.', ',') }}</strong>
+                            </div>
                         </div>
-                    </div>
+                    </header>
 
-                    <div class="hidden lg:grid grid-cols-12 gap-4 px-5 py-2 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        <div class="col-span-1">ID</div>
-                        <div class="col-span-3">Producto</div>
-                        <div class="col-span-2">Factura</div>
-                        <div class="col-span-3">Fecha de entrega</div>
-                        <div class="col-span-3">Usuario final</div>
-                    </div>
-
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <div>
                         @foreach($p['unidades'] ?? [] as $uIndex => $u)
                         @php 
                         $yaFinalizado = !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']);
@@ -326,21 +419,13 @@
                         // O si finalizó la config (fecha_fin_configuracion/config_lista_ui)
                         $yaGuardado = !empty($unidadesGuardadas["{$pIndex}_{$uIndex}"]) || $yaFinalizado;
                         @endphp
-                        <div class="px-5 py-4" wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
-                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-                                <div class="col-span-1 flex lg:justify-center">
-                                    <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold shrink-0">
-                                        {{ $u['unidadIndex'] ?? ($uIndex + 1) }}
-                                    </span>
+                        <div class="asg-unit" wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
+                            <div class="asg-unit__grid">
+                                <div class="asg-unit__badge {{ !empty($u['empleado_id']) && !empty($u['fecha_entrega']) ? 'is-done' : '' }}" title="Unidad {{ $u['unidadIndex'] ?? ($uIndex + 1) }}">
+                                    <small>U</small>{{ $u['unidadIndex'] ?? ($uIndex + 1) }}
                                 </div>
-                                <div class="col-span-3 flex items-center">
-                                    <div>
-                                        <p class="lg:hidden text-[10px] font-bold uppercase text-slate-400">Producto</p>
-                                        <p class="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">{{ $p['nombreEquipo'] ?? 'Producto' }}</p>
-                                    </div>
-                                </div>
-                                <div class="col-span-2">
-                                    <p class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1"> Factura</p>
+                                <div>
+                                    <span class="asg-label">Factura (XML)</span>
                                     @php
                                     $xmlSavedPath = $u['factura_xml_path'] ?? '';
                                     $hasNewXml = !empty($facturaXml[$pIndex][$uIndex]);
@@ -422,60 +507,101 @@
                                         @endif
                                         @endif
                                 </div>
-                                <div class="col-span-3">
-                                    <p class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fecha de entrega</p>
+                                <div>
+                                    <label class="asg-label" for="asg-fecha-{{ $pIndex }}-{{ $uIndex }}">Fecha de entrega</label>
                                     @if($modalYaTieneFacturas)
-                                    <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
+                                    <div class="asg-readonly">
                                         <i class="fas fa-calendar-alt text-slate-400 text-xs"></i> {{ $u['fecha_entrega'] ?? 'Sin fecha' }}
                                     </div>
                                     @else
-                                    <input type="date"
+                                    <input type="date" id="asg-fecha-{{ $pIndex }}-{{ $uIndex }}"
                                         wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.fecha_entrega"
-                                        class="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                        class="asg-field">
                                     @error("propuestasAsignacion.$pIndex.unidades.$uIndex.fecha_entrega")
                                     <p class="mt-1 text-xs text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                                     @enderror
                                     @endif
                                 </div>
-                                <div class="col-span-3"
-                                    x-data="{ open: false }"
-                                    @click.outside="open = false">
-                                    <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Usuario final</label>
+                                {{-- Combobox propio (aspecto select2): lista de empleados en el navegador, filtro instantáneo. Lógica inline para no depender de scripts globales. --}}
+                                <div x-data="{
+                                        open: false, q: '', activo: 0, pos: {}, lista: [], cargando: false,
+                                        get filtrados() {
+                                            const t = this.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+                                            const r = !t.length ? this.lista : this.lista.filter(e => { const h = (e.name + ' ' + e.correo + ' ' + e.id).toLowerCase(); return t.every(x => h.includes(x)); });
+                                            return r.slice(0, 60);
+                                        },
+                                        colocar() {
+                                            const b = this.$refs.boton; if (!b) return;
+                                            const r = b.getBoundingClientRect(), alto = 340;
+                                            const arriba = (window.innerHeight - r.bottom) < alto && r.top > alto;
+                                            this.pos = { left: r.left + 'px', width: Math.max(r.width, 280) + 'px', top: arriba ? 'auto' : (r.bottom + 6) + 'px', bottom: arriba ? (window.innerHeight - r.top + 6) + 'px' : 'auto' };
+                                        },
+                                        async abrir() {
+                                            this.colocar(); this.q = ''; this.activo = 0; this.open = true;
+                                            this.$nextTick(() => this.$refs.buscar && this.$refs.buscar.focus());
+                                            if (this.lista.length) return;
+                                            this.cargando = true;
+                                            {{-- Una sola petición por página; si falla se reintenta en la siguiente apertura --}}
+                                            if (!window.__asgEmpleadosP) window.__asgEmpleadosP = this.$wire.empleadosActivos().catch(() => { window.__asgEmpleadosP = null; return []; });
+                                            this.lista = (await window.__asgEmpleadosP) || [];
+                                            this.cargando = false;
+                                        },
+                                        cerrar() { this.open = false; },
+                                        mover(d) {
+                                            const n = this.filtrados.length; if (!n) return;
+                                            this.activo = (this.activo + d + n) % n;
+                                            this.$nextTick(() => { const el = this.$refs.lista && this.$refs.lista.querySelectorAll('[data-opt]')[this.activo]; if (el) el.scrollIntoView({ block: 'nearest' }); });
+                                        },
+                                        elegir(e) { if (!e) return; this.open = false; this.$wire.seleccionarEmpleado({{ $pIndex }}, {{ $uIndex }}, e.id); }
+                                    }"
+                                    x-init="$el.closest('.asg-body')?.addEventListener('scroll', () => cerrar(), { passive: true })"
+                                    @resize.window="cerrar()"
+                                    @click.outside="cerrar()"
+                                    @keydown.escape="if (open) { $event.stopPropagation(); cerrar(); $refs.boton && $refs.boton.focus() }">
+                                    <label class="asg-label" for="asg-usuario-{{ $pIndex }}-{{ $uIndex }}">Usuario final</label>
                                     @if($modalYaTieneFacturas || $yaFinalizado || $yaGuardado)
-                                    <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
+                                    <div class="asg-readonly">
                                         <i class="fas fa-user text-slate-400 text-xs"></i> {{ $u['empleado_nombre'] ?? '—' }}
                                     </div>
-                                    <div class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
-                                        <i class="fas fa-sitemap text-slate-400 text-[10px]"></i>
+                                    <div class="asg-dept">
+                                        <i class="fas fa-sitemap text-[10px]"></i>
                                         <span>{{ $u['departamento_nombre'] ?? '-' }}</span>
                                     </div>
                                     @else
-                                    <div class="relative">
-                                        <input type="text"
-                                            wire:model.live.debounce.400ms="usuarioSearch.{{ $pIndex }}.{{ $uIndex }}"
-                                            @focus="open = true"
-                                            autocomplete="off"
-                                            class="h-11 w-full pl-7 pr-4 text-sm border-2 border-slate-200 rounded-xl bg-gray-50 dark:bg-slate-800 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all relative z-20 dark:border-slate-600 dark:text-slate-200"
-                                            placeholder="Buscar empleado...">
-                                        @php $opts = $usuarioOptions[$pIndex][$uIndex] ?? []; @endphp
-                                        @if(!empty($opts))
-                                        <div x-show="open" class="absolute top-full left-0 right-0 z-[99999] mt-1 max-h-64 rounded-lg border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 shadow-2xl overflow-y-auto">
-                                            @foreach($opts as $opt)
-                                            <button type="button"
-                                                wire:click.prevent="seleccionarEmpleado({{ $pIndex }}, {{ $uIndex }}, {{ (int) $opt['id'] }})"
-                                                @click="open = false"
-                                                class="w-full px-3 py-2.5 text-left hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0">
-                                                <div class="text-sm font-medium text-slate-900 dark:text-slate-100 leading-tight truncate">{{ $opt['name'] }}</div>
-                                                <div class="text-xs text-slate-500 dark:text-slate-400 leading-tight truncate mt-0.5">{{ $opt['correo'] }}</div>
-                                            </button>
-                                            @endforeach
+                                    <button type="button" x-ref="boton" id="asg-usuario-{{ $pIndex }}-{{ $uIndex }}"
+                                        class="asg-combo" @click="open ? cerrar() : abrir()"
+                                        aria-haspopup="listbox" :aria-expanded="open">
+                                        <span class="asg-combo__val {{ empty($u['empleado_nombre']) ? 'is-placeholder' : '' }}">{{ $u['empleado_nombre'] ?: 'Selecciona un empleado' }}</span>
+                                        <i class="fas fa-chevron-down asg-combo__chev" :class="{ 'is-open': open }" aria-hidden="true"></i>
+                                    </button>
+                                    <div x-show="open" style="display: none" :style="pos" class="asg-combo__panel"
+                                        x-transition:enter="asg-combo-in" x-transition:enter-start="asg-off" x-transition:enter-end="asg-on">
+                                        <div class="asg-combo__search">
+                                            <i class="fas fa-search" aria-hidden="true"></i>
+                                            <input type="text" x-ref="buscar" x-model="q" @input="activo = 0" autocomplete="off"
+                                                @keydown.arrow-down.prevent="mover(1)" @keydown.arrow-up.prevent="mover(-1)"
+                                                @keydown.enter.prevent="elegir(filtrados[activo])"
+                                                placeholder="Buscar por nombre o correo…" aria-label="Buscar empleado">
                                         </div>
-                                        @endif
+                                        <ul x-ref="lista" class="asg-combo__list" role="listbox">
+                                            <template x-for="(e, i) in filtrados" :key="e.id">
+                                                <li data-opt role="option" :aria-selected="i === activo" class="asg-combo__opt"
+                                                    :class="{ 'is-active': i === activo, 'is-selected': e.id === {{ (int)($u['empleado_id'] ?? 0) }} }"
+                                                    @mouseenter="activo = i" @click="elegir(e)">
+                                                    <span class="asg-combo__name" x-text="e.name"></span>
+                                                    <span class="asg-combo__mail" x-text="e.correo"></span>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                        <p class="asg-combo__empty" x-show="cargando"><i class="fas fa-spinner fa-spin mr-1"></i> Cargando empleados…</p>
+                                        <p class="asg-combo__empty" x-show="!cargando && !filtrados.length">Sin resultados para "<span x-text="q"></span>"</p>
                                     </div>
-                                    <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 text-xs dark:from-slate-800 dark:to-slate-800/50 dark:border-slate-700">
-                                        <i class="fas fa-sitemap text-slate-400 dark:text-slate-500"></i>
-                                        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $u['departamento_nombre'] ?? '-' }}</span>
+                                    @if(!empty($u['departamento_nombre']))
+                                    <div class="asg-dept">
+                                        <i class="fas fa-sitemap text-[10px]"></i>
+                                        <span>{{ $u['departamento_nombre'] }}</span>
                                     </div>
+                                    @endif
                                     @error("propuestasAsignacion.$pIndex.unidades.$uIndex.empleado_id")
                                     <p class="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                                         <i class="fas fa-exclamation-circle"></i> {{ $message }}
@@ -505,7 +631,7 @@
                             }
                             }
                             @endphp
-                            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800"
+                            <div class="asg-check"
                                 wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}"
                                 x-data="{
                                 checklistOpen: {{ ($modalYaTieneFacturas || $yaFinalizado || $yaGuardado) ? 'false' : 'true' }},
@@ -646,7 +772,7 @@
                         </div>
                         @endforeach
                     </div>
-                </div>
+                </section>
                 @endforeach
 
                 @if(!$modalYaTieneFacturas)
@@ -679,12 +805,12 @@
                 ]);
                 }
                 }
-                $facturasSinInsumo = $todasFacturasParseadas->filter(fn($f) => empty($f['insumoId']))->count();
+                $facturasSinInsumo = $todasFacturasParseadas->filter(fn($f) => empty($f['insumoId']) && !($f['insumoDesvio'] && trim((string) $f['insumoNombre']) !== ''))->count();
                 $facturasConInsumo = $todasFacturasParseadas->count() - $facturasSinInsumo;
                 @endphp
 
                 @if($todasFacturasParseadas->isNotEmpty() && $insumosCargados && $presupuestoInternoAsignacion)
-                <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" x-data="{ expandido: true }">
+                <div class="asg-insumos" x-data="{ expandido: true }">
                     <button type="button" @click="expandido = !expandido"
                         class="w-full px-5 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         <div class="flex items-center gap-3">
@@ -817,14 +943,12 @@
                 @endif
             </div>
 
-            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 bg-gray-50 dark:bg-slate-900 shrink-0">
-                <p class="text-xs text-slate-400 dark:text-slate-500">
-                    @if($modalYaTieneFacturas) Solo lectura — para modificar contacta al administrador. @else Guarda el avance para conservar los XML y datos ingresados. @endif
+            <div class="asg-foot">
+                <p class="asg-foot__hint">
+                    @if($modalYaTieneFacturas) Para modificar, contacta al administrador. @else Guarda para conservar los XML y datos capturados. @endif
                 </p>
-                <div class="flex items-center gap-3">
-                    <button type="button" wire:click="closeAsignacion"
-                        class="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                        wire:loading.attr="disabled">
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="asgCerrar()" class="asg-btn asg-btn--ghost" wire:loading.attr="disabled">
                         Cerrar
                     </button>
                     @if(!$modalYaTieneFacturas)
@@ -852,7 +976,7 @@
                                 }
                             });
                         "
-                        class="px-4 py-2 text-sm rounded-lg font-medium text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                        class="asg-btn asg-btn--ok">
                         <span wire:loading.remove wire:target="persistAsignacion"><i class="fas fa-save mr-1"></i> Guardar</span>
                         <span wire:loading wire:target="persistAsignacion"><i class="fas fa-spinner fa-spin mr-1"></i> Guardando...</span>
                     </button>
@@ -861,61 +985,76 @@
             </div>
 
             <div wire:loading wire:target="persistAsignacion"
-                class="absolute inset-0 bg-gray-50/70 dark:bg-slate-900/70 flex items-center justify-center z-50 rounded-xl">
+                class="absolute inset-0 bg-gray-50/70 dark:bg-slate-900/70 flex items-center justify-center z-50">
                 <div class="flex flex-col items-center gap-2">
                     <i class="fas fa-spinner fa-spin text-2xl text-slate-600 dark:text-slate-300"></i>
-                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200">Guardando...</p>
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200">Guardando…</p>
                 </div>
             </div>
+            @endif
         </div>
     </div>
-    @endif
 
 
-    @if($modalCancelacionAbierto)
-    <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
-        wire:keydown.escape.window="cerrarModalCancelacion">
-        <div class="absolute inset-0" wire:click="cerrarModalCancelacion"></div>
-        <div class="relative z-10 w-full max-w-md mx-4 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700">
-            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                        <i class="fas fa-ban text-red-600 dark:text-red-400"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">
-                            Cancelar Solicitud @if($solicitudCancelarId)<span class="text-slate-400 font-normal">#{{ $solicitudCancelarId }}</span>@endif
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Esta acción no se puede deshacer.</p>
-                    </div>
+    {{-- Siempre en el DOM para que Alpine anime entrada y salida; estilos .scm-* en ux-pro-max.css.
+         Solo en la instancia de la tabla: la global del layout (soloModal) también escucharía scm-abrir y abriría un segundo modal. --}}
+    @if(!$soloModal)
+    <div x-data="{
+            open: false,
+            id: null, len: 0, min: 10, max: 1000,
+            {{-- Abre sin ir al servidor; el id y el motivo viajan al confirmar.
+                 Sin @entangle: la navegación SPA inicia Alpine antes que Livewire y el entangle truena. --}}
+            abrir(id) { this.id = id; this.len = 0; $refs.motivo.value = ''; this.open = true; $nextTick(() => $refs.motivo.focus()) },
+            cerrar() { this.open = false; $wire.cerrarModalCancelacion() },
+            confirmar() { if (this.len >= this.min) $wire.confirmarCancelacion(this.id) }
+        }"
+        @scm-abrir.window="abrir($event.detail)"
+        @scm-cerrar.window="open = false"
+        x-show="open" x-cloak
+        x-transition:enter="scm-in" x-transition:enter-start="scm-fade-off" x-transition:enter-end="scm-on"
+        x-transition:leave="scm-out" x-transition:leave-start="scm-on" x-transition:leave-end="scm-fade-off"
+        @keydown.escape.window="open && cerrar()"
+        class="scm">
+
+        <div @click="cerrar()" class="scm-backdrop"></div>
+
+        <div class="scm-panel" role="dialog" aria-modal="true" aria-labelledby="scm-titulo" aria-describedby="scm-lead">
+
+            <div class="scm-top">
+                <p id="scm-titulo" class="scm-kicker">Cancelar solicitud</p>
+                <button type="button" class="scm-close" @click="cerrar()" aria-label="Cerrar">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="scm-body">
+                <p class="scm-id" :class="{ 'is-void': len >= min }" x-text="'#' + (id ?? '')"></p>
+                <p id="scm-lead" class="scm-lead">El solicitante recibirá este motivo por correo. No se puede deshacer.</p>
+
+                <label for="scm-motivo" class="sr-only">Motivo de cancelación</label>
+                <textarea id="scm-motivo" x-ref="motivo" wire:model.defer="motivoCancelacion" rows="3" maxlength="1000"
+                    @input="len = $event.target.value.length"
+                    @keydown.ctrl.enter="confirmar()"
+                    aria-required="true" @error('motivoCancelacion') aria-invalid="true" @enderror
+                    placeholder="¿Por qué se cancela?"
+                    class="scm-field @error('motivoCancelacion') is-error @enderror"></textarea>
+                <div class="scm-meta">
+                    @error('motivoCancelacion')
+                    <span class="scm-error" role="alert">{{ $message }}</span>
+                    @else
+                    <span x-text="len < min ? 'Faltan ' + (min - len) + ' caracteres' : ''"></span>
+                    @enderror
+                    <span class="scm-meta__count" x-text="len + '/' + max"></span>
                 </div>
-                <button type="button" wire:click="cerrarModalCancelacion"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <i class="fas fa-times"></i>
-                </button>
             </div>
-            <div class="px-6 py-5">
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Motivo de cancelación <span class="text-red-500">*</span>
-                </label>
-                <textarea wire:model.live="motivoCancelacion" rows="4"
-                    placeholder="Describe por que se esta cancelando esta solicitud..."
-                    class="w-full px-4 py-3 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all resize-none"></textarea>
-                @error('motivoCancelacion')
-                <p class="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                </p>
-                @enderror
-            </div>
-            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
-                <button type="button" wire:click="cerrarModalCancelacion" wire:loading.attr="disabled"
-                    class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50">
-                    Regresar
-                </button>
-                <button type="button" wire:click="confirmarCancelacion" wire:loading.attr="disabled" wire:target="confirmarCancelacion"
-                    class="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-60">
-                    <span wire:loading.remove wire:target="confirmarCancelacion"><i class="fas fa-ban mr-1"></i>Confirmar Cancelación</span>
-                    <span wire:loading wire:target="confirmarCancelacion"><i class="fas fa-spinner fa-spin mr-1"></i>Procesando...</span>
+
+            <div class="scm-foot">
+                <button type="button" class="scm-btn scm-btn--ghost" @click="cerrar()"
+                    wire:loading.attr="disabled" wire:target="confirmarCancelacion">No</button>
+                <button type="button" class="scm-btn scm-btn--danger" @click="confirmar()"
+                    :disabled="len < min" wire:loading.attr="disabled" wire:target="confirmarCancelacion">
+                    <span wire:loading.remove wire:target="confirmarCancelacion">Cancelar</span>
+                    <span wire:loading wire:target="confirmarCancelacion"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Cancelando…</span>
                 </button>
             </div>
         </div>
@@ -1201,7 +1340,10 @@
         };
     })();
 
-    document.addEventListener('livewire:load', function() {
+    // Una sola vez por página: este script se re-ejecuta en cada navegación SPA y Livewire.restart()
+    // vuelve a disparar livewire:load; sin la bandera cada aviso salía repetido N veces.
+    if (!window.__swalAsignacionListeners) {
+        window.__swalAsignacionListeners = true;
         const _swalBase = {
             background: '#f9fafb',
             color: '#1e293b',
@@ -1261,7 +1403,7 @@
                 position: 'top-end'
             });
         });
-    });
+    }
 </script>
 @endpush
 @endonce
