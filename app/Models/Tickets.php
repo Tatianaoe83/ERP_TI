@@ -568,15 +568,15 @@ class Tickets extends Model
         ];
 
         $estado = $tiempoInfo['estado'] ?? 'normal';
+        $texto = self::formatearDuracion($tiempoInfo['transcurrido'])
+            .' / '.self::formatearDuracion($tiempoInfo['estimado']);
 
         return [
             'transcurrido' => $tiempoInfo['transcurrido'],
             'estimado'     => $tiempoInfo['estimado'],
             'porcentaje'   => min(100, (float) ($tiempoInfo['porcentaje'] ?? 0)),
             'estado'       => $estado,
-            'texto'        => $estado === 'pausado'
-                ? "{$tiempoInfo['transcurrido']}h / {$tiempoInfo['estimado']}h · en pausa"
-                : "{$tiempoInfo['transcurrido']}h / {$tiempoInfo['estimado']}h",
+            'texto'        => $estado === 'pausado' ? $texto.' · en pausa' : $texto,
             'estilo'       => $estilos[$estado] ?? $estilos['normal'],
         ];
     }

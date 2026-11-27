@@ -2218,7 +2218,7 @@
                                 tiempoSection.innerHTML = `
                                     <div class="flex justify-between text-[10px] mb-1 text-gray-500 dark:text-gray-400">
                                         <span>Tiempo:</span>
-                                        <span class="${estadoColor}">${tiempoInfo.texto_transcurrido} / ${tiempoInfo.texto_estimado}</span>
+                                        <span class="tiempo-texto ${estadoColor}">${tiempoInfo.texto_transcurrido} / ${tiempoInfo.texto_estimado}${tiempoInfo.estado === 'pausado' ? ' · en pausa' : ''}</span>
                                     </div>
                                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                                         <div class="h-1.5 rounded-full ${barraColor}" style="width: ${Math.min(tiempoInfo.porcentaje, 100)}%"></div>
@@ -2389,22 +2389,7 @@
                         if (data.success && data.tiempos && data.tiempos[ticketId]) {
                             const tiempo = data.tiempos[ticketId];
                             // Formatear horas a texto
-                            const formatearHoras = (horas) => {
-                                if (!horas || horas === 0 || horas === '') return '0m';
-                                const h = parseFloat(horas);
-                                if (isNaN(h)) return '0m';
-                                const horasEnteras = Math.floor(h);
-                                const minutos = Math.round((h - horasEnteras) * 60);
-                                if (horasEnteras > 0 && minutos > 0) {
-                                    return `${horasEnteras}h ${minutos}m`;
-                                } else if (horasEnteras > 0) {
-                                    return `${horasEnteras}h`;
-                                } else if (minutos > 0) {
-                                    return `${minutos}m`;
-                                } else {
-                                    return '0m';
-                                }
-                            };
+                            const formatearHoras = (horas) => window.formatearHorasDecimales(horas);
                             
                             return {
                                 texto_transcurrido: formatearHoras(tiempo.transcurrido),
@@ -2520,23 +2505,10 @@
                         const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
                         if (tiempoTexto) {
                             // Convertir horas decimales a horas y minutos
-                            const formatearHoras = (horas) => {
-                                if (!horas || horas === 0 || horas === '') return '-';
-                                const h = parseFloat(horas);
-                                if (isNaN(h)) return '-';
-                                const horasEnteras = Math.floor(h);
-                                const minutos = Math.round((h - horasEnteras) * 60);
-                                if (horasEnteras > 0 && minutos > 0) {
-                                    return `${horasEnteras}h ${minutos}m`;
-                                } else if (horasEnteras > 0) {
-                                    return `${horasEnteras}h`;
-                                } else if (minutos > 0) {
-                                    return `${minutos}m`;
-                                } else {
-                                    return '0m';
-                                }
-                            };
-                            tiempoTexto.textContent = `${formatearHoras(tiempoInfo.transcurrido)} / ${formatearHoras(tiempoInfo.estimado)}`;
+                            const formatearHoras = (horas) => window.formatearHorasDecimales(horas);
+                            let textoTiempo = `${formatearHoras(tiempoInfo.transcurrido)} / ${formatearHoras(tiempoInfo.estimado)}`;
+                            if (tiempoInfo.estado === 'pausado') textoTiempo += ' · en pausa';
+                            tiempoTexto.textContent = textoTiempo;
                         }
                         
                         // Actualizar la barra de progreso
@@ -4577,47 +4549,26 @@
             },
             
             formatearHorasDecimales(horasDecimales) {
-                if (!horasDecimales || horasDecimales === 0 || horasDecimales === '') return '-';
-                
-                const horas = parseFloat(horasDecimales);
-                if (isNaN(horas)) return '-';
-                
-                const horasEnteras = Math.floor(horas);
-                const minutos = Math.round((horas - horasEnteras) * 60);
-                
-                if (horasEnteras > 0 && minutos > 0) {
-                    return `${horasEnteras}h ${minutos}m`;
-                } else if (horasEnteras > 0) {
-                    return `${horasEnteras}h`;
-                } else if (minutos > 0) {
-                    return `${minutos}m`;
-                } else {
-                    return '0m';
-                }
+                return window.formatearHorasDecimales(horasDecimales);
             }
         });
     }
 
 
-    // Función global para formatear horas decimales a horas y minutos
+    // 8 horas laborales = 1 día. Igual que Tickets::formatearDuracion.
     window.formatearHorasDecimales = function(horasDecimales) {
-        if (!horasDecimales || horasDecimales === 0 || horasDecimales === '') return '-';
-        
-        const horas = parseFloat(horasDecimales);
-        if (isNaN(horas)) return '-';
-        
-        const horasEnteras = Math.floor(horas);
-        const minutos = Math.round((horas - horasEnteras) * 60);
-        
-        if (horasEnteras > 0 && minutos > 0) {
-            return `${horasEnteras}h ${minutos}m`;
-        } else if (horasEnteras > 0) {
-            return `${horasEnteras}h`;
-        } else if (minutos > 0) {
-            return `${minutos}m`;
-        } else {
-            return '0m';
-        }
+        const totalMinutos = Math.round(Math.max(0, parseFloat(horasDecimales) || 0) * 60);
+        if (!totalMinutos) return '0 minutos';
+        const porDia = 8 * 60;
+        const dias = Math.floor(totalMinutos / porDia);
+        const resto = totalMinutos % porDia;
+        const horasEnteras = Math.floor(resto / 60);
+        const minutos = resto % 60;
+        const partes = [];
+        if (dias) partes.push(dias + (dias === 1 ? ' día' : ' días'));
+        if (horasEnteras) partes.push(horasEnteras + (horasEnteras === 1 ? ' hora' : ' horas'));
+        if (minutos) partes.push(minutos + (minutos === 1 ? ' minuto' : ' minutos'));
+        return partes.join(', ');
     };
 
     // La cascada Categoría > Grupo > Subgrupo ahora vive dentro de ticketsModal()

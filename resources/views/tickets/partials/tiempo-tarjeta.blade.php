@@ -12,7 +12,7 @@
     </div>
     <p class="text-[11px] font-semibold flex items-center gap-1">
         <i class="fas fa-stopwatch text-[10px] opacity-80"></i>
-        {{ $tiempo['texto'] }}
+        <span class="tiempo-texto">{{ $tiempo['texto'] }}</span>
     </p>
 </div>
 @endif
