@@ -4,14 +4,23 @@ namespace App\Services;
 
 use App\Models\ActualizacionCapitalHumano;
 use App\Models\CentroCosto;
+use App\Models\Departamentos;
+use App\Models\Direccion;
 use App\Models\Empleados;
+use App\Models\Gerencia;
 use App\Models\Obras;
 use App\Models\Puestos;
+use App\Models\UnidadesDeNegocio;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class SincronizacionCapitalHumano
 {
+    private $departamentos = null;
+
+    private $motivoAlta = null;
+
     public function traer(): array
     {
         try {
@@ -25,7 +34,7 @@ class SincronizacionCapitalHumano
         $obras = $this->indiceObras();
         $centros = $this->indiceCentros();
 
-        $resultado = ['bajas' => 0, 'cambios' => 0, 'reingresos' => 0, 'altas' => 0, 'sin_empleado' => 0];
+        $resultado = ['bajas' => 0, 'cambios' => 0, 'reingresos' => 0, 'altas' => 0, 'sin_empleado' => 0, 'omitidos' => 0];
 
         $this->sincronizarPlantilla($empleados, $puestos, $obras, $centros, $resultado);
         $this->traerAltasBajas($empleados, $puestos, $obras, $centros, $resultado);
@@ -119,7 +128,7 @@ class SincronizacionCapitalHumano
                 'fecha' => $fila->fecha,
                 'resumen' => $empleado
                     ? 'Se agregó. Aún no tiene inventario. TI hace la asignación.'
-                    : 'Esta persona no está en TI.',
+                    : ($this->motivoAlta ?: 'Esta persona no está en TI.'),
                 'estado' => $empleado ? 'aplicado' : 'sin_empleado',
             ]);
             if ($empleado && $fila->tipo === 'ALTA') {
@@ -222,7 +231,10 @@ class SincronizacionCapitalHumano
 
             if (!$empleado) {
                 $empleado = $this->crearDesdeCapitalHumano($fila, $puestos, $obras, $centros, $empleados);
-                $empleados[$clave] = $empleado;
+                if (!$empleado) {
+                    $resultado['omitidos']++;
+                    continue;
+                }
             } elseif ($activo) {
                 $this->aplicarUbicacionActual($empleado, $fila, $puestos, $obras, $centros, $empleados);
                 if (!(int) $empleado->Estado) {
@@ -334,6 +346,224 @@ class SincronizacionCapitalHumano
         return $jefe ? $this->nombreCompleto($jefe) : null;
     }
 
+    private function asegurarPuesto(array &$puestos, $fila): array
+    {
+        $this->completarEstructura($fila);
+        $nombre = trim((string) ($fila->puesto ?? ''));
+        $area = trim((string) ($fila->area ?? ''));
+        $existente = $this->buscarPuesto($puestos, $nombre, $area);
+        if ($existente) {
+            return ['id' => $existente, 'creado' => false];
+        }
+        if ($nombre === '') {
+            return ['id' => null, 'creado' => false];
+        }
+
+        $departamentoId = $area !== '' ? $this->asegurarDepartamento($area, $fila) : null;
+        $puesto = Puestos::create([
+            'NombrePuesto' => mb_substr(mb_strtoupper($nombre, 'UTF-8'), 0, 75),
+            'DepartamentoID' => $departamentoId,
+        ]);
+        $clave = $this->clave($puesto->NombrePuesto);
+        if ($area !== '') {
+            $puestos['area'][$this->clave($puesto->NombrePuesto.'|'.$area)] = $puesto->PuestoID;
+        }
+        if (!isset($puestos['unico'][$clave])) {
+            $puestos['unico'][$clave] = $puesto->PuestoID;
+        }
+
+        return ['id' => $puesto->PuestoID, 'creado' => true];
+    }
+
+    private function completarEstructura($fila): void
+    {
+        if (!empty($fila->estructura_lista) || empty($fila->puesto_id)) {
+            return;
+        }
+
+        $fila->estructura_lista = true;
+        $unidadId = !empty($fila->unidad_negocio_id) ? (int) $fila->unidad_negocio_id : null;
+        $estructura = DB::connection('capital_humano')->selectOne("
+            SELECT p.nombre AS puesto,
+                   a.nombre AS area,
+                   g.nombre AS gerencia,
+                   d.nombre AS direccion,
+                   u.nombre AS unidad
+            FROM puestos p
+            LEFT JOIN areas a ON a.id = p.area_id
+            LEFT JOIN gerencias g ON g.id = a.gerencia_id
+            LEFT JOIN direcciones d ON d.id = COALESCE(a.direccion_id, p.direccion_id)
+            LEFT JOIN unidades_negocio u ON u.id = COALESCE(?, (
+                SELECT pun.unidad_negocio_id
+                FROM puesto_unidad_negocio pun
+                WHERE pun.puesto_id = p.id
+                LIMIT 1
+            ))
+            WHERE p.id = ?
+        ", [$unidadId, (int) $fila->puesto_id]);
+
+        if (!$estructura) {
+            return;
+        }
+
+        if (empty($fila->puesto)) {
+            $fila->puesto = $estructura->puesto;
+        }
+        if (empty($fila->area)) {
+            $fila->area = $estructura->area;
+        }
+        $fila->gerencia = $estructura->gerencia ?: null;
+        $fila->direccion = $estructura->direccion ?: null;
+        $fila->unidad = $estructura->unidad ?: ($fila->unidad ?? null);
+    }
+
+    private function asegurarDepartamento(string $nombreArea, $fila): ?int
+    {
+        $clave = $this->clave($nombreArea);
+        if ($clave === '') {
+            return null;
+        }
+
+        foreach ($this->indiceDepartamentos() as $id => $nombre) {
+            if ($this->clave($nombre) === $clave) {
+                return (int) $id;
+            }
+        }
+
+        $gerenciaId = $this->asegurarGerencia($fila);
+        if (!$gerenciaId) {
+            return null;
+        }
+
+        $departamento = Departamentos::create([
+            'NombreDepartamento' => mb_substr(mb_strtoupper($nombreArea, 'UTF-8'), 0, 50),
+            'GerenciaID' => $gerenciaId,
+        ]);
+        $this->departamentos[$departamento->DepartamentoID] = $departamento->NombreDepartamento;
+
+        return (int) $departamento->DepartamentoID;
+    }
+
+    private function indiceDepartamentos(): array
+    {
+        if ($this->departamentos === null) {
+            $this->departamentos = [];
+            foreach (Departamentos::query()->get(['DepartamentoID', 'NombreDepartamento']) as $departamento) {
+                $this->departamentos[$departamento->DepartamentoID] = $departamento->NombreDepartamento;
+            }
+        }
+
+        return $this->departamentos;
+    }
+
+    private function asegurarGerencia($fila): ?int
+    {
+        $nombre = trim((string) ($fila->gerencia ?: ($fila->direccion ?? '')));
+        if ($nombre === '') {
+            return null;
+        }
+
+        $clave = $this->clave($nombre);
+        foreach (Gerencia::query()->get(['GerenciaID', 'NombreGerencia']) as $gerencia) {
+            $actual = $this->clave($gerencia->NombreGerencia);
+            if ($actual === $clave || $actual === 'DIRECCION '.$clave || $this->terminaCon($actual, $clave)) {
+                return (int) $gerencia->GerenciaID;
+            }
+        }
+
+        $unidadId = $this->buscarUnidad($fila->unidad ?? null);
+        if (!$unidadId) {
+            return null;
+        }
+
+        $direccionId = Direccion::query()->where('UnidadNegocioID', $unidadId)->value('DireccionID');
+        if (!$direccionId) {
+            return null;
+        }
+
+        $gerencia = Gerencia::create([
+            'NombreGerencia' => mb_substr(mb_strtoupper($nombre, 'UTF-8'), 0, 100),
+            'UnidadNegocioID' => $unidadId,
+            'DireccionID' => $direccionId,
+            'estado' => 1,
+        ]);
+
+        return (int) $gerencia->GerenciaID;
+    }
+
+    private function terminaCon(string $texto, string $sufijo): bool
+    {
+        $marca = ' '.$sufijo;
+
+        return strlen($texto) > strlen($marca) && substr($texto, -strlen($marca)) === $marca;
+    }
+
+    private function buscarUnidad(?string $nombre): ?int
+    {
+        $clave = $this->clave((string) $nombre);
+        if ($clave === '') {
+            return null;
+        }
+
+        $mejor = null;
+        $largo = PHP_INT_MAX;
+        foreach (UnidadesDeNegocio::query()->get(['UnidadNegocioID', 'NombreEmpresa']) as $unidad) {
+            $actual = $this->clave($unidad->NombreEmpresa);
+            if ($actual === $clave) {
+                return (int) $unidad->UnidadNegocioID;
+            }
+            if (strpos($actual, $clave.' ') === 0 && strlen($actual) < $largo) {
+                $mejor = (int) $unidad->UnidadNegocioID;
+                $largo = strlen($actual);
+            }
+        }
+
+        return $mejor;
+    }
+
+    private function asegurarObra(array &$obras, ?string $nombre, ?string $unidadNombre): array
+    {
+        $nombre = trim((string) $nombre);
+        if ($nombre === '') {
+            return ['id' => null, 'creado' => false];
+        }
+
+        $clave = $this->clave($nombre);
+        if (isset($obras[$clave])) {
+            return ['id' => $obras[$clave], 'creado' => false];
+        }
+
+        $mejor = null;
+        $largo = PHP_INT_MAX;
+        foreach ($obras as $obraClave => $id) {
+            if (strpos($obraClave, $clave.' ') === 0 && strlen($obraClave) < $largo) {
+                $mejor = $id;
+                $largo = strlen($obraClave);
+            }
+        }
+        if ($mejor) {
+            $obras[$clave] = $mejor;
+
+            return ['id' => $mejor, 'creado' => false];
+        }
+
+        $unidadId = $this->buscarUnidad($unidadNombre);
+        if (!$unidadId) {
+            return ['id' => null, 'creado' => false];
+        }
+
+        $obra = Obras::create([
+            'NombreObra' => mb_substr(mb_strtoupper($nombre, 'UTF-8'), 0, 100),
+            'Direccion' => 'POR DEFINIR',
+            'EncargadoDeObra' => 'POR DEFINIR',
+            'UnidadNegocioID' => $unidadId,
+            'estado' => 1,
+        ]);
+        $obras[$clave] = $obra->ObraID;
+
+        return ['id' => $obra->ObraID, 'creado' => true];
+    }
+
     private function buscarPuesto(array $puestos, string $nombre, string $area): ?int
     {
         $conArea = $this->clave($nombre.'|'.$area);
@@ -422,16 +652,44 @@ class SincronizacionCapitalHumano
         return $indice;
     }
 
-    private function crearDesdeCapitalHumano($fila, array &$puestos, array &$obras, array &$centros, array &$empleados): Empleados
+    private function crearDesdeCapitalHumano($fila, array &$puestos, array &$obras, array &$centros, array &$empleados): ?Empleados
     {
-        $empleado = new Empleados();
-        $empleado->NombreEmpleado = mb_substr(mb_strtoupper($this->nombreCompleto($fila), 'UTF-8'), 0, 100);
-        $empleado->tipo_persona = 'FISICA';
-        $empleado->Estado = 1;
-        $empleado->NumTelefono = $this->telefono($fila->telefono ?? null);
-        $empleado->Correo = $this->correoDisponible($fila->correo_institucional ?? null);
+        $this->motivoAlta = null;
+        $nombre = $this->nombreCompleto($fila);
 
-        $empleado->save();
+        try {
+            $puesto = !empty($fila->puesto_id) ? $this->asegurarPuesto($puestos, $fila) : ['id' => null];
+            if (empty($fila->ubicacion) && !empty($fila->ubicacion_id)) {
+                $fila->ubicacion = DB::connection('capital_humano')->table('ubicaciones')->where('id', $fila->ubicacion_id)->value('nombre');
+            }
+            $obra = !empty($fila->ubicacion)
+                ? $this->asegurarObra($obras, $fila->ubicacion, $fila->unidad ?? null)
+                : ['id' => null];
+
+            if (empty($puesto['id']) || empty($obra['id'])) {
+                $falta = empty($puesto['id']) ? 'un puesto' : 'una ubicación';
+                $this->motivoAlta = 'No se dio de alta porque falta '.$falta.' que se pueda guardar en TI.';
+                Log::warning($nombre.': '.$this->motivoAlta);
+
+                return null;
+            }
+
+            $empleado = new Empleados();
+            $empleado->NombreEmpleado = mb_substr(mb_strtoupper($nombre, 'UTF-8'), 0, 100);
+            $empleado->tipo_persona = 'FISICA';
+            $empleado->Estado = 1;
+            $empleado->PuestoID = $puesto['id'];
+            $empleado->ObraID = $obra['id'];
+            $empleado->NumTelefono = $this->telefono($fila->telefono ?? null);
+            $empleado->Correo = $this->correoDisponible($fila->correo_institucional ?? null);
+            $empleado->save();
+        } catch (\Throwable $e) {
+            $this->motivoAlta = 'No se dio de alta: '.$e->getMessage();
+            Log::warning($nombre.': '.$this->motivoAlta);
+
+            return null;
+        }
+
         $empleados[$this->clave($empleado->NombreEmpleado)] = $empleado;
 
         return $empleado;

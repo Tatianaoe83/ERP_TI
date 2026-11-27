@@ -27,7 +27,8 @@ class TraerCambiosCapitalHumano extends Command
         $resumen = 'Plantilla al día. Altas: '.$resultado['altas']
             .'. Bajas sin inventario: '.($resultado['bajas_auto'] ?? 0)
             .'. Bajas con inventario: '.$resultado['bajas']
-            .'. Cambios de lugar: '.$resultado['cambios'].'.';
+            .'. Cambios de lugar: '.$resultado['cambios']
+            .'. Sin puesto o ubicación: '.($resultado['omitidos'] ?? 0).'.';
 
         Log::info($resumen);
         $this->info($resumen);
