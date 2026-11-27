@@ -347,17 +347,20 @@
                 return;
             }
 
-            var totalEmp = document.getElementById('totalEmpleadosModal');
-            var sinMesPagoMensual = document.getElementById('sinMesPagoMensualModal');
-            var sinMesPagoAnual = document.getElementById('sinMesPagoAnualModal');
-            var lineasConFecha = document.getElementById('lineasSinAsignarConFechaModal');
-            var insumosConFecha = document.getElementById('insumosSinAsignarConFechaModal');
+            function pintarConteo(id, valor, esAlerta) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var n = Number(valor) || 0;
+                el.textContent = String(n);
+                el.classList.remove('erp-chip--ok', 'erp-chip--alerta');
+                el.classList.add(esAlerta && n > 0 ? 'erp-chip--alerta' : 'erp-chip--ok');
+            }
 
-            if (totalEmp) totalEmp.innerText = data.totalEmpleados || 0;
-            if (sinMesPagoMensual) sinMesPagoMensual.innerText = data.empleadosSinMesPagoMensual || 0;
-            if (sinMesPagoAnual) sinMesPagoAnual.innerText = data.empleadosSinMesPagoAnual || 0;
-            if (lineasConFecha) lineasConFecha.innerText = data.lineasSinAsignarConFecha || 0;
-            if (insumosConFecha) insumosConFecha.innerText = data.insumosSinAsignarConFecha || 0;
+            pintarConteo('totalEmpleadosModal', data.totalEmpleados, false);
+            pintarConteo('sinMesPagoMensualModal', data.empleadosSinMesPagoMensual, true);
+            pintarConteo('sinMesPagoAnualModal', data.empleadosSinMesPagoAnual, true);
+            pintarConteo('lineasSinAsignarConFechaModal', data.lineasSinAsignarConFecha, true);
+            pintarConteo('insumosSinAsignarConFechaModal', data.insumosSinAsignarConFecha, true);
 
             var tieneFaltantes = (
                 data.empleadosSinMesPagoMensual > 0 ||

@@ -56,6 +56,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:30')
             ->withoutOverlapping()
             ->runInBackground();
+
+        // Altas, bajas y cambios de lugar desde Capital Humano
+        $schedule->command('capital-humano:traer')
+            ->hourly()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

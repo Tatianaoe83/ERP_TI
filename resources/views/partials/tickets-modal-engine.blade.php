@@ -169,7 +169,10 @@
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
                             const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
                             const pausadoCount = datos.ticketsStatus.pausado ? datos.ticketsStatus.pausado.length : 0;
-                            const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
+                            // Resueltos está paginado: el encabezado usa el total, no los 50 de la página.
+                            const resueltosCount = (datos.totalCerrados !== undefined && datos.totalCerrados !== null)
+                                ? datos.totalCerrados
+                                : (datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0);
                             
                             this.ticketsLista = {
                                 nuevos: nuevosCount,

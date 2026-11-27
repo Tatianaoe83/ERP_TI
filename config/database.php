@@ -45,11 +45,11 @@ return [
 
         'capital_humano' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => env('CH_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('CH_PORT', env('DB_PORT', '3306')),
             'database' => env('CH_DATABASE', 'capital_humano'),
-            'username' => env('DB_USERNAME'),
-            'password' => env('DB_PASSWORD'),
+            'username' => env('CH_USERNAME', env('DB_USERNAME')),
+            'password' => env('CH_PASSWORD', env('DB_PASSWORD')),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
